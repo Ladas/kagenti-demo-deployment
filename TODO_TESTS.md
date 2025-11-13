@@ -3420,3 +3420,216 @@ Wave 0+: Main Keycloak resources (CR, PostgreSQL, realms)
 
 ---
 
+| 2025-11-13 17:41:21 | 158 | 95 | 43 | 20 | ✗ FAIL |
+
+### Test Run: 2025-11-13 17:41:21
+
+**Summary**: 158 tests (95 passed, 43 failed, 20 skipped)
+
+| Test | Status | Duration |
+|------|--------|----------|
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_pod_running PASSED [  0%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_crds_registered PASSED [  1%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_webhook_service PASSED [  1%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_logs_no_errors FAILED [  2%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_can_list_agents PASSED [  3%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_pod_running PASSED [  3%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_crds_registered PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_logs_no_errors PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_can_list_components PASSED [  5%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_both_operators_running_simultaneously PASSED [  6%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_shared_configmaps_exist FAILED [  6%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_images_correct PASSED [  7%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_command_path_correct PASSED [  7%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_argocd_healthy PASSED [  8%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_cert_manager_healthy PASSED [  9%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_tekton_pipelines_installed PASSED [  9%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_istiod_healthy PASSED [ 10%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_keycloak_healthy PASSED [ 10%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_container_registry_healthy FAILED [ 11%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_kiali_healthy PASSED [ 12%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_operator_healthy FAILED [ 12%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_crds_installed FAILED [ 13%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_healthy PASSED [ 14%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_oauth_config_completed FAILED [ 15%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_external_gateway_exists PASSED [ 15%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_tls_certificates_ready PASSED [ 16%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_jaeger_healthy FAILED [ 16%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_tempo_healthy PASSED [ 17%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_otel_collector_healthy PASSED [ 18%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_phoenix_healthy PASSED [ 18%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_agent_services_exist PASSED [ 21%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_research_agent_a2a_endpoint SKIPPED [ 22%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_all_applications_exist FAILED [ 22%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_critical_applications_synced FAILED [ 23%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_no_crashloop_pods PASSED [ 24%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_cluster_pod_health_threshold PASSED [ 24%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_all_deployments_have_replicas PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_research_agent_simple_question SKIPPED [ 25%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_health_check FAILED [ 26%] | ✗ FAILED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_card_accessible FAILED [ 27%] | ✗ FAILED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_simple_factual_question SKIPPED [ 27%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_multi_turn_conversation SKIPPED [ 28%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_research_agent_healthy FAILED [ 28%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentDeployment::test_code_agent_healthy FAILED [ 29%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentDeployment::test_orchestrator_agent_healthy FAILED [ 30%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_services_exist PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_deployments_exist PASSED [ 31%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_research_agent_chat_endpoint SKIPPED [ 31%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_agent_health_endpoint SKIPPED [ 32%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentTelemetry::test_agent_trace_in_phoenix SKIPPED [ 33%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_prometheus_mcp_server_deployment_ready SKIPPED [ 33%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_phoenix_ready_for_trace_mcp_server PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_deployment_namespace_exists PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_service_accessible SKIPPED [ 35%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_github_mcp_server_has_credentials SKIPPED [ 36%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_monitoring_agent_workflow SKIPPED [ 36%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentCRDLifecycle::test_create_agent_cr SKIPPED [ 37%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agent_crd_installed PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentbuild_crd_installed PASSED [ 38%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentcard_crd_installed PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agents PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentbuilds PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentcards PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_webhook_accessible PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_rbac_configured PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentHealth::test_team1_namespace_exists PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentHealth::test_no_crashloop_agent_pods PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_server_healthy PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_applicationset_controller_healthy PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_repo_server_healthy PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_all_argocd_applications_exist PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_critical_applications_synced PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istiod_healthy PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_ingress_gateway_healthy SKIPPED [ 47%] | ○ SKIPPED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_base_crds_installed PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_mtls_policy_exists PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_healthy PASSED [ 49%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_webhook_healthy PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_cainjector_healthy PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_certificates_ready PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_gateway_api_crds_installed PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_external_gateway_exists PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_httproutes_configured PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_controller_healthy PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_webhook_healthy PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_crds_installed PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_no_crashloop_pods_in_infrastructure PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_infrastructure_pod_health_threshold PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_healthy PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_exists PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_api_responds FAILED [ 57%] | ✗ FAILED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_graph_accessible FAILED [ 58%] | ✗ FAILED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_healthy PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_service_exists PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_web_ui_accessible PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_graphql_api_responds PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_postgres_backend_running FAILED [ 61%] | ✗ FAILED | - |
+| integration/test_observability.py::TestTempo::test_tempo_healthy PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_service_exists PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_ready_endpoint PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_healthy PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_service_exists PASSED [ 64%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_configmap_exists FAILED [ 65%] | ✗ FAILED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_health_endpoint PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_observability.py::TestJaeger::test_jaeger_healthy FAILED [ 66%] | ✗ FAILED | - |
+| integration/test_observability.py::TestJaeger::test_jaeger_service_exists FAILED [ 66%] | ✗ FAILED | - |
+| integration/test_observability.py::TestJaeger::test_jaeger_ui_accessible SKIPPED [ 67%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_service_exists PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_datasources_configured SKIPPED [ 69%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_phoenix FAILED [ 69%] | ✗ FAILED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_tempo FAILED [ 70%] | ✗ FAILED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_no_crashloop_pods_in_observability PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_observability_pod_health_threshold PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_healthy PASSED [ 72%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_service_exists PASSED [ 72%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_postgres_healthy PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_realm_imports_completed SKIPPED [ 74%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_admin_api_accessible SKIPPED [ 74%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_https_gateway_access PASSED [ 75%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_kagenti_realm_accessible SKIPPED [ 75%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_healthy PASSED [ 76%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_service_exists PASSED [ 77%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_config_completed FAILED [ 77%] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_secret_exists PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_responds SKIPPED [ 78%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_operator_healthy FAILED [ 79%] | ✗ FAILED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_installed FAILED [ 80%] | ✗ FAILED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_queryable FAILED [ 80%] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiOperator::test_kagenti_operator_deployment_exists PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_external_gateway_exists PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_gateway_listeners_configured PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_tls_certificates_ready PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_healthy FAILED [ 84%] | ✗ FAILED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_service_exists FAILED [ 84%] | ✗ FAILED | - |
+| integration/test_platform.py::TestPlatformHealth::test_no_crashloop_pods_in_platform PASSED [ 85%] | ✓ PASSED | - |
+| integration/test_platform.py::TestPlatformHealth::test_platform_pod_health_threshold PASSED [ 86%] | ✓ PASSED | - |
+| integration/test_platform.py::TestPlatformHealth::test_all_platform_services_have_endpoints FAILED [ 86%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_exist PASSED [ 87%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_healthy FAILED [ 87%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_apps_healthy FAILED [ 88%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istiod] FAILED [ 89%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[kagenti-operator] FAILED [ 89%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[cert-manager] FAILED [ 90%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak-operator] FAILED [ 90%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istio-base] FAILED [ 91%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[gateway-api] FAILED [ 92%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak] FAILED [ 92%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[kagenti-platform-operator] FAILED [ 93%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[kagenti-system] FAILED [ 93%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] FAILED [ 94%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[istio-system] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[gateway-system] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] FAILED [ 96%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] FAILED [ 96%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[istio-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[gateway-system] PASSED [ 98%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_phoenix_traces SKIPPED [ 98%] | ○ SKIPPED | - |
+| validation/test_log_trace_errors.py::test_generate_error_warning_summary PASSED [100%] | ✓ PASSED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_logs_no_errors | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestOperatorIntegration::test_shared_configmaps_exist | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestServiceMesh::test_container_registry_healthy | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestOperators::test_platform_operator_healthy | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestOperators::test_platform_crds_installed | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_oauth_config_completed | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestObservability::test_jaeger_healthy | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestArgoCD::test_all_applications_exist | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestArgoCD::test_critical_applications_synced | ✗ FAILED | - |
+| FAILED tests/integration/test_agent_conversation.py::TestAgentConversation::test_agent_health_check | ✗ FAILED | - |
+| FAILED tests/integration/test_agent_conversation.py::TestAgentConversation::test_agent_card_accessible | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_research_agent_healthy | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_code_agent_healthy | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_orchestrator_agent_healthy | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestKiali::test_kiali_api_responds | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestKiali::test_kiali_service_graph_accessible | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestPhoenix::test_phoenix_postgres_backend_running | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestOTELCollector::test_otel_collector_configmap_exists | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestJaeger::test_jaeger_healthy | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestJaeger::test_jaeger_service_exists | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_phoenix | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_tempo | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_config_completed | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformOperator::test_platform_operator_healthy | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformOperator::test_platform_crds_installed | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformOperator::test_platform_crds_queryable | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestContainerRegistry::test_container_registry_healthy | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestContainerRegistry::test_container_registry_service_exists | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformHealth::test_all_platform_services_have_endpoints | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_all_apps_healthy | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_apps_healthy | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istiod] | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[kagenti-operator] | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[cert-manager] | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak-operator] | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istio-base] | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[gateway-api] | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak] | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[kagenti-platform-operator] | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[kagenti-system] | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] | ✗ FAILED | - |
+
+
+---
+
