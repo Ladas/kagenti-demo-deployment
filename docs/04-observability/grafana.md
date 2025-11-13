@@ -674,6 +674,58 @@ Configure notification channels to send alerts:
 
 ## Troubleshooting
 
+### Automated Validation Script
+
+The repository provides a comprehensive observability validation script at `scripts/validation/validate-observability.sh`:
+
+```bash
+# Run validation for Kind local cluster
+./scripts/validation/validate-observability.sh kind-local
+
+# Run validation for K3s
+./scripts/validation/validate-observability.sh k3s-local
+
+# Run validation for OpenShift
+./scripts/validation/validate-observability.sh openshift-prod
+```
+
+**What it checks**:
+- ✅ Namespace existence
+- ✅ Deployment health (ready replicas)
+- ✅ Service configuration (ClusterIP)
+- ✅ ConfigMap existence (datasources, dashboards)
+- ✅ HTTP endpoint accessibility
+- ✅ Prometheus datasource connectivity
+- ✅ Environment-specific routing (HTTPRoute/Ingress/Route)
+
+**Example output**:
+```
+=== Kagenti Observability Validation ===
+Environment: kind-local
+Namespace: observability
+
+1. Namespace
+Checking namespace 'observability'... ✓
+
+2. Deployments
+Checking deployment 'grafana'... ✓ (1/1 pods ready)
+
+3. Services
+Checking service 'grafana'... ✓ (ClusterIP: 10.96.1.5)
+
+4. ConfigMaps
+Checking ConfigMap 'grafana-datasources'... ✓
+Checking ConfigMap 'grafana-dashboards-config'... ✓
+
+5. Kind-specific checks
+Testing HTTP endpoint (Grafana HTTPRoute)... ✓
+
+=== Validation Summary ===
+✅ All validations passed!
+```
+
+---
+
 ### Issue: Grafana UI Not Accessible
 
 **Symptoms**: `kubectl port-forward` or HTTPRoute returns connection error

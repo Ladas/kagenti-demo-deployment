@@ -157,6 +157,36 @@ graph TD
 
 ## Local Testing
 
+### Using the Test Runner Script
+
+The repository provides a comprehensive test runner script at `tests/integration/run_tests.sh`:
+
+```bash
+# Run all tests (excludes slow tests)
+./tests/integration/run_tests.sh
+
+# Run only critical tests (quick smoke test)
+./tests/integration/run_tests.sh --fast
+
+# Run all tests including slow tests
+./tests/integration/run_tests.sh --slow
+
+# Run tests in parallel (requires pytest-xdist)
+./tests/integration/run_tests.sh --parallel
+
+# Generate HTML report
+./tests/integration/run_tests.sh --html
+
+# Run specific test category
+./tests/integration/run_tests.sh --category infrastructure
+./tests/integration/run_tests.sh --category observability
+./tests/integration/run_tests.sh --category platform
+./tests/integration/run_tests.sh --category agents
+
+# Get help
+./tests/integration/run_tests.sh --help
+```
+
 ### Run All Agent Tests Locally
 
 ```bash
