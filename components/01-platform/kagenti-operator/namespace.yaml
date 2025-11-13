@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: kagenti-system
-  labels:
-    app.kubernetes.io/name: kagenti-operator
-    app.kubernetes.io/part-of: kagenti
-    app.kubernetes.io/component: platform
-    istio-injection: enabled  # Enable Istio sidecar injection for service mesh mTLS

@@ -10,7 +10,8 @@ namespace: kagenti-system
 resources:
   - deployment.yaml
   - configmap.yaml
-  - oauth-secret-job.yaml  # Per-service OAuth secret generation (production-ready pattern)
+  # OAuth secret is created by master oauth2-secrets-extractor job in keycloak namespace
+  # and mirrored here via Reflector (see components/00-infrastructure/keycloak/oauth-secrets-extractor-job.yaml)
   - httproute.yaml
   - destinationrule.yaml
 
