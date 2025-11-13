@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: reflector
-  labels:
-    name: reflector
-    # No Istio injection needed - Reflector only talks to K8s API
-    istio-injection: disabled
