@@ -2,11 +2,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # Cert-Manager (deployed via separate Helm Application)
-  # See: argocd/applications/helm/cert-manager.yaml
+  # Cert-Manager CRDs and operator
+  - cert-manager.yaml
 
-  # Gateway API CRDs
-  - gateway-api/
+  # Gateway API CRDs (from Helm chart)
+  - gateway-api-chart/crds/gateway-api-1.3.0.yaml
 
   # Tekton Pipelines & Triggers
   - tekton/
@@ -17,11 +17,11 @@ resources:
   # MCP Inspector (debugging tool)
   - mcp-inspector/
 
-  # OAuth2 Proxy (authentication layer)
+  # OAuth2 Proxy (if needed for infrastructure layer auth)
   - oauth2-proxy/
 
   # Istio strict mTLS policy (security hardening)
-  - istio-config/
+  - istio/strict-mtls.yaml
 
   # Keycloak (Operator-based, SPIFFE-enabled v26.4.1)
   - keycloak/

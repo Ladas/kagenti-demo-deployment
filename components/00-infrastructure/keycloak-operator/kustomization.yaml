@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Keycloak Operator from official release
+  # Ref: https://www.keycloak.org/operator/installation
+  - https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.0.7/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
+  - https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.0.7/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml
+  - https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.0.7/kubernetes/kubernetes.yml
+
+namespace: keycloak
+
+# Disable Istio sidecar injection for operator
+# Operator needs direct access to Kubernetes API without proxy
+patchesStrategicMerge:
+  - disable-sidecar-patch.yaml

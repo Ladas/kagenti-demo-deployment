@@ -1,0 +1,6 @@
+dependencies:
+- name: gateway-api
+  repository: file://../gateway-api-chart
+  version: 1.3.0
+digest: sha256:7288bf026a21552541c4f71aee75d5d7044b81f77fffbd73102254cd32027d5b
+generated: "2025-11-06T10:04:48.718222+01:00"

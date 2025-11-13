@@ -1,0 +1,78 @@
+# Jaeger Services
+# Separate services for collector (ingestion) and UI (query)
+
+---
+# Collector Service - For trace ingestion
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+  namespace: observability
+  labels:
+    app: jaeger
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: collector
+spec:
+  selector:
+    app: jaeger
+  ports:
+  # OTLP gRPC (recommended for OTEL Collector)
+  - name: otlp-grpc
+    port: 4317
+    targetPort: 4317
+    protocol: TCP
+
+  # OTLP HTTP
+  - name: otlp-http
+    port: 4318
+    targetPort: 4318
+    protocol: TCP
+
+  # Zipkin compatible endpoint
+  - name: zipkin
+    port: 9411
+    targetPort: 9411
+    protocol: TCP
+
+  # Jaeger native gRPC
+  - name: jaeger-grpc
+    port: 14250
+    targetPort: 14250
+    protocol: TCP
+
+  # Jaeger native Thrift
+  - name: jaeger-thrift
+    port: 14268
+    targetPort: 14268
+    protocol: TCP
+
+  type: ClusterIP
+
+---
+# Query Service - For UI and API access
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-query
+  namespace: observability
+  labels:
+    app: jaeger
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: query
+spec:
+  selector:
+    app: jaeger
+  ports:
+  # UI and Query API
+  - name: ui
+    port: 16686
+    targetPort: 16686
+    protocol: TCP
+
+  # Admin port (health, metrics)
+  - name: admin
+    port: 14269
+    targetPort: 14269
+    protocol: TCP
+
+  type: ClusterIP
