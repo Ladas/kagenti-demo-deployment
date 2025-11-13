@@ -414,7 +414,6 @@ kubectl get crd | grep agent
 ## Related Documentation
 
 - **[TODO_TESTS.md](../TODO_TESTS.md)** - Comprehensive testing roadmap
-- **[AGENT_TEST_SUMMARY.md](../AGENT_TEST_SUMMARY.md)** - Agent testing achievements
 - **[CLAUDE.md](../CLAUDE.md)** - TDD workflow and GitOps best practices
 - **[tests/README.md](../tests/README.md)** - Test suite documentation
 

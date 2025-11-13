@@ -236,7 +236,6 @@ kagenti-platform-kind (Root App)
 
 **Planning & Progress:**
 - [Documentation Progress](DOCS_PROGRESS_2025-11-11.md) - Current documentation status
-- [Deployment Issues](DEPLOYMENT_ISSUES_2025-11-11.md) - Known deployment issues and fixes
 - [ArgoCD Cleanup Plan](TODO_ARGO_CLEANUP.md) - ArgoCD App-of-Apps migration
 - [ApplicationSets Migration](TODO_ARGO_NEXT.md) - ApplicationSets adoption plan
 
