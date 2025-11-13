@@ -1,0 +1,26 @@
+# Kind-local Applications Overlay
+# Patches base Applications for local Kind cluster
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - ../base  # Base Applications (infrastructure, platform, observability, agents)
+  - ../helm  # Helm Applications (istio-base, istiod, kiali, SPIRE)
+  - ../kustomize  # Kustomize Applications (kagenti-operator, platform-operator)
+
+commonLabels:
+  kagenti.dev/environment: kind-local
+  kagenti.dev/cluster-type: kind
+  kagenti.dev/sync-mode: manual  # Manual sync for local development
+
+patches:
+  # Patch all Applications to use local cluster server
+  - target:
+      kind: Application
+    patch: |
+      - op: replace
+        path: /spec/destination/server
+        value: https://kubernetes.default.svc

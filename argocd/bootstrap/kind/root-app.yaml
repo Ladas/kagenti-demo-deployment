@@ -1,0 +1,30 @@
+# Root Application (App-of-Apps Pattern)
+# Creates all component Applications for Kind cluster
+# This Application is manually synced - it creates child Applications that are also manually synced
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagenti-platform-kind
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io  # Cascade delete
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Ladas/kagenti-demo-deployment.git
+    targetRevision: argocd-gitops-dev
+    path: argocd/applications/kind-local
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  # Automated sync enabled - root app auto-syncs child Applications
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

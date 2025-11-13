@@ -1,0 +1,91 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spire
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  labels:
+    kagenti.dev/layer: infrastructure
+    kagenti.dev/component: security
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://spiffe.github.io/helm-charts-hardened
+    chart: spire
+    targetRevision: 0.21.0
+    helm:
+      values: |
+        global:
+          openshift: false
+          spire:
+            recommendations:
+              enabled: true
+            namespaces:
+              create: true
+            ingressControllerType: ""
+            clusterName: kagenti-demo
+            trustDomain: kagenti.dev
+            caSubject:
+              country: US
+              organization: KagentiPlatform
+              commonName: kagenti.dev
+
+        spire-server:
+          tornjak:
+            enabled: true
+          controllerManager:
+            ignoreNamespaces:
+              - kube-system
+              - kube-public
+              - kagenti-system
+              - tekton-*
+              - istio-*
+            identities:
+              clusterSPIFFEIDs:
+                default:
+                  autoPopulateDNSNames: true
+          # Disable pre-upgrade hook (fails on fresh installs - only for upgrades)
+          preUpgradeHook:
+            enabled: false
+
+        spiffe-oidc-discovery-provider:
+          enabled: true
+          tls:
+            spire:
+              enabled: false
+
+        tornjak-frontend:
+          enabled: true
+          image:
+            tag: v2.0.0
+          ingress:
+            enabled: false
+          service:
+            type: ClusterIP
+            port: 3000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spire-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - Replace=true
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle

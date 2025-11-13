@@ -1,0 +1,410 @@
+# NetworkPolicies for Observability Stack
+# Defense-in-depth network security for tracing and monitoring
+
+---
+# Tempo - Infrastructure Tracing
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tempo
+  namespace: observability
+  labels:
+    app: tempo
+spec:
+  podSelector:
+    matchLabels:
+      app: tempo
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from OTEL Collector (trace ingestion)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 4317  # OTLP gRPC
+    - protocol: TCP
+      port: 4318  # OTLP HTTP
+
+  # Allow from Prometheus (metrics scraping)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 3200  # Metrics
+
+  # Allow from OAuth2 Proxy (authenticated UI access)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: oauth2-proxy
+    ports:
+    - protocol: TCP
+      port: 3200  # UI
+
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow to Istio control plane (required for sidecar injection)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: istiod
+    ports:
+    - protocol: TCP
+      port: 15012  # xDS API
+    - protocol: TCP
+      port: 15010  # xDS and CA discovery
+
+---
+# Phoenix - Agent/LLM Tracing
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: phoenix
+  namespace: observability
+  labels:
+    app: phoenix
+spec:
+  podSelector:
+    matchLabels:
+      app: phoenix
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from OTEL Collector (trace ingestion)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 4317  # OTLP gRPC
+    - protocol: TCP
+      port: 6006  # HTTP API
+
+  # Allow from Prometheus (metrics scraping)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090  # Metrics
+
+  # Allow from OAuth2 Proxy (authenticated UI access)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: oauth2-proxy
+    ports:
+    - protocol: TCP
+      port: 6006  # UI
+
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow to Istio control plane (required for sidecar injection)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: istiod
+    ports:
+    - protocol: TCP
+      port: 15012  # xDS API
+    - protocol: TCP
+      port: 15010  # xDS and CA discovery
+
+---
+# OTEL Collector - Trace Routing
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+spec:
+  podSelector:
+    matchLabels:
+      app: otel-collector
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from all pods (any service can send traces)
+  - from:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 4317  # OTLP gRPC
+    - protocol: TCP
+      port: 4318  # OTLP HTTP
+    - protocol: TCP
+      port: 9411  # Zipkin
+    - protocol: TCP
+      port: 14250  # Jaeger gRPC
+    - protocol: TCP
+      port: 14268  # Jaeger HTTP
+
+  # Allow from Prometheus (metrics scraping)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8888  # Metrics
+
+  egress:
+  # Allow to Tempo (export infrastructure traces)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: tempo
+    ports:
+    - protocol: TCP
+      port: 4317
+
+  # Allow to Phoenix (export LLM/agent traces)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: phoenix
+    ports:
+    - protocol: TCP
+      port: 4317
+
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow to Istio control plane (required for sidecar injection)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: istiod
+    ports:
+    - protocol: TCP
+      port: 15012  # xDS API
+    - protocol: TCP
+      port: 15010  # xDS and CA discovery
+
+---
+# Grafana - Metrics Visualization
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: grafana
+  namespace: observability
+  labels:
+    app: grafana
+spec:
+  podSelector:
+    matchLabels:
+      app: grafana
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from Ingress/Gateway for UI access
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: default
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: gateway
+    ports:
+    - protocol: TCP
+      port: 3000
+
+  egress:
+  # Allow to Prometheus (datasource)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+      podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+
+  # Allow to Keycloak (authentication)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: keycloak
+      podSelector:
+        matchLabels:
+          app: keycloak
+    ports:
+    - protocol: TCP
+      port: 8080
+
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow to Istio control plane (required for sidecar injection)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: istiod
+    ports:
+    - protocol: TCP
+      port: 15012  # xDS API
+    - protocol: TCP
+      port: 15010  # xDS and CA discovery
+
+---
+# Keycloak - Authentication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from Ingress/Gateway for UI/API access
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: default
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: gateway
+    ports:
+    - protocol: TCP
+      port: 8080
+
+  # Allow from Grafana (OIDC authentication)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+      podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 8080
+
+  # Allow from OAuth2 Proxy (OIDC authentication for services)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: oauth2-proxy
+    ports:
+    - protocol: TCP
+      port: 8080
+
+  # Allow from kagenti-system (Kagenti UI OAuth configuration)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kagenti-system
+    ports:
+    - protocol: TCP
+      port: 8080
+
+  # Allow from same namespace (realm import job, config job)
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8080
+
+  egress:
+  # Allow to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow to Istio control plane (required for sidecar injection)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          app: istiod
+    ports:
+    - protocol: TCP
+      port: 15012  # xDS API
+    - protocol: TCP
+      port: 15010  # xDS and CA discovery

@@ -1,0 +1,76 @@
+# HTTPS-only External Gateway
+# Enforces TLS for all external traffic
+#
+# GitOps Pattern: Pre-create Service for Istio Gateway
+# ===================================================
+# Problem: Istio auto-creates services with random NodePorts
+# Solution: Create service FIRST with fixed NodePorts, matching Istio's naming pattern
+# Pattern: Service name must be <gateway-name>-istio (e.g., external-gateway-istio)
+# Result: Istio adopts pre-existing service instead of creating a new one
+#
+# References:
+# - https://istio.io/latest/docs/tasks/traffic-management/ingress/gateway-api/
+# - https://github.com/istio/istio/issues/45113
+
+---
+# Service MUST be created FIRST (sync-wave 0)
+# Service name MUST match Istio pattern: <gateway-name>-istio
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-gateway-istio
+  namespace: default
+  labels:
+    gateway.networking.k8s.io/gateway-name: external-gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  type: NodePort
+  ports:
+  - port: 443
+    targetPort: 8443  # Istio gateway pods listen on 8443 for HTTPS
+    nodePort: 30443   # Fixed NodePort mapped to host:9443 via Kind config
+    protocol: TCP
+    name: https
+  - port: 80
+    targetPort: 8080  # Istio gateway pods listen on 8080 for HTTP
+    nodePort: 30080   # Fixed NodePort mapped to host:8080 via Kind config
+    protocol: TCP
+    name: http
+  selector:
+    gateway.networking.k8s.io/gateway-name: external-gateway
+
+---
+# Gateway created AFTER service (sync-wave 1)
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: external-gateway
+  namespace: default
+  annotations:
+    networking.istio.io/service-type: NodePort
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  gatewayClassName: istio
+  listeners:
+  # HTTPS listener (primary - enforced)
+  - name: https
+    hostname: "*.localtest.me"
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: localtest-me-tls
+        kind: Secret
+    allowedRoutes:
+      namespaces:
+        from: All
+
+  # HTTP listener for redirect to HTTPS only
+  - name: http-redirect
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All

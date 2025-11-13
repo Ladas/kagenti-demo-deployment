@@ -1,0 +1,34 @@
+# Agents Component
+# Kagenti AI Agents (research, code, orchestrator)
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: team1
+
+resources:
+  - namespace.yaml
+  - research-agent.yaml
+  - code-agent.yaml
+  - orchestrator-agent.yaml
+
+# Override image tags to use locally loaded images
+images:
+  - name: localhost:5000/research-agent
+    newTag: v0.0.15
+  - name: localhost:5000/code-agent
+    newTag: v0.0.15
+  - name: localhost:5000/orchestrator-agent
+    newTag: v0.0.15
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: kagenti-agents
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: agents
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/agents/kustomization.yaml

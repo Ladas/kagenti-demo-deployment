@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-inspector
+  namespace: kagenti-system
+  labels:
+    app: mcp-inspector
+    app.kubernetes.io/name: mcp-inspector
+    app.kubernetes.io/component: inspector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-inspector
+  template:
+    metadata:
+      labels:
+        app: mcp-inspector
+    spec:
+      containers:
+        - name: mcp-inspector
+          image: ghcr.io/modelcontextprotocol/inspector:0.16.8
+          ports:
+            - containerPort: 6274
+              name: ui
+            - containerPort: 6277
+              name: proxy
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          env:
+          - name: DANGEROUSLY_OMIT_AUTH
+            value: "true"
+          - name: ALLOWED_ORIGINS
+            valueFrom:
+              configMapKeyRef:
+                name: mcp-inspector-config
+                key: ALLOWED_ORIGINS
+          - name: HOST
+            value: 0.0.0.0

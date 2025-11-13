@@ -1,0 +1,33 @@
+# OpenTelemetry Collector Component
+# Receives traces from instrumented services and routes to backends
+#
+# Routing Logic:
+#   - OpenInference traces (agent/LLM) → Phoenix
+#   - Standard OTLP traces (infrastructure) → Jaeger
+#
+# Ref: https://opentelemetry.io/docs/collector/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: otel-collector
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: observability
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/observability/otel-collector/kustomization.yaml
+  description: |
+    OpenTelemetry Collector with dual-backend trace routing.
+    Routes OpenInference traces to Phoenix, standard traces to Jaeger.

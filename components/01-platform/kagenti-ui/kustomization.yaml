@@ -1,0 +1,30 @@
+# Kagenti UI Component
+# Web interface for creating and managing AI agents
+# Built with Streamlit
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kagenti-system
+
+resources:
+  - deployment.yaml
+  - configmap.yaml
+  - oauth-secret-job.yaml  # Per-service OAuth secret generation (production-ready pattern)
+  - httproute.yaml
+  - destinationrule.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: kagenti-ui
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: platform
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/platform/kagenti-ui/kustomization.yaml
+  description: |
+    Kagenti UI - Web interface for agent management.
+    Provides UI for creating, monitoring, and managing AI agents.

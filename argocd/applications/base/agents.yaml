@@ -1,0 +1,41 @@
+# Base Agents Application
+# Deploys example agents (code-agent, research-agent, orchestrator-agent)
+# Reusable across Kind and OpenShift
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agents
+  annotations:
+    argocd.argoproj.io/sync-wave: "25"
+  labels:
+    kagenti.dev/layer: applications
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Ladas/kagenti-demo-deployment.git
+    targetRevision: argocd-gitops-dev
+    path: components/03-applications
+
+  destination:
+    server: SET_IN_OVERLAY  # Patched per cluster
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+
+  ignoreDifferences:
+    - group: "*"
+      kind: Secret
+      jsonPointers:
+        - /data
+    - group: "*"
+      kind: ServiceAccount
+      jsonPointers:
+        - /secrets

@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kiali
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "25"
+  labels:
+    kagenti.dev/layer: observability
+    kagenti.dev/component: service-mesh-ui
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://kiali.org/helm-charts
+    chart: kiali-server
+    targetRevision: 2.4.0
+    helm:
+      values: |
+        # Authentication strategy
+        auth:
+          strategy: anonymous
+
+        # Deployment configuration
+        deployment:
+          replicas: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+        # External services configuration
+        external_services:
+          prometheus:
+            url: http://prometheus.istio-system:9090
+          grafana:
+            enabled: true
+            url: http://grafana.observability:3000
+            in_cluster_url: http://grafana.observability:3000
+          tracing:
+            enabled: true
+            # Using Tempo instead of Jaeger
+            use_grpc: true
+            url: http://tempo.observability:16686
+            in_cluster_url: http://tempo.observability:16686
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kiali-system
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

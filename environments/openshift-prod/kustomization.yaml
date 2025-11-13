@@ -1,0 +1,57 @@
+# OpenShift Production Environment
+# Target: External OpenShift production cluster
+# Access: https://grafana.apps.your-cluster.example.com
+# IMPORTANT: Production deployments require approval and maintenance window
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+# Reference components
+resources:
+  # Infrastructure
+  - ../../components/infrastructure/tekton
+
+  # Platform
+  - ../../components/platform/operator
+
+  # Observability
+  - ../../components/observability
+  - ../../components/observability/kiali
+  - ../../components/observability/phoenix
+
+  # Agents
+  - ../../components/agents
+
+  # OpenShift-specific resources
+  - patches/grafana-route.yaml
+  - patches/grafana-pdb.yaml
+
+# Environment-specific patches
+patchesStrategicMerge:
+  - patches/grafana-resources-ha.yaml
+  - patches/grafana-openshift-scc.yaml
+  - patches/grafana-replicas.yaml
+
+# Remove HTTPRoute (not used in OpenShift)
+patches:
+  - target:
+      kind: HTTPRoute
+      name: grafana
+    patch: |-
+      $patch: delete
+
+# Environment labels
+commonLabels:
+  environment: openshift-prod
+  cluster-type: openshift
+
+# Environment-specific config
+configMapGenerator:
+  - name: environment-config
+    namespace: observability
+    literals:
+      - CLUSTER_TYPE=openshift
+      - ENVIRONMENT=production
+      - DOMAIN=apps.your-cluster.example.com

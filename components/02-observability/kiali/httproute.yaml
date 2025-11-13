@@ -1,0 +1,43 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kiali
+  namespace: kiali-system
+  labels:
+    shared-gateway-access: "true"
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: https  # Use HTTPS listener
+  hostnames:
+  - "kiali.localtest.me"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: kiali
+      port: 20001
+
+---
+# HTTP to HTTPS redirect for Kiali
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kiali-http-redirect
+  namespace: kiali-system
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: http-redirect
+  hostnames:
+  - "kiali.localtest.me"
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301

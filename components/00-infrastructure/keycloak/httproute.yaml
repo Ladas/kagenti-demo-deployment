@@ -1,0 +1,28 @@
+# HTTPRoute for Keycloak via Istio Gateway
+# Hostname will be patched in overlays (kind-local, openshift)
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+spec:
+  parentRefs:
+    - name: external-gateway
+      namespace: default
+  hostnames:
+    - keycloak.example.com  # Overridden in overlays
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        # Service created by keycloak-statefulset.yaml (vanilla deployment, no operator)
+        - name: keycloak
+          port: 8080
+          weight: 1

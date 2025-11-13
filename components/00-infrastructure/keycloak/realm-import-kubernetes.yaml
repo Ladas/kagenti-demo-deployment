@@ -1,0 +1,79 @@
+# KeycloakRealmImport for kubernetes realm
+# Platform services: Grafana, Tempo, Prometheus, K8s Dashboard
+# Ref: https://www.keycloak.org/operator/realm-import
+
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakRealmImport
+metadata:
+  name: kubernetes-realm
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+spec:
+  keycloakCRName: keycloak
+  realm:
+    id: kubernetes
+    realm: kubernetes
+    enabled: true
+    displayName: "Kubernetes Realm"
+    registrationAllowed: false
+    registrationEmailAsUsername: false
+    rememberMe: true
+    verifyEmail: false
+    loginWithEmailAllowed: true
+    duplicateEmailsAllowed: false
+    resetPasswordAllowed: true
+    editUsernameAllowed: false
+    bruteForceProtected: true
+
+    # Frontend URL for HTTPS redirects
+    attributes:
+      frontendUrl: "https://keycloak.localtest.me:9443"
+
+    # Platform services clients
+    clients:
+      - clientId: grafana
+        name: "Grafana"
+        description: "Grafana Monitoring Dashboard"
+        enabled: true
+        publicClient: false
+        protocol: openid-connect
+        redirectUris:
+          - "https://grafana.localtest.me:9443/*"
+        webOrigins:
+          - "https://grafana.localtest.me:9443"
+        standardFlowEnabled: true
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        serviceAccountsEnabled: false
+        authorizationServicesEnabled: false
+
+      - clientId: k8s-dashboard
+        name: "Kubernetes Dashboard"
+        description: "Kubernetes Dashboard UI"
+        enabled: true
+        publicClient: false
+        protocol: openid-connect
+        redirectUris:
+          - "https://dashboard.localtest.me:9443/*"
+        webOrigins:
+          - "https://dashboard.localtest.me:9443"
+        standardFlowEnabled: true
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        serviceAccountsEnabled: false
+        authorizationServicesEnabled: false
+
+    # Demo users
+    users:
+      - username: admin
+        enabled: true
+        email: admin@kagenti.local
+        firstName: Admin
+        lastName: User
+        credentials:
+          - type: password
+            value: admin
+            temporary: false

@@ -1,0 +1,20 @@
+# K3s-specific resource limits
+# Rancher Desktop typically has more resources than Kind
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: grafana
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+            requests:
+              cpu: "500m"
+              memory: 1Gi

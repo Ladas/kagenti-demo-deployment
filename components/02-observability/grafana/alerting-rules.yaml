@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: kagenti-system
+data:
+  kagenti-alerts.yaml: |
+    groups:
+    - name: kagenti-agents
+      interval: 30s
+      rules:
+      - alert: AgentPodDown
+        expr: kube_pod_status_phase{namespace="agents", phase!="Running"} == 1
+        for: 5m
+        labels:
+          severity: critical
+          component: agent
+        annotations:
+          summary: "Agent pod {{$labels.pod}} is not running"
+          description: "Pod {{$labels.pod}} in namespace {{$labels.namespace}} has been in {{$labels.phase}} state for more than 5 minutes"
+
+      - alert: AgentHighCPU
+        expr: sum(rate(container_cpu_usage_seconds_total{namespace="agents"}[5m])) by (pod) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{$labels.pod}} high CPU usage"
+          description: "Agent {{$labels.pod}} is using more than 80% CPU for 10 minutes"
+
+      - alert: AgentHighMemory
+        expr: sum(container_memory_working_set_bytes{namespace="agents"}) by (pod) / sum(container_spec_memory_limit_bytes{namespace="agents"}) by (pod) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{$labels.pod}} high memory usage"
+          description: "Agent {{$labels.pod}} is using more than 90% of memory limit"
+
+      - alert: AgentHighErrorRate
+        expr: sum(rate(istio_requests_total{destination_workload_namespace="agents",response_code=~"5.."}[5m])) by (destination_workload) / sum(rate(istio_requests_total{destination_workload_namespace="agents"}[5m])) by (destination_workload) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: agent
+        annotations:
+          summary: "Agent {{$labels.destination_workload}} high error rate"
+          description: "Agent {{$labels.destination_workload}} has error rate above 5% for 5 minutes"
+
+      - alert: AgentSlowResponse
+        expr: histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{destination_workload_namespace="agents"}[5m])) by (destination_workload, le)) > 5000
+        for: 10m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{$labels.destination_workload}} slow responses"
+          description: "Agent {{$labels.destination_workload}} p95 latency is above 5 seconds"
+
+    - name: tekton-pipelines
+      interval: 30s
+      rules:
+      - alert: PipelineRunFailed
+        expr: tekton_pipelinerun_count{status="failed"} > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: tekton
+        annotations:
+          summary: "Pipeline run failed"
+          description: "Pipeline {{$labels.pipeline}} has failed builds"
+
+      - alert: PipelineRunStuck
+        expr: tekton_pipelinerun_duration_seconds{status="running"} > 3600
+        for: 5m
+        labels:
+          severity: warning
+          component: tekton
+        annotations:
+          summary: "Pipeline run stuck"
+          description: "Pipeline {{$labels.pipeline}} has been running for over 1 hour"
+
+    - name: istio-mesh
+      interval: 30s
+      rules:
+      - alert: HighServiceMeshLatency
+        expr: histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{reporter="source"}[5m])) by (destination_service_name, le)) > 10000
+        for: 5m
+        labels:
+          severity: warning
+          component: istio
+        annotations:
+          summary: "High service mesh latency"
+          description: "Service {{$labels.destination_service_name}} p99 latency is above 10 seconds"
+
+      - alert: ServiceMeshDown
+        expr: sum(up{job="envoy-stats"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: istio
+        annotations:
+          summary: "Service mesh is down"
+          description: "Istio service mesh metrics are not available"

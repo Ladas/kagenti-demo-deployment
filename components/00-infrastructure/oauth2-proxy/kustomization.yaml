@@ -1,0 +1,35 @@
+# OAuth2 Proxy Component
+# Provides OIDC authentication for services without native support
+#
+# Protects:
+#   - Tempo (kubernetes realm)
+#   - Phoenix (kagenti realm)
+#   - Kiali (kubernetes realm)
+#   - Prometheus (kubernetes realm)
+#
+# Ref: https://oauth2-proxy.github.io/oauth2-proxy/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: oauth2-proxy
+
+resources:
+  - namespace.yaml
+  - oauth2-proxy-secrets.yaml
+  - tempo-proxy.yaml
+  - phoenix-proxy.yaml
+  - kiali-proxy.yaml
+  - prometheus-proxy.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: oauth2-proxy
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: authentication
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/infrastructure/oauth2-proxy/kustomization.yaml

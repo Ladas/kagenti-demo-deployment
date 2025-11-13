@@ -1,0 +1,51 @@
+# Base Platform Application
+# Reusable across Kind and OpenShift
+# Cluster-specific values are set via Kustomize patches
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+  labels:
+    kagenti.dev/layer: platform
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Ladas/kagenti-demo-deployment.git
+    targetRevision: argocd-gitops-dev
+    path: components/01-platform
+
+  destination:
+    server: SET_IN_OVERLAY  # Patched per cluster
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+
+  ignoreDifferences:
+    - group: "*"
+      kind: Secret
+      jsonPointers:
+        - /data
+    - group: "*"
+      kind: ServiceAccount
+      jsonPointers:
+        - /secrets
+    - group: "batch"
+      kind: Job
+      jsonPointers:
+        - /spec/template/metadata/labels
+        - /status
+    - group: "gateway.networking.k8s.io"
+      kind: Gateway
+      jsonPointers:
+        - /spec/podReplacementPolicy

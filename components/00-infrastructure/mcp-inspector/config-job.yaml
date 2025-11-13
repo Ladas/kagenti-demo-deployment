@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-config-sa
+  namespace: kagenti-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-config-role
+rules:
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["httproutes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-config-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-config-role
+subjects:
+  - kind: ServiceAccount
+    name: mcp-config-sa
+    namespace: kagenti-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mcp-config-job
+  namespace: kagenti-system
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: mcp-config-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: config-creator
+          image: bitnami/kubectl:1.30
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              set -e
+              echo "Starting MCP config job..."
+
+              # Get hostname from the HTTPRoute hostnames
+              INSPECTOR_HOST=$(kubectl get httproute mcp-inspector -n kagenti-system -o jsonpath='{.spec.hostnames[0]}')
+
+              # If no hostname in HTTPRoute, use default
+              if [ -z "$INSPECTOR_HOST" ]; then
+                INSPECTOR_HOST="mcp-inspector.localtest.me"
+              fi
+
+              echo "Inspector host: $INSPECTOR_HOST"
+
+              # Create the ConfigMap using a heredoc and apply it
+              echo "Creating/updating mcp-inspector-config ConfigMap..."
+              kubectl apply -n kagenti-system -f - <<EOF
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: mcp-inspector-config
+              data:
+                ALLOWED_ORIGINS: "https://${INSPECTOR_HOST}"
+              EOF
+
+              echo "ConfigMap 'mcp-inspector-config' applied successfully."

@@ -1,0 +1,25 @@
+# Cross-Namespace RBAC for Keycloak Secret Sharing
+# CRITICAL: NO namespace: field here to preserve explicit namespace declarations in rbac.yaml
+# Enables copy-admin-secret-job to copy secrets cross-namespace
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - rbac.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: keycloak-platform-rbac
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: infrastructure
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/00-infrastructure/keycloak-platform-rbac/kustomization.yaml
+  description: |
+    Cross-namespace RBAC for Keycloak admin secret access.
+    ServiceAccount in keycloak namespace can read keycloak-initial-admin secret
+    and write to kagenti-system namespace.

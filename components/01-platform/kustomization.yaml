@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Namespaces (must be first)
+  - namespaces.yaml
+
+  # Gateway (Istio Gateway configuration)
+  - gateway/
+
+  # SPIRE (Workload identity - platform-specific HTTPRoutes)
+  - spire/
+
+  # Kagenti UI
+  - kagenti-ui/
+
+  # TLS certificates
+  - tls/
+
+# NOTE: kagenti-chart is a Helm chart - needs separate Helm Application
+# TODO: Create argocd/applications/helm/kagenti-platform.yaml for this chart
+
+# NOTE: Kagenti Operator is deployed via Helm (argocd/applications/helm/kagenti-operator.yaml)
+# NOTE: This layer depends on 00-infrastructure being deployed first (sync wave 10)
+# - Requires Istio service mesh from infrastructure layer
+# - Requires cert-manager for TLS certificates

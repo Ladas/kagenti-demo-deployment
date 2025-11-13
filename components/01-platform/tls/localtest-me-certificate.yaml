@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: localtest-me-wildcard
+  namespace: kagenti-system
+spec:
+  secretName: localtest-me-tls
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  subject:
+    organizations:
+      - kagenti
+  commonName: "*.localtest.me"
+  dnsNames:
+    - "*.localtest.me"
+    - "localtest.me"
+  issuerRef:
+    name: kagenti-selfsigned-issuer
+    kind: Issuer

@@ -1,0 +1,41 @@
+# Kind Local Environment
+# Target: Local Kind cluster for development
+# Access: http://grafana.localtest.me:8080
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# No global namespace - components define their own namespaces
+
+# Reference components
+resources:
+  # Infrastructure
+  - ../../components/infrastructure/tekton
+
+  # Platform
+  - ../../components/platform/operator
+  - ../../components/platform/gateway  # HTTPS Gateway with TLS
+
+  # Observability (includes Phoenix, Grafana, Dashboard)
+  - ../../components/observability
+
+  # Agents
+  - ../../components/agents
+
+# Environment-specific patches
+patchesStrategicMerge:
+  - patches/grafana-resources.yaml
+
+# Environment labels
+commonLabels:
+  environment: kind-local
+  cluster-type: kind
+
+# Environment-specific config
+configMapGenerator:
+  - name: environment-config
+    namespace: observability
+    literals:
+      - CLUSTER_TYPE=kind
+      - ENVIRONMENT=local
+      - DOMAIN=localtest.me

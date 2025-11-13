@@ -1,0 +1,81 @@
+# Keycloak Custom Resource
+# Managed by the Keycloak Operator
+# Ref: https://www.keycloak.org/operator/basic-deployment
+
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+spec:
+  # Single instance for development
+  # For production, use 2+ replicas for high availability
+  instances: 1
+
+  # PostgreSQL database configuration
+  db:
+    vendor: postgres
+    host: postgres.keycloak.svc.cluster.local
+    database: keycloak
+    port: 5432
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+
+  # HTTP configuration
+  # Istio sidecar handles TLS, so Keycloak runs on HTTP
+  http:
+    httpEnabled: true
+
+  # Hostname configuration
+  # Will be overridden in overlays for each environment
+  hostname:
+    hostname: keycloak.example.com
+    strict: false
+    strictBackchannel: false
+
+  # Proxy configuration
+  # Use "forwarded" for Istio/Envoy proxy headers
+  proxy:
+    headers: forwarded
+
+  # Additional Keycloak configuration options
+  # Force HTTPS URLs for admin console and realms
+  additionalOptions:
+    - name: hostname-url
+      value: https://keycloak.localtest.me:9443
+    - name: hostname-admin-url
+      value: https://keycloak.localtest.me:9443
+
+  # Disable ingress - using Istio Gateway API instead
+  ingress:
+    enabled: false
+
+  # Image configuration
+  # Using Keycloak v26.4.1+ for SPIFFE/SPIRE support
+  # Operator will manage version updates automatically
+  image: quay.io/keycloak/keycloak:26.4.1
+
+  # NOTE: Temporarily disabled build-time options to avoid operator --optimized flag issue
+  # The Keycloak Operator always adds --optimized flag, which requires pre-built cache
+  # Options below require `kc.sh build` before starting with --optimized
+  #
+  # DISABLED FOR NOW:
+  # - health-enabled: true (requires build)
+  # - features.enabled: spiffe:v1 (requires build)
+  #
+  # Workaround attempted: init container to run kc.sh build
+  # Problem: Operator copies ENTIRE pod template to realm import Jobs
+  # Result: Jobs inherited init container and failed with build config errors
+  #
+  # TODO: Re-enable after implementing one of these solutions:
+  # 1. Build custom Keycloak image with features pre-built
+  # 2. Use MutatingWebhook to add sidecar.istio.io/inject: false to Job pods
+  # 3. Patch Keycloak Operator to support pod template overrides for Jobs

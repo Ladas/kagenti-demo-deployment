@@ -1,0 +1,48 @@
+---
+# EnvoyFilter to inject X-Forwarded-Proto header for TLS-terminated traffic
+# This ensures backend services (like Keycloak) detect HTTPS correctly
+# Ref: https://istio.io/latest/docs/reference/config/networking/envoy-filter/
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: gateway-forwarded-proto
+  namespace: default
+spec:
+  workloadSelector:
+    labels:
+      gateway.networking.k8s.io/gateway-name: external-gateway
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: GATEWAY
+      listener:
+        portNumber: 443  # HTTPS listener
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+            subFilter:
+              name: "envoy.filters.http.router"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.lua
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+          inline_code: |
+            function envoy_on_request(request_handle)
+              -- Add X-Forwarded-Proto header for HTTPS traffic
+              request_handle:headers():add("x-forwarded-proto", "https")
+
+              -- Also add X-Forwarded-Port for completeness
+              local host = request_handle:headers():get(":authority")
+              if host then
+                -- Extract port from Host header (e.g., "keycloak.localtest.me:9443")
+                local port = host:match(":(%d+)$")
+                if port then
+                  request_handle:headers():add("x-forwarded-port", port)
+                else
+                  -- Default HTTPS port if not specified
+                  request_handle:headers():add("x-forwarded-port", "443")
+                end
+              end
+            end

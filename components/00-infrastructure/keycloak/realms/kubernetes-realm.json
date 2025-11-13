@@ -1,0 +1,234 @@
+{
+  "realm": "kubernetes",
+  "displayName": "Kubernetes Platform",
+  "enabled": true,
+  "sslRequired": "all",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "defaultSignatureAlgorithm": "RS256",
+  "offlineSessionMaxLifespan": 5184000,
+  "offlineSessionMaxLifespanEnabled": false,
+  "clientSessionIdleTimeout": 1800,
+  "clientSessionMaxLifespan": 36000,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "loginTheme": "keycloak",
+  "accountTheme": "keycloak",
+  "adminTheme": "keycloak",
+  "emailTheme": "keycloak",
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Platform administrator role",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "developer",
+        "description": "Platform developer role",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "viewer",
+        "description": "Platform viewer role",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "k8s-admins",
+      "path": "/k8s-admins",
+      "realmRoles": ["admin"]
+    },
+    {
+      "name": "k8s-developers",
+      "path": "/k8s-developers",
+      "realmRoles": ["developer"]
+    },
+    {
+      "name": "k8s-viewers",
+      "path": "/k8s-viewers",
+      "realmRoles": ["viewer"]
+    },
+    {
+      "name": "grafana-admins",
+      "path": "/grafana-admins"
+    },
+    {
+      "name": "grafana-editors",
+      "path": "/grafana-editors"
+    },
+    {
+      "name": "grafana-viewers",
+      "path": "/grafana-viewers"
+    }
+  ],
+  "users": [
+    {
+      "username": "platform-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "platform-admin@localtest.me",
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "groups": ["/k8s-admins", "/grafana-admins"],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "developer",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "developer@localtest.me",
+      "firstName": "Platform",
+      "lastName": "Developer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "developer123",
+          "temporary": false
+        }
+      ],
+      "groups": ["/k8s-developers", "/grafana-editors"],
+      "realmRoles": ["developer"]
+    },
+    {
+      "username": "viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "viewer@localtest.me",
+      "firstName": "Platform",
+      "lastName": "Viewer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "viewer123",
+          "temporary": false
+        }
+      ],
+      "groups": ["/k8s-viewers", "/grafana-viewers"],
+      "realmRoles": ["viewer"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "grafana",
+      "name": "Grafana",
+      "description": "Grafana metrics visualization",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "https://grafana.localtest.me:9443/oauth2/callback",
+        "https://grafana.localtest.me:9443/*"
+      ],
+      "webOrigins": [
+        "https://grafana.localtest.me:9443"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "tempo",
+      "name": "Tempo Tracing",
+      "description": "Infrastructure distributed tracing",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "https://tempo.localtest.me:9443/oauth2/callback",
+        "https://tempo.localtest.me:9443/*"
+      ],
+      "webOrigins": [
+        "https://tempo.localtest.me:9443"
+      ]
+    },
+    {
+      "clientId": "prometheus",
+      "name": "Prometheus",
+      "description": "Metrics monitoring",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "https://prometheus.localtest.me:9443/oauth2/callback",
+        "https://prometheus.localtest.me:9443/*"
+      ],
+      "webOrigins": [
+        "https://prometheus.localtest.me:9443"
+      ]
+    },
+    {
+      "clientId": "kiali",
+      "name": "Kiali Service Mesh",
+      "description": "Istio service mesh visualization",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "https://kiali.localtest.me:9443/oauth2/callback",
+        "https://kiali.localtest.me:9443/*"
+      ],
+      "webOrigins": [
+        "https://kiali.localtest.me:9443"
+      ]
+    }
+  ]
+}

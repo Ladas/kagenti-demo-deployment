@@ -1,0 +1,9 @@
+# Patch Keycloak CR hostname for Kind local development
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  hostname:
+    hostname: keycloak.localtest.me

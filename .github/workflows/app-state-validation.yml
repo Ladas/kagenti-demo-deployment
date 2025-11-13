@@ -1,0 +1,304 @@
+name: ArgoCD App State Validation
+
+on:
+  push:
+    branches:
+      - main
+      - argocd-gitops-dev
+  pull_request:
+    branches:
+      - main
+      - argocd-gitops-dev
+  workflow_dispatch:
+    inputs:
+      cluster_mode:
+        description: 'Cluster mode (kind/existing)'
+        required: false
+        default: 'kind'
+        type: choice
+        options:
+          - kind
+          - existing
+      exclude_apps:
+        description: 'Comma-separated apps to exclude'
+        required: false
+        default: ''
+      only_critical:
+        description: 'Only validate critical apps'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  KIND_VERSION: 'v0.20.0'
+  KUBECTL_VERSION: 'v1.28.0'
+  ARGOCD_VERSION: 'v2.9.3'
+
+jobs:
+  validate-app-state:
+    name: Validate ArgoCD Application State
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install kubernetes>=28.1.0 pytest>=8.0.0 pytest-html>=4.1.0 \
+                      pytest-json-report>=1.5.0 tenacity>=8.2.3 rich>=13.7.0
+
+      - name: Determine cluster mode
+        id: cluster_mode
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "mode=${{ inputs.cluster_mode }}" >> $GITHUB_OUTPUT
+          else
+            echo "mode=kind" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker (for Kind)
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install Kind
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/${{ env.KIND_VERSION }}/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/${{ env.KUBECTL_VERSION }}/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/download/${{ env.ARGOCD_VERSION }}/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+          argocd version --client
+
+      - name: Create Kind cluster
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          chmod +x ./scripts/kind/01-create-cluster.sh
+          ./scripts/kind/01-create-cluster.sh
+
+      - name: Install ArgoCD
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          chmod +x ./scripts/kind/02-install-argocd.sh
+          ./scripts/kind/02-install-argocd.sh
+
+      - name: Bootstrap ArgoCD applications
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          chmod +x ./scripts/kind/03-bootstrap-apps.sh
+          ./scripts/kind/03-bootstrap-apps.sh
+
+      - name: Wait for ArgoCD to be ready
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "Waiting for ArgoCD to be ready..."
+          kubectl wait --for=condition=available \
+            deployment/argocd-server \
+            -n argocd \
+            --timeout=300s
+
+          kubectl wait --for=condition=available \
+            deployment/argocd-application-controller \
+            -n argocd \
+            --timeout=300s
+
+      - name: Sync critical applications (Wave 0)
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "Syncing Wave 0 - Core Infrastructure..."
+          argocd app sync gateway-api cert-manager tekton istio-base istiod istio-config \
+            --port-forward \
+            --port-forward-namespace argocd \
+            --grpc-web \
+            --timeout 600 || true
+
+      - name: Sync infrastructure services (Wave 5)
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "Syncing Wave 5 - Infrastructure Services..."
+          argocd app sync keycloak container-registry kiali \
+            --port-forward \
+            --port-forward-namespace argocd \
+            --grpc-web \
+            --timeout 600 || true
+
+      - name: Sync operators (Wave 10)
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "Syncing Wave 10 - Operators..."
+          argocd app sync kagenti-operator platform-operator \
+            --port-forward \
+            --port-forward-namespace argocd \
+            --grpc-web \
+            --timeout 600 || true
+
+      - name: Sync platform (Wave 15)
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "Syncing Wave 15 - Platform..."
+          argocd app sync platform \
+            --port-forward \
+            --port-forward-namespace argocd \
+            --grpc-web \
+            --timeout 600 || true
+
+      - name: Sync observability (Wave 20)
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "Syncing Wave 20 - Observability..."
+          argocd app sync observability \
+            --port-forward \
+            --port-forward-namespace argocd \
+            --grpc-web \
+            --timeout 600 || true
+
+      - name: Sync agents (Wave 25)
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "Syncing Wave 25 - Agents..."
+          argocd app sync agents \
+            --port-forward \
+            --port-forward-namespace argocd \
+            --grpc-web \
+            --timeout 600 || true
+
+      - name: Wait for applications to stabilize
+        run: |
+          echo "Waiting for applications to stabilize..."
+          sleep 60
+
+      - name: Set test parameters
+        id: test_params
+        run: |
+          EXCLUDE_APPS="${{ inputs.exclude_apps }}"
+          ONLY_CRITICAL="${{ inputs.only_critical }}"
+
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            # For automated runs, be more lenient
+            EXCLUDE_APPS="agents,observability"
+            ONLY_CRITICAL="false"
+          fi
+
+          echo "exclude_apps=${EXCLUDE_APPS}" >> $GITHUB_OUTPUT
+          echo "only_critical=${ONLY_CRITICAL}" >> $GITHUB_OUTPUT
+
+      - name: Run app state validation
+        id: validation
+        run: |
+          PYTEST_ARGS="-v --html=report.html --self-contained-html --json-report --json-report-file=report.json"
+
+          if [[ -n "${{ steps.test_params.outputs.exclude_apps }}" ]]; then
+            PYTEST_ARGS="$PYTEST_ARGS --exclude-app=${{ steps.test_params.outputs.exclude_apps }}"
+          fi
+
+          if [[ "${{ steps.test_params.outputs.only_critical }}" == "true" ]]; then
+            PYTEST_ARGS="$PYTEST_ARGS --only-critical"
+          fi
+
+          pytest tests/validation/test_app_state.py $PYTEST_ARGS
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: |
+            report.html
+            report.json
+          retention-days: 30
+
+      - name: Parse test results
+        if: always()
+        id: parse_results
+        run: |
+          if [[ -f report.json ]]; then
+            TOTAL=$(jq -r '.summary.total // 0' report.json)
+            PASSED=$(jq -r '.summary.passed // 0' report.json)
+            FAILED=$(jq -r '.summary.failed // 0' report.json)
+
+            echo "total=${TOTAL}" >> $GITHUB_OUTPUT
+            echo "passed=${PASSED}" >> $GITHUB_OUTPUT
+            echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          else
+            echo "total=0" >> $GITHUB_OUTPUT
+            echo "passed=0" >> $GITHUB_OUTPUT
+            echo "failed=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const total = '${{ steps.parse_results.outputs.total }}';
+            const passed = '${{ steps.parse_results.outputs.passed }}';
+            const failed = '${{ steps.parse_results.outputs.failed }}';
+
+            const status = failed === '0' ? '✅ PASSED' : '❌ FAILED';
+            const color = failed === '0' ? '🟢' : '🔴';
+
+            const comment = `## ${color} ArgoCD App State Validation ${status}
+
+            **Test Results:**
+            - Total Tests: ${total}
+            - Passed: ✅ ${passed}
+            - Failed: ❌ ${failed}
+
+            **Cluster Mode:** ${{ steps.cluster_mode.outputs.mode }}
+            **Excluded Apps:** ${{ steps.test_params.outputs.exclude_apps || 'None' }}
+            **Only Critical:** ${{ steps.test_params.outputs.only_critical }}
+
+            📊 [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## ArgoCD App State Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.validation.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total Tests:** ${{ steps.parse_results.outputs.total }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Passed:** ${{ steps.parse_results.outputs.passed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed:** ${{ steps.parse_results.outputs.failed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster Mode:** ${{ steps.cluster_mode.outputs.mode }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Excluded Apps:** ${{ steps.test_params.outputs.exclude_apps || 'None' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Only Critical:** ${{ steps.test_params.outputs.only_critical }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup Kind cluster
+        if: always() && steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          kind delete cluster --name kagenti-demo || true
+
+      - name: Fail job if validation failed
+        if: steps.validation.outcome == 'failure'
+        run: exit 1

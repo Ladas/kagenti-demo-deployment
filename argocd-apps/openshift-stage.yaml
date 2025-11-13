@@ -1,0 +1,51 @@
+# ArgoCD Application for OpenShift Stage Environment
+# This creates an Application that watches the openshift-stage environment
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagenti-openshift-stage
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  # Source: This GitOps repository
+  source:
+    repoURL: https://github.com/your-org/kagenti-gitops.git  # UPDATE THIS
+    targetRevision: main
+    path: environments/openshift-stage
+
+  # Destination: External OpenShift Stage cluster
+  destination:
+    server: https://api.stage-cluster.example.com:6443  # UPDATE THIS
+    namespace: observability
+
+  # Sync policy: Automatic with pruning
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health assessment
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: route.openshift.io
+      kind: Route
+      jsonPointers:
+        - /status

@@ -1,0 +1,44 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kagenti-ui
+  namespace: kagenti-system
+  labels:
+    app: kagenti-ui
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: https
+  hostnames:
+  - "kagenti.localtest.me"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: kagenti-ui
+      port: 8501
+---
+# HTTP to HTTPS redirect
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kagenti-ui-http-redirect
+  namespace: kagenti-system
+  labels:
+    app: kagenti-ui
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: http
+  hostnames:
+  - "kagenti.localtest.me"
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        port: 9443

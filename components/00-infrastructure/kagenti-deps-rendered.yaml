@@ -1,0 +1,1178 @@
+---
+# Source: kagenti-deps/templates/container-registry.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cr-system
+  labels:
+    helm.sh/chart: kagenti-deps-0.1.0
+    app.kubernetes.io/name: kagenti-deps
+    app.kubernetes.io/instance: kagenti-deps
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    istio-discovery: enabled
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kiali-system
+  labels:
+    istio-discovery: enabled
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kiali
+  namespace: kiali-system
+---
+# Source: kagenti-deps/templates/phoenix-postgres.yaml
+kind: Secret
+apiVersion: v1
+metadata:
+  name: otel-db-secret
+stringData:
+  password: thisisonly4testingNOT4prod 
+  username: testuser
+type: Opaque
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kiali
+  namespace: kiali-system
+data:
+  config.yaml: |
+    auth:
+      strategy: anonymous
+    deployment:
+      accessible_namespaces:
+      - "**"
+      namespace: kiali-system
+    external_services:
+      custom_dashboards:
+        enabled: true
+      grafana:
+        enabled: true
+        in_cluster_url: http://grafana.observability:3000
+        url: http://grafana.localtest.me:8080
+      istio:
+        config_map_name: istio
+        istio_sidecar_injector_config_map_name: istio-sidecar-injector
+        istiod_deployment_name: istiod
+        root_namespace: istio-system
+      prometheus:
+        url: http://prometheus-server.observability:80
+      tracing:
+        enabled: false
+    server:
+      web_root: /
+      port: 20001
+---
+# Source: kagenti-deps/templates/otel-collector.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+data:
+  base.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318 # overriden by the server
+
+    exporters:
+      debug:
+        verbosity: detailed
+      otlp/phoenix:
+        endpoint: phoenix:4317
+        tls:
+          insecure: true
+
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 1000
+      batch:
+      filter/phoenix:
+        traces:
+          span:
+            ## Filter for openinference packages
+            #### Python format `openinference.instrumentation.${package_name}`
+            #### - crewAI exception `crewai.telemetry`
+            #### Javascript format `@arizeai/openinference-instrumentation-${packageName}`
+            - not(IsMatch(instrumentation_scope.name, "^openinference\\.instrumentation\\..*") or IsMatch(instrumentation_scope.name, "^@arizeai/openinference-instrumentation-.*") or instrumentation_scope.name == "crewai.telemetry")
+
+    extensions:
+      health_check:
+
+    service:
+      extensions: [ health_check ]
+      pipelines:
+        traces/phoenix:
+          receivers: [ otlp ]
+          processors: [ memory_limiter, filter/phoenix, batch ]
+          exporters: [ otlp/phoenix ]
+---
+# Source: kagenti-deps/templates/phoenix-postgres.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-otel-init-script
+data:
+  # these scripts are required for quay.io/fedora/postgresql-15
+  set_passwords.sh: |
+    #!/bin/bash
+
+    _psql () { psql --set ON_ERROR_STOP=1 "$@" ; }
+
+    if [[ ",$postinitdb_actions," = *,simple_db,* ]]; then
+    _psql --set=username="$POSTGRESQL_USER" \
+          --set=password="$POSTGRESQL_PASSWORD" \
+    <<< "ALTER USER :\"username\" WITH ENCRYPTED PASSWORD :'password';"
+    fi
+
+    if [ -v POSTGRESQL_MASTER_USER ]; then
+    _psql --set=masteruser="$POSTGRESQL_MASTER_USER" \
+          --set=masterpass="$POSTGRESQL_MASTER_PASSWORD" \
+    <<'EOF'
+    ALTER USER :"masteruser" WITH REPLICATION;
+    ALTER USER :"masteruser" WITH ENCRYPTED PASSWORD :'masterpass';
+    EOF
+    fi
+
+    if [ -v POSTGRESQL_ADMIN_PASSWORD ]; then
+    _psql --set=adminpass="$POSTGRESQL_ADMIN_PASSWORD" \
+    <<<"ALTER USER \"postgres\" WITH ENCRYPTED PASSWORD :'adminpass';"
+    fi
+  init.sh: |
+    #!/bin/bash
+    set -e
+    
+    psql -v ON_ERROR_STOP=1  <<-EOSQL
+        ALTER DATABASE postgres OWNER TO testuser;
+    EOSQL
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kiali
+rules:
+- apiGroups: [""]
+  resources:
+  - configmaps
+  - endpoints
+  - pods
+  - pods/log
+  - pods/portforward
+  - replicationcontrollers
+  - services
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+- apiGroups: ["apps"]
+  resources:
+  - deployments
+  - replicasets
+  - statefulsets
+  - daemonsets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["networking.k8s.io"]
+  resources:
+  - networkpolicies
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources:
+  - gateways
+  - httproutes
+  - grpcroutes
+  - referencegrants
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["networking.istio.io"]
+  resources:
+  - destinationrules
+  - envoyfilters
+  - gateways
+  - serviceentries
+  - sidecars
+  - virtualservices
+  - workloadentries
+  - workloadgroups
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - patch
+- apiGroups: ["security.istio.io"]
+  resources:
+  - authorizationpolicies
+  - peerauthentications
+  - requestauthentications
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - patch
+- apiGroups: ["telemetry.istio.io"]
+  resources:
+  - telemetries
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - patch
+- apiGroups: ["extensions.istio.io"]
+  resources:
+  - wasmplugins
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - patch
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kiali
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kiali
+subjects:
+- kind: ServiceAccount
+  name: kiali
+  namespace: kiali-system
+---
+# Source: kagenti-deps/templates/container-registry.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: container-registry
+  namespace: cr-system
+spec:
+  ports:
+  - port: 5000
+    targetPort: 5000
+  selector:
+    app: container-registry
+---
+# Source: kagenti-deps/templates/keycloak-k8s.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http
+      name: http
+  selector:
+    app: keycloak
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/keycloak-k8s.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak-discovery
+  namespace: keycloak
+spec:
+  selector:
+    app: keycloak
+  clusterIP: None
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/keycloak-k8s.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres
+  namespace: keycloak
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kiali
+  namespace: kiali-system
+  labels:
+    app: kiali
+spec:
+  ports:
+  - name: http
+    port: 20001
+    protocol: TCP
+    targetPort: 20001
+  - name: http-metrics
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: kiali
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/mcp-inspector.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-inspector
+  namespace: kagenti-system
+spec:
+  selector:
+    app: mcp-inspector
+  ports:
+  - name: ui
+    port: 6274
+    protocol: TCP
+    targetPort: 6274
+  - name: proxy
+    port: 6277
+    protocol: TCP
+    targetPort: 6277
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/otel-collector.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: otel-collector
+spec:
+  selector:
+    app: otel-collector
+  ports:
+    - name: otlp-grpc
+      protocol: TCP
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      protocol: TCP
+      port: 4318
+      targetPort: 4318
+    - name: otlp-receiver
+      protocol: TCP
+      port: 8335
+      targetPort: 8335  
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/phoenix-postgres.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres-otel
+  name: postgres
+spec:
+  ports:
+  - name: postgres
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    app: postgres-otel
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/phoenix.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: phoenix
+    app.kubernetes.io/instance: phoenix
+    app.kubernetes.io/name: phoenix
+  name: phoenix
+spec:
+  ports:
+  - appProtocol: http
+    name: http
+    port: 6006
+    protocol: TCP
+    targetPort: 6006
+  - appProtocol: http
+    name: http2
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  - appProtocol: grpc
+    name: grpc
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+  selector:
+    app: phoenix
+  type: ClusterIP
+---
+# Source: kagenti-deps/templates/container-registry.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-registry
+  namespace: cr-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: container-registry
+  template:
+    metadata:
+      labels:
+        app: container-registry
+    spec:
+      containers:
+      - name: registry
+        image: "ghcr.io/distribution/distribution:3.0.0"
+        ports:
+        - containerPort: 5000
+          name: registry
+        env:
+        - name: OTEL_TRACES_EXPORTER
+          value: "none"
+        - name: REGISTRY_LOG_LEVEL
+          value: "info"
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiali
+  namespace: kiali-system
+  labels:
+    app: kiali
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiali
+  template:
+    metadata:
+      labels:
+        app: kiali
+    spec:
+      serviceAccountName: kiali
+      containers:
+      - name: kiali
+        image: quay.io/kiali/kiali:v2.3.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - /opt/kiali/kiali
+        - -config
+        - /kiali-configuration/config.yaml
+        env:
+        - name: ACTIVE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: LOG_LEVEL
+          value: "info"
+        - name: LOG_FORMAT
+          value: "text"
+        ports:
+        - name: api-port
+          containerPort: 20001
+          protocol: TCP
+        - name: http-metrics
+          containerPort: 9090
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: api-port
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 30
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: api-port
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 30
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: kiali-configuration
+          mountPath: /kiali-configuration
+      volumes:
+      - name: kiali-configuration
+        configMap:
+          name: kiali
+---
+# Source: kagenti-deps/templates/mcp-inspector.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-inspector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-inspector
+  template:
+    metadata:
+      labels:
+        app: mcp-inspector
+    spec:
+      containers:
+        - name: mcp-inspector
+          image: ghcr.io/modelcontextprotocol/inspector:0.16.8
+          ports:
+            - containerPort: 6274
+            - containerPort: 6277
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          env:
+          - name: DANGEROUSLY_OMIT_AUTH
+            value: "true"
+          - name: ALLOWED_ORIGINS
+            valueFrom:
+              configMapKeyRef:
+                name: mcp-inspector-config
+                key: ALLOWED_ORIGINS
+          - name: HOST
+            value: 0.0.0.0
+---
+# Source: kagenti-deps/templates/otel-collector.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.122.1 
+          command:
+          - /otelcol-contrib
+          - --config=/etc/otelcol-config/base.yaml
+          - --set
+          - receivers::otlp::protocols::http::endpoint=0.0.0.0:8335
+          volumeMounts:
+            - name: otel-collector-config
+              mountPath: /etc/otelcol-config
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+              protocol: TCP
+            - containerPort: 4318
+              name: otlp-http
+              protocol: TCP
+            - containerPort: 8335
+              name: otlp-receiver
+              protocol: TCP  
+      volumes:
+        - name: otel-collector-config
+          configMap:
+            name: otel-collector-config
+---
+# Source: kagenti-deps/templates/keycloak-k8s.yaml
+apiVersion: apps/v1
+# Use a stateful setup to ensure that for a rolling update Pods are restarted with a rolling strategy one-by-one.
+# This prevents losing in-memory information stored redundantly in two Pods.
+kind: StatefulSet
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+  namespace: keycloak
+spec:
+  serviceName: keycloak-discovery
+  # Run with one replica to save resources, or with two replicas to allow for rolling updates for configuration changes
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.3.3
+          args: ["start"]
+          env:
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: "admin"
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              value: "admin"
+            # In a production environment, add a TLS certificate to Keycloak to either end-to-end encrypt the traffic between
+            # the client or Keycloak, or to encrypt the traffic between your proxy and Keycloak.
+            # Respect the proxy headers forwarded by the reverse proxy
+            # In a production environment, verify which proxy type you are using, and restrict access to Keycloak
+            # from other sources than your proxy if you continue to use proxy headers.
+            # Envoy/Istio requires "forwarded"
+            - name: KC_PROXY_HEADERS
+              value: "forwarded"
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            # In this explorative setup, no strict hostname is set.
+            # For production environments, set a hostname for a secure setup.
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+            - name: KC_HOSTNAME
+              value: "http://keycloak.localtest.me:8080/"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: "KC_CACHE"
+              value: "ispn"
+            # Passing the Pod's IP primary address to the JGroups clustering as this is required in IPv6 only setups
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            # Instruct JGroups which DNS hostname to use to discover other Keycloak nodes
+            # Needs to be unique for each Keycloak cluster
+            - name: JAVA_OPTS_APPEND
+              value: "-Djgroups.bind.address=$(POD_IP)"
+            - name: "KC_DB_URL_DATABASE"
+              value: "keycloak"
+            - name: "KC_DB_URL_HOST"
+              value: "postgres"
+            - name: "KC_DB"
+              value: "postgres"
+            # In a production environment, use a secret to store username and password to the database
+            - name: "KC_DB_PASSWORD"
+              value: "keycloak"
+            - name: "KC_DB_USERNAME"
+              value: "keycloak"
+            - name: KC_DB_URL_PROPERTIES
+              value: ?sslmode=disable
+            - name: KC_DB_POOL_INITIAL_SIZE
+              value: "5"
+            - name: KC_DB_POOL_MIN_SIZE
+              value: "5"
+            - name: KC_DB_POOL_MAX_SIZE
+              value: "20"
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /health/started
+              port: 9000
+            periodSeconds: 30
+            timeoutSeconds: 60
+            failureThreshold: 600
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 9000
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 9000
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 3000Mi
+            requests:
+              cpu: 500m
+              memory: 1700Mi
+---
+# Source: kagenti-deps/templates/keycloak-k8s.yaml
+# This is deployment of PostgreSQL with an ephemeral storage for testing: Once the Pod stops, the data is lost.
+# For a production setup, replace it with a database setup that persists your data.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: mirror.gcr.io/postgres:17
+          env:
+            - name: POSTGRES_USER
+              value: "keycloak"
+            - name: POSTGRES_PASSWORD
+              value: "keycloak"
+            - name: POSTGRES_DB
+              value: "keycloak"
+            - name: POSTGRES_LOG_STATEMENT
+              value: "all"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          ports:
+            - name: postgres
+              containerPort: 5432
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+---
+# Source: kagenti-deps/templates/phoenix-postgres.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-otel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-otel
+  serviceName: postgres-otel
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+      labels:
+        app: postgres-otel
+    spec:
+      volumes:
+      - name: init-script
+        configMap:
+          name: postgres-otel-init-script
+          defaultMode: 0755 
+      containers:
+      - env:
+        - name: POSTGRESQL_DATABASE
+          value: postgres
+        - name: POSTGRESQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: otel-db-secret
+              key: username  
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: otel-db-secret
+              key: password
+        image: quay.io/fedora/postgresql-15
+        imagePullPolicy: IfNotPresent
+        name: postgres
+        ports:
+        - containerPort: 5432
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U postgres -d postgres
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault    
+        volumeMounts:
+        - mountPath: /var/lib/pgsql/data
+          name: postgres-data
+        - name: init-script
+          mountPath: /usr/share/container-scripts/postgresql/start/ 
+          readOnly: false
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+---
+# Source: kagenti-deps/templates/phoenix.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: phoenix
+spec:
+  serviceName: phoenix
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phoenix
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+      labels:
+        app: phoenix
+    spec:
+      containers:
+      - args:
+        - -m
+        - phoenix.server.main
+        - serve
+        command:
+        - python
+        env:
+        - name: PHOENIX_POSTGRES_HOST
+          value: postgres
+        - name: PHOENIX_POSTGRES_PORT
+          value: "5432"
+        - name: PHOENIX_POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: otel-db-secret
+              key: username
+        - name: PHOENIX_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: otel-db-secret
+              key: password
+        - name: PHOENIX_POSTGRES_DB
+          value: postgres       
+        - name: PHOENIX_WORKING_DIR
+          value: /mnt/data
+        - name: PHOENIX_PORT
+          value: "6006"
+        image: arizephoenix/phoenix:version-8.32.1
+        name: phoenix
+        ports:
+        - containerPort: 6006
+        - containerPort: 9090
+        - containerPort: 4317
+        readinessProbe:
+          httpGet:
+            port: 6006
+        volumeMounts:
+        - mountPath: /mnt/data
+          name: phoenix
+  volumeClaimTemplates:
+  - metadata:
+      name: phoenix
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 8Gi
+---
+# Source: kagenti-deps/templates/keycloak-k8s.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    helm.sh/chart: kagenti-deps-0.1.0
+    app.kubernetes.io/name: kagenti-deps
+    app.kubernetes.io/instance: kagenti-deps
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  parentRefs:
+    - name: external-gateway
+      namespace: default
+  hostnames:
+    - keycloak.localtest.me
+  rules:
+    -
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: keycloak
+          port: 8080
+          weight: 1
+---
+# Source: kagenti-deps/templates/kiali-k8s.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kiali
+  namespace: kiali-system
+  labels:
+    helm.sh/chart: kagenti-deps-0.1.0
+    app.kubernetes.io/name: kagenti-deps
+    app.kubernetes.io/instance: kagenti-deps
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  parentRefs:
+    - name: external-gateway
+      namespace: default
+  hostnames:
+    - kiali.localtest.me
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: kiali
+          port: 20001
+          weight: 1
+---
+# Source: kagenti-deps/templates/mcp-inspector.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mcp-inspector
+  namespace: kagenti-system
+spec:
+  parentRefs:
+  - name: http
+    sectionName: http
+    namespace: kagenti-system
+  hostnames:
+  - mcp-inspector.localtest.me
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: mcp-inspector
+      port: 6274 # from service port defined above
+---
+# Source: kagenti-deps/templates/mcp-inspector.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mcp-proxy
+  namespace: kagenti-system
+spec:
+  parentRefs:
+  - name: http
+    sectionName: http
+    namespace: kagenti-system
+  hostnames:
+  - mcp-proxy.localtest.me
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: mcp-inspector
+      port: 6277 # from service port defined above
+---
+# Source: kagenti-deps/templates/keycloak-namespace.yaml
+# ------------------------------------------------------------------
+#  Creates the Namespace for all Keycloak-related resources.
+#  This is created during the main install, before any hooks.
+# ------------------------------------------------------------------
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+  labels:
+    helm.sh/chart: kagenti-deps-0.1.0
+    app.kubernetes.io/name: kagenti-deps
+    app.kubernetes.io/instance: kagenti-deps
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    istio-discovery: enabled
+---
+# Source: kagenti-deps/templates/mcp-inspector-config.yaml
+# This template creates a post-install job that waits for OpenShift routes or Kubernetes ingresses to be
+# ready and then creates a ConfigMap with their hostnames.
+# To enable it, set 'mcpConfigJob.enabled: true' in your values.yaml
+# ——————————————————————————————————————————————————————————————————————————————
+#  RBAC for the MCP Config Job
+#  These resources are also created as hooks to ensure they exist before the
+#  job runs and are cleaned up appropriately.
+# ——————————————————————————————————————————————————————————————————————————————
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kagenti-deps-mcp-config-sa
+  namespace: default
+  annotations:
+    "helm.sh/hook": post-install, post-upgrade
+    "helm.sh/hook-weight": "-5" # Very low weight to ensure it's created first
+    "helm.sh/hook-delete-policy": before-hook-creation
+---
+# Source: kagenti-deps/templates/mcp-inspector-config.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kagenti-deps-mcp-config-role
+  annotations:
+    "helm.sh/hook": post-install, post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+rules:
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["httproutes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "create", "update", "patch"]
+---
+# Source: kagenti-deps/templates/mcp-inspector-config.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kagenti-deps-mcp-config-binding
+  annotations:
+    "helm.sh/hook": post-install, post-upgrade
+    "helm.sh/hook-weight": "-4" # Runs after the SA and Role are created
+    "helm.sh/hook-delete-policy": before-hook-creation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kagenti-deps-mcp-config-role
+subjects:
+  - kind: ServiceAccount
+    name: kagenti-deps-mcp-config-sa
+    namespace: default
+---
+# Source: kagenti-deps/templates/mcp-inspector-config.yaml
+# ——————————————————————————————————————————————————————————————————————————————
+#  Configuration Job (Post-Install Hook)
+#  This job waits for routes/ingresses and creates the mcp-inspector-config ConfigMap.
+# ——————————————————————————————————————————————————————————————————————————————
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kagenti-deps-mcp-config-job
+  namespace: default
+  annotations:
+    "helm.sh/hook": post-install, post-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": hook-succeeded
+  labels:
+    helm.sh/chart: kagenti-deps-0.1.0
+    app.kubernetes.io/name: kagenti-deps
+    app.kubernetes.io/instance: kagenti-deps
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: kagenti-deps-mcp-config-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: route-checker-and-config-creator
+          image: "quay.io/kubestellar/kubectl:1.30.14"
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              set -e
+              echo "Starting MCP config job..."
+              # Get hostname from the HTTPRoute hostnames
+              INSPECTOR_HOST=$(kubectl get httproute mcp-inspector -n kagenti-system -o jsonpath='{.spec.hostnames[0]}')
+
+              # If no hostname in HTTPRoute, construct from domain
+              if [ -z "$INSPECTOR_HOST" ]; then
+                INSPECTOR_HOST="mcp-inspector.localhost"
+              fi
+
+              if [ -z "$INSPECTOR_HOST" ]; then
+                echo "Error: Could not retrieve hostname."
+                exit 1
+              fi
+
+              echo "Inspector host: $INSPECTOR_HOST"
+
+              # Create the ConfigMap using a heredoc and apply it
+              echo "Creating/updating mcp-inspector-config ConfigMap..."
+              kubectl apply -n default -f - <<EOF
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: mcp-inspector-config
+              data:
+                ALLOWED_ORIGINS: "https://${INSPECTOR_HOST}"
+              EOF
+
+              echo "ConfigMap 'mcp-inspector-config' applied successfully."

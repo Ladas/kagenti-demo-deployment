@@ -1,0 +1,24 @@
+# Gateway Component - HTTPS Gateway Configuration
+# Configures Istio Gateway with HTTPS support for localtest.me
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# No global namespace - resources define their own namespaces
+
+resources:
+  - self-signed-cert.yaml
+  - external-gateway-https.yaml
+  - envoyfilter-forwarded-proto.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: gateway
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: platform
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/platform/gateway/kustomization.yaml
