@@ -283,9 +283,9 @@ Kagenti includes a comprehensive observability stack with **dual-backend tracing
 
 | Component | Purpose | Access (Kind) | Production Auth |
 |-----------|---------|---------------|-----------------|
-| **Jaeger** | Infrastructure traces (Istio, Redis, PostgreSQL) | https://jaeger.localtest.me:9443 | Keycloak `kubernetes` realm |
+| **Tempo** | Infrastructure traces (Istio, Redis, PostgreSQL) | https://tempo.localtest.me:9443 | Keycloak `kubernetes` realm |
 | **Phoenix** | Agent/LLM traces (OpenInference) | https://phoenix.localtest.me:9443 | Keycloak `kagenti` realm |
-| **OTEL Collector** | Routes traces to Jaeger or Phoenix | Internal service | N/A |
+| **OTEL Collector** | Routes traces to Tempo or Phoenix | Internal service | N/A |
 | **Grafana** | Metrics dashboards | https://grafana.localtest.me:9443 | Keycloak `kubernetes` realm |
 | **Kubernetes Dashboard** | Cluster management UI | https://kubernetes-dashboard.localtest.me:9443 | Keycloak `kubernetes` realm |
 | **Keycloak** | Authentication & SSO | https://keycloak.localtest.me:9443 | Admin: `admin` / `admin` |
@@ -297,7 +297,7 @@ Kagenti includes a comprehensive observability stack with **dual-backend tracing
 - 🔒 **Keycloak SSO** - Dual-realm authentication (`kubernetes` + `kagenti`)
 
 **Two-Tier Tracing Architecture**:
-- **Jaeger** handles high-volume infrastructure traces (short retention: 7-14 days)
+- **Tempo** handles high-volume infrastructure traces (short retention: 7-14 days)
 - **Phoenix** handles valuable agent/LLM traces (long retention: 30-90 days)
 - **OTEL Collector** automatically routes based on `openinference.span.kind` attribute
 
@@ -330,7 +330,7 @@ Kagenti includes a comprehensive observability stack with **dual-backend tracing
 | **Grafana** | 1 | 100m | 256Mi | Dashboards |
 | **Tempo** | 1 | 200m | 512Mi | Distributed tracing |
 | **Phoenix** | 1 | 100m | 256Mi | LLM observability |
-| **Jaeger** | 1 | 200m | 512Mi | Tracing UI |
+| **Tempo** | 1 | 200m | 512Mi | Tracing backend/UI |
 | **Kiali** | 1 | 100m | 256Mi | Service mesh UI |
 | **OTEL Collector** | 2 | 200m | 512Mi | Telemetry collection |
 | **Istio (istiod)** | 1 | 500m | 2Gi | Service mesh control plane |
