@@ -179,7 +179,7 @@ kagenti-demo-deployment/
 ├── components/                    # 🧩 Reusable Kubernetes Manifests
 │   ├── infrastructure/           #   ├─ Foundation (Keycloak, OTEL, Tekton)
 │   ├── platform/                #   ├─ Kagenti platform (UI, Operators)
-│   ├── observability/           #   ├─ Monitoring (Grafana, Phoenix, Jaeger)
+│   ├── observability/           #   ├─ Monitoring (Grafana, Phoenix, Tempo)
 │   └── agents/                  #   └─ AI agents (research, code, orchestrator)
 │
 ├── scripts/                      # 🔧 Automation Scripts
@@ -238,12 +238,6 @@ kagenti-platform-kind (Root App)
 - [Documentation Progress](DOCS_PROGRESS_2025-11-11.md) - Current documentation status
 - [ArgoCD Cleanup Plan](TODO_ARGO_CLEANUP.md) - ArgoCD App-of-Apps migration
 - [ApplicationSets Migration](TODO_ARGO_NEXT.md) - ApplicationSets adoption plan
-
-**Legacy Documentation** (reference only):
-- [Old Documentation](old_docs/) - Previous documentation (preserved for reference)
-- [Legacy Deployment Guide](old_docs/DEPLOYMENT.md)
-- [Legacy Tracing Architecture](old_docs/TRACING_ARCHITECTURE.md)
-- [Legacy Keycloak GitOps](old_docs/KEYCLOAK_GITOPS_ARCHITECTURE.md)
 
 ## 🧩 Why Components + Overlays?
 
