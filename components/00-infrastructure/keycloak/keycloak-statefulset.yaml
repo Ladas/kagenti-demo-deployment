@@ -131,6 +131,9 @@ spec:
               value: "postgres.keycloak.svc.cluster.local"
             - name: KC_DB_URL_PORT
               value: "5432"
+            # Disable SSL for PostgreSQL connection (Istio sidecar handles mTLS)
+            - name: KC_DB_URL_PROPERTIES
+              value: "?sslmode=disable"
 
             # Admin credentials
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
