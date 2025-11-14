@@ -156,15 +156,15 @@ jobs:
                 HEALTHY=$((HEALTHY + 1))
               elif [ "$HEALTH_STATUS" = "Progressing" ]; then
                 PROGRESSING=$((PROGRESSING + 1))
-                # Check if this app is allowed to be progressing
-                if [[ ! "$PROGRESSING_OK" =~ "$app" ]]; then
+                # Check if this app is allowed to be progressing (use word boundaries)
+                if [[ ! " $PROGRESSING_OK " =~ " $app " ]]; then
                   echo "    ⚠️  $app is Progressing (waiting...)"
                 fi
               elif [ "$HEALTH_STATUS" = "Degraded" ]; then
                 DEGRADED=$((DEGRADED + 1))
                 DEGRADED_APPS="$DEGRADED_APPS $app"
-                # Check if this is a REQUIRED app
-                if [[ "$REQUIRED_APPS" =~ "$app" ]]; then
+                # Check if this is a REQUIRED app (use word boundaries to avoid substring matches)
+                if [[ " $REQUIRED_APPS " =~ " $app " ]]; then
                   echo "    ❌ REQUIRED app $app is Degraded!"
                 fi
               fi
@@ -176,7 +176,8 @@ jobs:
             # FAIL immediately if a REQUIRED app is Degraded
             if [ $DEGRADED -gt 0 ]; then
               for app in $DEGRADED_APPS; do
-                if [[ "$REQUIRED_APPS" =~ "$app" ]]; then
+                # Use word boundaries to avoid substring matches (e.g., "platform" in "kagenti-platform-operator")
+                if [[ " $REQUIRED_APPS " =~ " $app " ]]; then
                   echo ""
                   echo "❌ FAIL: Required application '$app' is Degraded"
                   echo "Cannot proceed with degraded required applications"
