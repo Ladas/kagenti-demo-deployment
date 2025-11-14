@@ -154,10 +154,10 @@ echo ""
 # Pre-flight: Ask about operator images (or use CI_MODE env var)
 OPERATOR_IMAGE_MODE="${OPERATOR_IMAGE_MODE:-load}"
 
-# Skip prompts in CI mode
+# Skip prompts in CI mode - use tar files
 if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-    echo -e "${YELLOW}→ CI mode detected - skipping operator image loading${NC}"
-    OPERATOR_IMAGE_MODE="skip"
+    echo -e "${YELLOW}→ CI mode detected - will load operators from tar files${NC}"
+    OPERATOR_IMAGE_MODE="load-tar"
 else
     echo "Load operator images? (y/n/skip) [default: y]"
     echo "  y     - Load pre-built images from Docker (30 seconds)"
@@ -244,6 +244,41 @@ case "$OPERATOR_IMAGE_MODE" in
         ;;
     skip)
         echo -e "${YELLOW}⊘ Skipping operator image loading${NC}"
+        ;;
+    load-tar)
+        # CI mode: load from tar files in .images directory
+        echo -e "${GREEN}→ Loading operator images from tar files${NC}"
+        IMAGES_DIR="$REPO_ROOT/.images"
+
+        TAR_FILES=(
+            "$IMAGES_DIR/kagenti-operator-dev.tar"
+            "$IMAGES_DIR/kagenti-platform-operator-dev.tar"
+        )
+
+        loaded_count=0
+        for tar_file in "${TAR_FILES[@]}"; do
+            if [ ! -f "$tar_file" ]; then
+                echo -e "${RED}✗ Missing operator image tar file: $tar_file${NC}"
+                echo "  Please run: ./scripts/export-operator-images.sh"
+                exit 1
+            fi
+
+            image_name=$(basename "$tar_file" .tar)
+            echo "  Loading $image_name..."
+            if kind load image-archive "$tar_file" --name kagenti-demo 2>&1 | grep -v "Image.*already present"; then
+                loaded_count=$((loaded_count + 1))
+            else
+                echo -e "${RED}✗ Failed to load: $tar_file${NC}"
+                exit 1
+            fi
+        done
+
+        if [ "$loaded_count" -eq 2 ]; then
+            echo -e "${GREEN}✓ Loaded $loaded_count operator images from tar files${NC}"
+        else
+            echo -e "${RED}✗ Failed to load all operator images${NC}"
+            exit 1
+        fi
         ;;
     load)
         # Default: load pre-built images

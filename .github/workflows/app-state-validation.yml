@@ -105,12 +105,15 @@ jobs:
           echo "Waiting for ArgoCD applications to sync and become healthy..."
           echo "Monitoring ArgoCD application status via kubectl..."
 
-          TIMEOUT=1800  # 30 minutes maximum
+          TIMEOUT=600   # 10 minutes maximum
           INTERVAL=10   # Check every 10 seconds
           ELAPSED=0
 
-          # List of critical applications to monitor (excluding agents and observability as per test params)
-          CRITICAL_APPS="infrastructure gateway-api cert-manager istio-base istiod istio-config keycloak kagenti-operator kagenti-platform-operator platform"
+          # List of REQUIRED applications (MUST be healthy, or we fail)
+          REQUIRED_APPS="infrastructure gateway-api cert-manager istio-base istiod istio-config keycloak kagenti-operator kagenti-platform-operator platform"
+
+          # List of apps that can be "Progressing" (Tekton often shows this during leader election)
+          PROGRESSING_OK="tekton"
 
           while [ $ELAPSED -lt $TIMEOUT ]; do
             echo ""
@@ -123,6 +126,9 @@ jobs:
             TOTAL=0
             SYNCED=0
             HEALTHY=0
+            PROGRESSING=0
+            DEGRADED=0
+            DEGRADED_APPS=""
 
             for app in $ALL_APPS; do
               # Skip agents and observability (excluded in test params)
@@ -145,13 +151,38 @@ jobs:
 
               if [ "$HEALTH_STATUS" = "Healthy" ]; then
                 HEALTHY=$((HEALTHY + 1))
+              elif [ "$HEALTH_STATUS" = "Progressing" ]; then
+                PROGRESSING=$((PROGRESSING + 1))
+                # Check if this app is allowed to be progressing
+                if [[ ! "$PROGRESSING_OK" =~ "$app" ]]; then
+                  echo "    ⚠️  $app is Progressing (waiting...)"
+                fi
+              elif [ "$HEALTH_STATUS" = "Degraded" ]; then
+                DEGRADED=$((DEGRADED + 1))
+                DEGRADED_APPS="$DEGRADED_APPS $app"
+                # Check if this is a REQUIRED app
+                if [[ "$REQUIRED_APPS" =~ "$app" ]]; then
+                  echo "    ❌ REQUIRED app $app is Degraded!"
+                fi
               fi
             done
 
             echo ""
-            echo "Summary: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced"
+            echo "Summary: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced, $PROGRESSING progressing, $DEGRADED degraded"
 
-            # Check if all apps are healthy and synced
+            # FAIL immediately if a REQUIRED app is Degraded
+            if [ $DEGRADED -gt 0 ]; then
+              for app in $DEGRADED_APPS; do
+                if [[ "$REQUIRED_APPS" =~ "$app" ]]; then
+                  echo ""
+                  echo "❌ FAIL: Required application '$app' is Degraded"
+                  echo "Cannot proceed with degraded required applications"
+                  exit 1
+                fi
+              done
+            fi
+
+            # Success: All apps healthy and synced (progressing apps are OK if not required)
             if [ $TOTAL -gt 0 ] && [ $HEALTHY -eq $TOTAL ] && [ $SYNCED -eq $TOTAL ]; then
               echo ""
               echo "✅ All applications are healthy and synced!"
@@ -167,7 +198,26 @@ jobs:
           echo ""
           echo "⚠️  Timeout reached after ${TIMEOUT}s"
           echo "Final status: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced"
-          echo "Proceeding with tests anyway..."
+
+          # Check if REQUIRED apps are healthy
+          echo ""
+          echo "Checking required applications..."
+          for required_app in $REQUIRED_APPS; do
+            APP_JSON=$(kubectl get application "$required_app" -n argocd -o json 2>/dev/null || echo "{}")
+            HEALTH=$(echo "$APP_JSON" | jq -r '.status.health.status // "Missing"')
+            if [ "$HEALTH" != "Healthy" ]; then
+              echo "  ❌ Required app '$required_app' is $HEALTH"
+              echo ""
+              echo "Cannot proceed - required applications are not healthy"
+              exit 1
+            else
+              echo "  ✓ $required_app is Healthy"
+            fi
+          done
+
+          echo ""
+          echo "✅ All required applications are healthy (some optional apps may still be progressing)"
+          echo "Proceeding with tests..."
 
       - name: Set test parameters
         id: test_params
