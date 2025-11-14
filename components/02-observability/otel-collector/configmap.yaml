@@ -72,9 +72,9 @@ data:
         limit_mib: 512
         spike_limit_mib: 128
 
-      # Resource detection processor - Automatically detect Kubernetes metadata
+      # Resource detection processor - Automatically detect container/system metadata
       resourcedetection:
-        detectors: [env, system, docker, kubernetes]
+        detectors: [env, system, docker]
         timeout: 5s
         override: false
 
