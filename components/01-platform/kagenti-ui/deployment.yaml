@@ -24,6 +24,9 @@ rules:
   - apiGroups: ["kagenti.operator.dev"]
     resources: ["components"]
     verbs: ["get", "list", "delete", "create", "update", "patch", "watch"]
+  - apiGroups: ["agent.kagenti.dev"]
+    resources: ["agents", "agentbuilds", "agentcards"]
+    verbs: ["get", "list", "delete", "create", "update", "patch", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
