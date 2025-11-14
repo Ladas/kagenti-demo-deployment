@@ -88,6 +88,8 @@ spec:
           readOnly: true
         - name: storage
           mountPath: /loki
+        - name: wal
+          mountPath: /wal
 
         securityContext:
           allowPrivilegeEscalation: false
@@ -101,4 +103,6 @@ spec:
         configMap:
           name: loki-config
       - name: storage
+        emptyDir: {}
+      - name: wal
         emptyDir: {}
