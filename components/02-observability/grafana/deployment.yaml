@@ -15,10 +15,10 @@ data:
   datasources.yaml: |
     apiVersion: 1
     datasources:
-      - name: OTEL Metrics
+      - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://otel-collector.observability.svc:8888
+        url: http://prometheus.observability.svc:9090
         isDefault: true
         editable: true
         jsonData:

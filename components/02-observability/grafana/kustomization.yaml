@@ -15,6 +15,7 @@ configMapGenerator:
       - dashboards/kubernetes-cluster.json
       - dashboards/agent-metrics.json
       - dashboards/tekton-pipelines.json
+      - dashboards/loki-logs.json
 
 labels:
   - pairs:
