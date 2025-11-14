@@ -6,7 +6,6 @@ namespace: observability
 resources:
   - deployment.yaml
   - httproute.yaml
-  - destinationrule.yaml
 
 configMapGenerator:
   - name: grafana-dashboards
