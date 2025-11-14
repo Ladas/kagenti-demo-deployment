@@ -110,7 +110,7 @@ spec:
         - name: GF_SECURITY_ADMIN_USER
           value: "admin"
         - name: GF_SECURITY_ADMIN_PASSWORD
-          value: "admin"
+          value: "admin123"
 
         # Disable anonymous auth
         - name: GF_AUTH_ANONYMOUS_ENABLED
