@@ -1,0 +1,13 @@
+# PeerAuthentication for Prometheus
+# Allows HTTP connections from Grafana (PERMISSIVE mode)
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: prometheus-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  mtls:
+    mode: PERMISSIVE
