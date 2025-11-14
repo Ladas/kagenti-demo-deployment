@@ -1,5 +1,8 @@
 # Strict mTLS for observability namespace
 # Ensures all service-to-service communication is encrypted
+#
+# Note: Services accessed via OAuth2-Proxy need PERMISSIVE mTLS on their
+# application ports because OAuth2-Proxy connects using plain HTTP
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
@@ -8,3 +11,35 @@ metadata:
 spec:
   mtls:
     mode: STRICT
+---
+# Allow OAuth2-Proxy to connect to Phoenix without mTLS on port 6006
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: phoenix-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: phoenix
+  mtls:
+    mode: PERMISSIVE
+  portLevelMtls:
+    6006:
+      mode: PERMISSIVE
+---
+# Allow OAuth2-Proxy to connect to Tempo without mTLS on port 3100
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: tempo-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: tempo
+  mtls:
+    mode: PERMISSIVE
+  portLevelMtls:
+    3100:
+      mode: PERMISSIVE

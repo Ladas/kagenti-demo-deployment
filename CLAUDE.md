@@ -298,7 +298,34 @@ kubectl describe certificate <cert-name> -n <namespace>
 kubectl logs -n cert-manager deployment/cert-manager --tail=100
 ```
 
-**Issue: mTLS connection failures**
+**Issue: mTLS connection failures / TLS WRONG_VERSION_NUMBER**
+
+This error occurs when OAuth2-Proxy's Istio sidecar tries to use mTLS to connect to backend services that expect plain HTTP.
+
+**Symptom**: `upstream connect error or disconnect/reset before headers. TLS error: WRONG_VERSION_NUMBER`
+
+**Root cause**: STRICT mTLS policy + OAuth2-Proxy using HTTP to backend
+
+**Fix**: Add PERMISSIVE mTLS for backend services accessed via OAuth2-Proxy:
+
+```bash
+# Check mTLS policies
+kubectl get peerauthentication -A
+
+# For services like Phoenix, Tempo, Kiali - they need PERMISSIVE mode
+# Already configured in:
+# - components/02-observability/mtls-policy.yaml (Phoenix, Tempo)
+# - components/02-observability/kiali/mtls-policy.yaml (Kiali)
+
+# Verify policy applied
+kubectl get peerauthentication -n observability
+kubectl get peerauthentication -n kiali-system
+
+# Check OAuth2-Proxy logs for TLS errors
+kubectl logs -n oauth2-proxy deployment/phoenix-oauth2-proxy --tail=50
+```
+
+**General mTLS debugging**:
 
 ```bash
 # Verify Istio sidecar injection (should show 2/2 containers)
@@ -307,7 +334,7 @@ kubectl get pods -n <namespace>
 # Check namespace has istio-injection label
 kubectl get namespace <namespace> -o jsonpath='{.metadata.labels.istio-injection}'
 
-# Check mTLS policies
+# Check all mTLS policies
 kubectl get peerauthentication -A
 kubectl get destinationrule -A
 

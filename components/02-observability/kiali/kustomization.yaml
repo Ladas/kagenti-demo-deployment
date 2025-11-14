@@ -12,6 +12,7 @@ namespace: kiali-system
 resources:
   - kiali-rendered.yaml
   - httproute.yaml
+  - mtls-policy.yaml
 
 labels:
   - pairs:
