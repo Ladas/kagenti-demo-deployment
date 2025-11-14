@@ -21,6 +21,7 @@ resources:
   - phoenix-proxy.yaml
   - kiali-proxy.yaml
   - prometheus-proxy.yaml
+  - destinationrules.yaml
 
 labels:
   - pairs:
