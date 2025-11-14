@@ -265,8 +265,11 @@ case "$OPERATOR_IMAGE_MODE" in
 
             image_name=$(basename "$tar_file" .tar)
             echo "  Loading $image_name..."
-            if kind load image-archive "$tar_file" --name kagenti-demo 2>&1 | grep -v "Image.*already present"; then
+
+            # Load the image and capture output
+            if kind load image-archive "$tar_file" --name kagenti-demo 2>&1; then
                 loaded_count=$((loaded_count + 1))
+                echo -e "${GREEN}  ✓ Loaded $image_name${NC}"
             else
                 echo -e "${RED}✗ Failed to load: $tar_file${NC}"
                 exit 1
