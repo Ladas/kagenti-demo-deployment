@@ -60,6 +60,7 @@ This document provides a comprehensive testing strategy and action plan for the 
 | `test_platform.py` | Keycloak, Kagenti UI, operators, gateway | ✅ Implemented | ~60% |
 | `test_observability.py` | Grafana, Tempo, Phoenix, Jaeger, OTEL | ✅ Implemented | ~50% |
 | `test_agents.py` | Agent deployment, API endpoints, telemetry | ✅ Implemented | ~40% |
+| `test_otel_signal_flows.py` | **OTEL signals (metrics, logs, traces) end-to-end** | ✅ **NEW** | **100%** (19/19 passing) |
 
 **Key Findings:**
 - Session-scoped fixtures for K8s clients (good pattern)
@@ -420,14 +421,34 @@ asyncio_mode = "auto"
 
 **Purpose:** Validate observability components collect and display data.
 
-**Tests:**
-- ✅ Grafana accessible
-- ⚠️ Tempo receiving traces
-- ⚠️ Phoenix tracing UI showing data
-- ⚠️ Jaeger deprecated (should remove or mark xfail)
-- ✅ OTEL collector running
+**Test File:** `tests/integration/test_otel_signal_flows.py` (19 tests)
 
-**Status:** 🟡 Partial (some components not working)
+**Tests:**
+- ✅ **Metrics Signal** (5/5 tests)
+  - OTEL Collector exposes /metrics endpoint
+  - Prometheus scrapes OTEL Collector
+  - Prometheus API responds to PromQL queries
+  - Grafana Prometheus datasource configured
+  - End-to-end metrics flow validated
+- ✅ **Logs Signal** (5/5 tests)
+  - Loki /ready endpoint responds
+  - Loki receiving logs from Promtail
+  - Loki responds to LogQL queries
+  - Grafana Loki datasource configured
+  - End-to-end logs flow validated
+- ✅ **Traces Signal** (7/7 tests)
+  - Tempo /ready endpoint responds
+  - OTEL Collector configured to export to Tempo
+  - Grafana Tempo datasource configured
+  - Tempo API search endpoint responds
+  - Phoenix receiving LLM traces
+  - OTEL Collector filters LLM traces to Phoenix
+  - End-to-end traces flow validated
+- ✅ **Overall Health** (2/2 tests)
+  - All observability components healthy
+  - Grafana all datasources configured
+
+**Status:** 🟢 Complete (19/19 tests passing - 100%)
 
 ### Category 4: Agent Lifecycle
 
