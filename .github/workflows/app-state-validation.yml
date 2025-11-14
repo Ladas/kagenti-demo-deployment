@@ -103,7 +103,11 @@ jobs:
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |
           chmod +x ./scripts/kind/02-install-argocd.sh
-          ./scripts/kind/02-install-argocd.sh
+          # Run script but continue even if argocd login fails (it's optional for CI)
+          ./scripts/kind/02-install-argocd.sh || true
+
+          # Verify ArgoCD is actually installed
+          kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
 
       - name: Bootstrap ArgoCD applications
         if: steps.cluster_mode.outputs.mode == 'kind'
