@@ -14,6 +14,9 @@ resources:
   # Kagenti system namespace
   - kagenti-system-namespace.yaml
 
+  # GitHub token secret (placeholder for dev, required by kagenti UI)
+  - github-token-secret.yaml
+
   # MCP Inspector (debugging tool)
   - mcp-inspector/
 
