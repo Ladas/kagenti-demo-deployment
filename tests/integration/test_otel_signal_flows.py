@@ -376,6 +376,11 @@ class TestLogsSignal:
 
         # Query Loki with simple LogQL query (last 1 hour of logs from any namespace)
         try:
+            # Calculate timestamps using Python (Alpine-compatible)
+            import time
+            start_ns = int((time.time() - 3600) * 1e9)  # 1 hour ago in nanoseconds
+            end_ns = int(time.time() * 1e9)
+
             # Use query_range endpoint with 1-hour range
             output = exec_in_pod(
                 k8s_client,
@@ -384,11 +389,11 @@ class TestLogsSignal:
                 [
                     "sh",
                     "-c",
-                    "curl -s -G 'http://loki-query-frontend.observability.svc:3100/loki/api/v1/query_range' "
-                    "--data-urlencode 'query={namespace=~\".+\"}' "
-                    "--data-urlencode 'start=$(date -u -d '1 hour ago' +%s)000000000' "
-                    "--data-urlencode 'end=$(date -u +%s)000000000' "
-                    "| grep -o '\"status\":\"success\"'"
+                    f"curl -s -G 'http://loki-query-frontend.observability.svc:3100/loki/api/v1/query_range' "
+                    f"--data-urlencode 'query={{namespace=~\".+\"}}' "
+                    f"--data-urlencode 'start={start_ns}' "
+                    f"--data-urlencode 'end={end_ns}' "
+                    f"| grep -o '\"status\":\"success\"'"
                 ]
             )
 
@@ -460,6 +465,11 @@ class TestLogsSignal:
 
         # Step 2: Query logs for observability namespace
         try:
+            # Calculate timestamps using Python (Alpine-compatible)
+            import time
+            start_ns = int((time.time() - 3600) * 1e9)  # 1 hour ago in nanoseconds
+            end_ns = int(time.time() * 1e9)
+
             query_output = exec_in_pod(
                 k8s_client,
                 "observability",
@@ -467,12 +477,12 @@ class TestLogsSignal:
                 [
                     "sh",
                     "-c",
-                    "curl -s -G 'http://loki-query-frontend.observability.svc:3100/loki/api/v1/query_range' "
-                    "--data-urlencode 'query={namespace=\"observability\"}' "
-                    "--data-urlencode 'limit=10' "
-                    "--data-urlencode 'start=$(date -u -d '1 hour ago' +%s)000000000' "
-                    "--data-urlencode 'end=$(date -u +%s)000000000' "
-                    "| grep -o '\"status\":\"success\"'"
+                    f"curl -s -G 'http://loki-query-frontend.observability.svc:3100/loki/api/v1/query_range' "
+                    f"--data-urlencode 'query={{namespace=\"observability\"}}' "
+                    f"--data-urlencode 'limit=10' "
+                    f"--data-urlencode 'start={start_ns}' "
+                    f"--data-urlencode 'end={end_ns}' "
+                    f"| grep -o '\"status\":\"success\"'"
                 ]
             )
 
