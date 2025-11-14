@@ -1,6 +1,6 @@
 # ArgoCD GitOps Workflow for Local Development
 
-**Last Updated**: 2025-11-13
+**Last Updated**: 2025-11-14
 
 This document describes the GitOps workflow for developing Kagenti platform components using ArgoCD.
 
@@ -38,19 +38,25 @@ This document describes the GitOps workflow for developing Kagenti platform comp
 ```
 
 **What it does:**
-1. Destroys existing cluster
-2. Creates new Kind cluster
-3. Installs ArgoCD
-4. Bootstraps applications
-5. Optionally builds/loads agent images (prompted)
-6. Syncs root application
-7. Monitors deployment progress (15-minute timeout)
+1. Auto-detects repository and branch (uses PR branch in GitHub Actions)
+2. Destroys existing cluster
+3. Creates new Kind cluster
+4. Installs ArgoCD
+5. Bootstraps applications (automatically uses detected repo/branch)
+6. Optionally builds/loads agent images (prompted locally, skipped in CI)
+7. Syncs root application
 8. Shows final status
 
-**When prompted for agent images:**
+**Branch Detection:**
+- **Local**: Uses current Git branch
+- **GitHub Actions PR**: Automatically uses PR branch and fork repository
+- **Default**: Falls back to `main` branch from upstream repo
+
+**When prompted for agent images (local only):**
 - `y` - Build from source (2-5 minutes)
 - `n` - Load pre-built images (30 seconds)
 - `skip` - Skip agents (agents will show ImagePullBackOff)
+- **CI mode**: Automatically skips prompts
 
 ### Manual Deployment (if needed)
 
