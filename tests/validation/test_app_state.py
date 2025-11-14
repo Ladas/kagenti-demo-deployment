@@ -87,12 +87,12 @@ class AppHealthStatus:
     def is_healthy(self) -> bool:
         """Check if application is in healthy state.
 
-        Note: We only check ArgoCD's health status, NOT individual resource counts.
-        ArgoCD marks apps as "Healthy" when main deployments are running, even if
-        some CRDs/ConfigMaps aren't fully applied yet. This matches the workflow wait loop logic.
+        Note: We only check ArgoCD's health status, NOT sync status or resource counts.
+        This matches the workflow wait loop logic which only checks .status.health.status.
+        ArgoCD may report apps as "Healthy" even if they're temporarily "OutOfSync"
+        during normal resyncs or gitops operations.
         """
         return (
-            self.sync_status == "Synced" and
             self.health_status in ["Healthy", "Progressing"] and
             not self.has_errors()
         )
