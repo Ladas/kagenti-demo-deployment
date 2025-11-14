@@ -310,6 +310,33 @@ spec:
     - protocol: TCP
       port: 15010  # xDS and CA discovery
 
+  # Allow to Loki (datasource for logs)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: loki
+    ports:
+    - protocol: TCP
+      port: 3100
+
+  # Allow to Tempo (datasource for traces)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: tempo
+    ports:
+    - protocol: TCP
+      port: 3200
+
+  # Allow to OTEL Collector (datasource for Prometheus metrics)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 8888
+
 ---
 # Keycloak - Authentication
 apiVersion: networking.k8s.io/v1
