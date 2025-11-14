@@ -134,8 +134,9 @@ jobs:
             DEGRADED_APPS=""
 
             for app in $ALL_APPS; do
-              # Skip agents and observability (excluded in test params)
-              if [[ "$app" == *"agent"* ]] || [[ "$app" == "observability" ]]; then
+              # Skip agent applications and observability (excluded in test params)
+              # NOTE: Don't skip operators - only skip apps ending with "-agent"
+              if [[ "$app" == *"-agent" ]] || [[ "$app" == "observability" ]] || [[ "$app" == "agents" ]]; then
                 continue
               fi
 
