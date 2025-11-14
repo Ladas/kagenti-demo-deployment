@@ -15,7 +15,7 @@ spec:
 
   source:
     repoURL: https://github.com/Ladas/kagenti-demo-deployment.git
-    targetRevision: argocd-gitops-dev
+    targetRevision: argocd-gitops-dev-phase-1
     path: components/03-applications
 
   destination:
