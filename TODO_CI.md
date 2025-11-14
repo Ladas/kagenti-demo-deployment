@@ -26,18 +26,22 @@
 
 ### ❌ Remaining Issues
 
-#### 1. Wait Loop Timing - Need to Verify Fix Works
-**Problem**: Wait loop was incorrectly matching "platform" as a required app
+#### 1. Operator Deployment Timing
+**Problem**: Operators take longer than 10 minutes to become Healthy in CI
 
-**Root Cause**: Regex substring matching bug
-- `[[ "$REQUIRED_APPS" =~ "$app" ]]` matches "platform" inside "kagenti-platform-operator"
-- This caused false failures when platform app was Degraded
+**Root Cause Analysis**:
+- ✅ Operators ARE being created as Applications
+- ✅ Operators ARE visible in wait loop (after fix 359f597)
+- ❌ `kagenti-platform-operator` goes Degraded after ~60 seconds
+- Progression: Unknown → OutOfSync,Missing → OutOfSync,Degraded
 
-**Fix Applied (dcde1f3)**:
-- Changed to word boundary matching: `[[ " $REQUIRED_APPS " =~ " $app " ]]`
-- Applied to all three regex checks: PROGRESSING_OK, REQUIRED_APPS (2x)
+**Possible Causes**:
+1. Operators need more than 10-minute timeout
+2. Operators have deployment issues in PR fork environment
+3. Operator images not loading correctly
+4. Kustomize remote resource issues
 
-**Status**: Testing in progress - waiting for CI run to validate fix
+**Status**: Needs investigation - operators fail too quickly for timeout to be only issue
 
 #### 2. Test Report Shows APP_FAILED=0 But Tests Actually Failed
 **Problem**: Parse step shows `APP_FAILED=0` but tests failed
@@ -101,16 +105,20 @@ FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app
 5. `107caaa` - Revert to correct operator overlay URLs
 6. `1ee8816` - Add operators to REQUIRED_APPS list + create TODO_CI.md
 7. `dcde1f3` - **FIX**: Fix regex matching bug in wait loop (word boundaries)
+8. `07ce99a` - Update TODO_CI.md with regex fix tracking
+9. `359f597` - **MAJOR FIX**: Fix operator exclusion bug in wait loop
 
 ## CI Run History
 
-| Run ID | Status | Apps Created | Operators Healthy | Notes |
-|--------|--------|--------------|-------------------|-------|
-| 19366497819 | Failed | 17/17 ✅ | Degraded | Apps created but operators crashing |
-| 19367233425 | Failed | 17/17 ✅ | Failed | Broke URLs - all apps failed |
-| 19367994555 | Failed | 17/17 ✅ | **Healthy** ✅ | Timing issues only |
-| 19368622510 | Failed | 17/17 ✅ | **Healthy** ✅ | Regex bug: "platform" matched "kagenti-platform-operator" |
-| TBD | Running | ? | ? | Fixed regex matching with word boundaries |
+| Run ID | Status | Apps Created | Operators Visible | Operators Healthy | Notes |
+|--------|--------|--------------|-------------------|-------------------|-------|
+| 19366497819 | Failed | 17/17 ✅ | ❌ (14) | N/A | Apps created but operators excluded from wait loop |
+| 19367233425 | Failed | 17/17 ✅ | ❌ (14) | N/A | Broke URLs - all apps failed |
+| 19367994555 | Failed | 17/17 ✅ | ❌ (14) | N/A | Timing issues only |
+| 19368622510 | Failed | 17/17 ✅ | ❌ (14) | N/A | Regex bug: "platform" matched substring |
+| 19369235699 | Failed | 17/17 ✅ | ❌ (14) | N/A | Fixed regex matching with word boundaries |
+| 19369647098 | Failed | 17/17 ✅ | ❌ (14) | N/A | Same as above (decc5d8) |
+| 19370644519 | Failed | 17/17 ✅ | ✅ (16) | ❌ Degraded | **BREAKTHROUGH**: Operators now visible! But platform-operator fails deployment
 
 ## Next Steps
 
