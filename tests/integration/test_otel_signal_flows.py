@@ -59,7 +59,7 @@ def exec_in_pod(k8s_client, namespace: str, pod_name: str, command: List[str]) -
     Execute command in pod and return output.
 
     Args:
-        k8s_client: Kubernetes CoreV1Api client
+        k8s_client: Kubernetes CoreV1Api client (unused - kept for compatibility)
         namespace: Kubernetes namespace
         pod_name: Pod name
         command: Command to execute
@@ -67,19 +67,19 @@ def exec_in_pod(k8s_client, namespace: str, pod_name: str, command: List[str]) -
     Returns:
         Command stdout output
     """
-    from kubernetes.stream import stream
+    import subprocess
 
-    resp = stream(
-        k8s_client.connect_get_namespaced_pod_exec,
-        pod_name,
-        namespace,
-        command=command,
-        stderr=True,
-        stdin=False,
-        stdout=True,
-        tty=False,
+    # Build kubectl exec command
+    kubectl_cmd = ["kubectl", "exec", "-n", namespace, pod_name, "--"] + command
+
+    result = subprocess.run(
+        kubectl_cmd,
+        capture_output=True,
+        text=True,
+        timeout=30
     )
-    return resp
+
+    return result.stdout
 
 
 def get_pod_for_deployment(k8s_client, namespace: str, deployment_name: str) -> Optional[str]:
