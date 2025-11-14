@@ -647,13 +647,13 @@ class TestTracesSignal:
 
             config_yaml = configmap.data.get("otel-collector-config.yaml", "")
 
-            # Check for Phoenix exporter and filter
+            # Check for Phoenix exporter
             assert "phoenix" in config_yaml.lower() or "otlp/phoenix" in config_yaml, \
                 "OTEL Collector config does not include Phoenix exporter"
 
-            # Check for filter/phoenix processor (filters LLM traces)
-            assert "filter/phoenix" in config_yaml or "filter" in config_yaml, \
-                "OTEL Collector missing filter for Phoenix (should filter LLM traces)"
+            # Check for routing processor (routes LLM traces to Phoenix)
+            assert "routing" in config_yaml, \
+                "OTEL Collector missing routing processor for Phoenix (should route LLM traces)"
 
         except ApiException as e:
             pytest.fail(f"Failed to read OTEL Collector config: {e}")
