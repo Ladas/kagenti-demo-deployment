@@ -26,27 +26,18 @@
 
 ### ❌ Remaining Issues
 
-#### 1. Timing Issues - Apps Not Ready When Tests Run
-**Problem**: Tests run before applications finish deploying
+#### 1. Wait Loop Timing - Need to Verify Fix Works
+**Problem**: Wait loop was incorrectly matching "platform" as a required app
 
-**Failed Apps in Latest Run**:
-- gateway-api
-- istio-base
-- istiod
-- keycloak
-- keycloak-operator
-- kagenti-platform-operator (marked unhealthy in test, but logs show Healthy)
+**Root Cause**: Regex substring matching bug
+- `[[ "$REQUIRED_APPS" =~ "$app" ]]` matches "platform" inside "kagenti-platform-operator"
+- This caused false failures when platform app was Degraded
 
-**Root Cause**:
-- Intelligent wait loop may be exiting too early
-- Some apps marked as "Progressing" when tests run
-- Need to wait for Healthy status, not just Synced
+**Fix Applied (dcde1f3)**:
+- Changed to word boundary matching: `[[ " $REQUIRED_APPS " =~ " $app " ]]`
+- Applied to all three regex checks: PROGRESSING_OK, REQUIRED_APPS (2x)
 
-**Solution Options**:
-1. Increase wait timeout (currently 10 minutes)
-2. Add per-app readiness checks
-3. Wait for ALL critical apps to be Healthy before running tests
-4. Add retry logic to test execution
+**Status**: Testing in progress - waiting for CI run to validate fix
 
 #### 2. Test Report Shows APP_FAILED=0 But Tests Actually Failed
 **Problem**: Parse step shows `APP_FAILED=0` but tests failed
@@ -108,6 +99,8 @@ FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app
 3. `ffb521f` - **KEY FIX**: Move operator Applications to base/ directory
 4. `f2aad7c` - Incorrect URL "fix" (reverted in next commit)
 5. `107caaa` - Revert to correct operator overlay URLs
+6. `1ee8816` - Add operators to REQUIRED_APPS list + create TODO_CI.md
+7. `dcde1f3` - **FIX**: Fix regex matching bug in wait loop (word boundaries)
 
 ## CI Run History
 
@@ -116,6 +109,8 @@ FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app
 | 19366497819 | Failed | 17/17 ✅ | Degraded | Apps created but operators crashing |
 | 19367233425 | Failed | 17/17 ✅ | Failed | Broke URLs - all apps failed |
 | 19367994555 | Failed | 17/17 ✅ | **Healthy** ✅ | Timing issues only |
+| 19368622510 | Failed | 17/17 ✅ | **Healthy** ✅ | Regex bug: "platform" matched "kagenti-platform-operator" |
+| TBD | Running | ? | ? | Fixed regex matching with word boundaries |
 
 ## Next Steps
 
