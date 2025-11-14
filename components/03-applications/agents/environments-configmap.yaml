@@ -1,0 +1,16 @@
+# Environments ConfigMap for kagenti UI
+# Required for agent build environment configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: environments
+  namespace: team1
+  labels:
+    app.kubernetes.io/name: environments
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: agents
+data:
+  # Container registry configuration for agent builds
+  CONTAINER_REGISTRY: "localhost:5000"
+  # Build environment
+  ENVIRONMENT: "kind-local"
