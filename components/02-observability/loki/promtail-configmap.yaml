@@ -110,6 +110,18 @@ data:
             action: drop
             regex: loki
 
+          # Drop kube-system namespace logs to reduce file count
+          - source_labels:
+              - __meta_kubernetes_namespace
+            action: drop
+            regex: kube-system
+
+          # Drop metallb-system namespace logs to reduce file count
+          - source_labels:
+              - __meta_kubernetes_namespace
+            action: drop
+            regex: metallb-system
+
           # Set log path to container logs
           - source_labels:
               - __meta_kubernetes_pod_uid
