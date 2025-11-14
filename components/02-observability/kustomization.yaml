@@ -8,6 +8,9 @@ resources:
   # Tempo (distributed tracing backend - infrastructure traces)
   - tempo/
 
+  # Loki (log aggregation backend)
+  - loki/
+
   # Phoenix (LLM observability - agent/LLM traces)
   - phoenix/
 

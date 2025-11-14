@@ -1,0 +1,48 @@
+# Loki Log Aggregation Component
+# Distributed logging backend from Grafana Labs
+#
+# Purpose: Log aggregation for Kubernetes and application logs
+# Companion to Tempo (traces) and OTEL Metrics
+#
+# Advantages over ELK stack:
+# - Simpler deployment (no separate indexing service)
+# - Lower resource footprint
+# - Native Grafana integration
+# - LogQL query language (similar to PromQL)
+# - Cost-effective object storage support
+#
+# Deployment: Loki monolithic mode (for dev/staging)
+# Ref: https://grafana.com/docs/loki/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+resources:
+  # Loki backend
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+
+  # Promtail log collector
+  - promtail-rbac.yaml
+  - promtail-configmap.yaml
+  - promtail-daemonset.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: observability
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/observability/loki/kustomization.yaml
+  description: |
+    Log aggregation with Loki.
+    Handles: Kubernetes logs, application logs, structured logging.
+    Tempo handles: Distributed traces.
+    OTEL Metrics handles: Metrics and monitoring.

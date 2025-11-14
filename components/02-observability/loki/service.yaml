@@ -1,0 +1,57 @@
+# Loki Service
+# Exposes HTTP API, gRPC, and memberlist ports
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: observability
+  labels:
+    app: loki
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/component: logging
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for stateful workloads
+  ports:
+  # HTTP API (query, push, metrics)
+  - port: 3100
+    targetPort: 3100
+    protocol: TCP
+    name: http
+
+  # gRPC API
+  - port: 9096
+    targetPort: 9096
+    protocol: TCP
+    name: grpc
+
+  # Memberlist (gossip protocol for distributed mode)
+  - port: 7946
+    targetPort: 7946
+    protocol: TCP
+    name: memberlist
+
+  selector:
+    app: loki
+---
+# Loki Query Frontend Service
+# Used for querying logs (non-headless)
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-query-frontend
+  namespace: observability
+  labels:
+    app: loki
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/component: logging
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3100
+    targetPort: 3100
+    protocol: TCP
+    name: http
+  selector:
+    app: loki

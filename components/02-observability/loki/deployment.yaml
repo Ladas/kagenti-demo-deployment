@@ -1,0 +1,104 @@
+# Loki Monolithic Deployment
+# Single deployment with all Loki components
+# For production, consider microservices mode
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: observability
+  labels:
+    app: loki
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/component: logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+        app.kubernetes.io/name: loki
+        sidecar.istio.io/inject: "false"  # Don't inject Istio sidecar into logging backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+
+      containers:
+      - name: loki
+        image: grafana/loki:3.0.0
+        imagePullPolicy: IfNotPresent
+        args:
+          - -config.file=/etc/loki/loki.yaml
+          - -target=all
+        ports:
+        # HTTP API
+        - name: http
+          containerPort: 3100
+          protocol: TCP
+
+        # gRPC API
+        - name: grpc
+          containerPort: 9096
+          protocol: TCP
+
+        # Memberlist (distributed mode)
+        - name: memberlist
+          containerPort: 7946
+          protocol: TCP
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 5
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+
+        volumeMounts:
+        - name: config
+          mountPath: /etc/loki
+          readOnly: true
+        - name: storage
+          mountPath: /loki
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+
+      volumes:
+      - name: config
+        configMap:
+          name: loki-config
+      - name: storage
+        emptyDir: {}
