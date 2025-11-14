@@ -1,0 +1,12 @@
+# DestinationRule for Grafana
+# Since Grafana has no Istio sidecar, clients must use plain HTTP (not mTLS)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: grafana-disable-mtls
+  namespace: observability
+spec:
+  host: grafana.observability.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE  # Gateway must use plain HTTP, Grafana has no sidecar
