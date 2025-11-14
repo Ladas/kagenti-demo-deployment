@@ -1,8 +1,8 @@
 # Strict mTLS for observability namespace
 # Ensures all service-to-service communication is encrypted
 #
-# Note: Services accessed via OAuth2-Proxy need PERMISSIVE mTLS on their
-# application ports because OAuth2-Proxy connects using plain HTTP
+# Note: Services accessed via Gateway or by Grafana (which has no sidecar) need
+# PERMISSIVE mTLS to accept both mTLS (from mesh) and plaintext (from Grafana)
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
@@ -12,7 +12,63 @@ spec:
   mtls:
     mode: STRICT
 ---
-# Allow OAuth2-Proxy to connect to Phoenix without mTLS on port 6006
+# Grafana: PERMISSIVE mTLS (no sidecar, accessed via Gateway)
+# Allows Gateway (with mTLS) and Korrel8r to connect to Grafana
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: grafana-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  mtls:
+    mode: PERMISSIVE
+---
+# Loki: PERMISSIVE mTLS on query ports
+# Allows Grafana (no sidecar) to query logs while maintaining mTLS for write path
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: loki-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: loki
+  mtls:
+    mode: PERMISSIVE
+---
+# Tempo: PERMISSIVE mTLS on query ports
+# Allows Grafana (no sidecar) and Korrel8r to query traces
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: tempo-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: tempo
+  mtls:
+    mode: PERMISSIVE
+---
+# OTEL Collector: PERMISSIVE mTLS on metrics port
+# Allows Grafana (no sidecar) to scrape Prometheus metrics
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: otel-collector-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  mtls:
+    mode: PERMISSIVE
+---
+# Phoenix: PERMISSIVE mTLS (for external access via Gateway)
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
