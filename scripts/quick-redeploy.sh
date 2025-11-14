@@ -99,10 +99,15 @@ if [ -n "${GITHUB_ACTIONS:-}" ]; then
 fi
 echo ""
 
-# Pre-flight: Ask about agent images
-AGENT_IMAGE_MODE="skip"
+# Pre-flight: Ask about agent images (or use CI_MODE env var)
+AGENT_IMAGE_MODE="${AGENT_IMAGE_MODE:-skip}"
 AGENT_SOURCE_DIR="${AGENT_SOURCE_DIR:-$REPO_ROOT/../agent-examples-local}"
-if [ -d "$AGENT_SOURCE_DIR" ]; then
+
+# Skip prompts in CI mode
+if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo -e "${YELLOW}→ CI mode detected - skipping agent image loading${NC}"
+    AGENT_IMAGE_MODE="skip"
+elif [ -d "$AGENT_SOURCE_DIR" ]; then
     echo -e "${BLUE}Agent source found at: $AGENT_SOURCE_DIR${NC}"
     echo ""
     echo "Build agent images? (y/n/skip) [default: skip]"
@@ -135,31 +140,38 @@ else
 fi
 echo ""
 
-# Pre-flight: Ask about operator images
-OPERATOR_IMAGE_MODE="load"
-echo "Load operator images? (y/n/skip) [default: y]"
-echo "  y     - Load pre-built images from Docker (30 seconds)"
-echo "  n     - Rebuild from source (2-5 minutes)"
-echo "  skip  - Skip operator image loading (operators won't start)"
-echo ""
-echo -n "Your choice: "
-read -r -t 15 operator_response || operator_response="y"
-echo ""
+# Pre-flight: Ask about operator images (or use CI_MODE env var)
+OPERATOR_IMAGE_MODE="${OPERATOR_IMAGE_MODE:-load}"
 
-case "$operator_response" in
-    n|N)
-        OPERATOR_IMAGE_MODE="rebuild"
-        echo -e "${YELLOW}→ Will rebuild operator images from source${NC}"
-        ;;
-    skip|SKIP|s|S)
-        OPERATOR_IMAGE_MODE="skip"
-        echo -e "${YELLOW}→ Will skip operator image loading${NC}"
-        ;;
-    *)
-        OPERATOR_IMAGE_MODE="load"
-        echo -e "${GREEN}→ Will load pre-built operator images${NC}"
-        ;;
-esac
+# Skip prompts in CI mode
+if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo -e "${YELLOW}→ CI mode detected - skipping operator image loading${NC}"
+    OPERATOR_IMAGE_MODE="skip"
+else
+    echo "Load operator images? (y/n/skip) [default: y]"
+    echo "  y     - Load pre-built images from Docker (30 seconds)"
+    echo "  n     - Rebuild from source (2-5 minutes)"
+    echo "  skip  - Skip operator image loading (operators won't start)"
+    echo ""
+    echo -n "Your choice: "
+    read -r -t 15 operator_response || operator_response="y"
+    echo ""
+
+    case "$operator_response" in
+        n|N)
+            OPERATOR_IMAGE_MODE="rebuild"
+            echo -e "${YELLOW}→ Will rebuild operator images from source${NC}"
+            ;;
+        skip|SKIP|s|S)
+            OPERATOR_IMAGE_MODE="skip"
+            echo -e "${YELLOW}→ Will skip operator image loading${NC}"
+            ;;
+        *)
+            OPERATOR_IMAGE_MODE="load"
+            echo -e "${GREEN}→ Will load pre-built operator images${NC}"
+            ;;
+    esac
+fi
 echo ""
 
 # Step 1: Cleanup existing cluster
