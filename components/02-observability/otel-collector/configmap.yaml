@@ -72,15 +72,45 @@ data:
         limit_mib: 512
         spike_limit_mib: 128
 
-      # Attributes processor for enrichment
+      # Resource detection processor - Automatically detect Kubernetes metadata
+      resourcedetection:
+        detectors: [env, system, docker, kubernetes]
+        timeout: 5s
+        override: false
+
+      # Attributes processor for enrichment and baggage propagation
       attributes:
         actions:
+          # Environment and cluster metadata
           - key: deployment.environment
             value: ${ENVIRONMENT}
             action: upsert
           - key: cluster.name
             value: ${CLUSTER_NAME}
             action: upsert
+          # Baggage propagation - Copy baggage to span attributes for queries
+          - key: request.id
+            action: insert
+            from_context: request.id
+          - key: user.id
+            action: insert
+            from_context: user.id
+          - key: tenant.id
+            action: insert
+            from_context: tenant.id
+          - key: task.type
+            action: insert
+            from_context: task.type
+
+      # Transform processor for optimization
+      transform:
+        trace_statements:
+          - context: resource
+            statements:
+              # Remove verbose attributes to reduce span size
+              - delete_key(attributes, "process.command_line")
+              # Ensure cluster name is set
+              - set(attributes["k8s.cluster.name"], "${CLUSTER_NAME}") where attributes["k8s.cluster.name"] == nil
 
       # Routing processor - Exclusive routing for privacy
       #
@@ -177,7 +207,7 @@ data:
         # Traces pipeline - Sends traces AND generates metrics via spanmetrics connector
         traces:
           receivers: [otlp, zipkin, jaeger]
-          processors: [memory_limiter, attributes, batch, routing]
+          processors: [memory_limiter, resourcedetection, attributes, transform, batch, routing]
           exporters: [otlp/phoenix, otlp/tempo, spanmetrics]  # spanmetrics generates metrics
 
         # Metrics pipeline - Collector metrics + span-derived metrics
