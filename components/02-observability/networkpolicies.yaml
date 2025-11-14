@@ -50,6 +50,15 @@ spec:
     - protocol: TCP
       port: 3200  # UI
 
+  # Allow from Grafana (same namespace, datasource queries)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 3200  # Query API
+
   egress:
   # Allow DNS
   - to:
@@ -187,6 +196,15 @@ spec:
       podSelector:
         matchLabels:
           app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8888  # Metrics
+
+  # Allow from Grafana (metrics scraping for datasource)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
     ports:
     - protocol: TCP
       port: 8888  # Metrics
