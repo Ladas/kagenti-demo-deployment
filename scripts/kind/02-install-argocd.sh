@@ -70,15 +70,18 @@ if ! command -v argocd &> /dev/null; then
 fi
 
 # Login to ArgoCD CLI using port-forward (LoadBalancer IP doesn't work from host)
+# This is optional - continue even if login fails (e.g., in CI)
 echo "🔐 Logging in to ArgoCD CLI via port-forward..."
 export ARGOCD_PASSWORD="${ARGOCD_PASSWORD}"
-argocd login --port-forward --port-forward-namespace argocd \
+if argocd login --port-forward --port-forward-namespace argocd \
   --username admin \
   --password "${ARGOCD_PASSWORD}" \
   --insecure \
-  --grpc-web
-
-echo "✅ ArgoCD CLI logged in"
+  --grpc-web 2>/dev/null; then
+  echo "✅ ArgoCD CLI logged in"
+else
+  echo "⚠️  ArgoCD CLI login skipped (optional for CI)"
+fi
 echo ""
 
 # Increase gRPC message size limit for large manifests (local sync)
