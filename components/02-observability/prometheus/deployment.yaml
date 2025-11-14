@@ -33,6 +33,9 @@ spec:
         app: prometheus
       annotations:
         sidecar.istio.io/inject: "true"
+        # Exclude K8s API server (443) from Istio sidecar interception
+        # Prometheus needs direct access for service discovery
+        traffic.sidecar.istio.io/excludeOutboundPorts: "443"
     spec:
       serviceAccountName: prometheus
       containers:
