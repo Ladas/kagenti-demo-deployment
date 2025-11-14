@@ -26,6 +26,29 @@ data:
         access: proxy
         url: http://otel-collector.kagenti-system:8889
         editable: true
+      - name: Tempo
+        type: tempo
+        access: proxy
+        url: http://tempo.observability.svc:3200
+        editable: true
+        jsonData:
+          httpMethod: GET
+          tracesToLogsV2:
+            # Future: Enable correlation with Loki logs
+            datasourceUid: 'loki'
+          tracesToMetrics:
+            # Enable correlation with Prometheus metrics
+            datasourceUid: 'prometheus'
+          serviceMap:
+            # Enable service graph visualization
+            datasourceUid: 'prometheus'
+          nodeGraph:
+            enabled: true
+          search:
+            hide: false
+          lokiSearch:
+            # Future: Enable Loki trace discovery
+            datasourceUid: 'loki'
 ---
 apiVersion: v1
 kind: ConfigMap

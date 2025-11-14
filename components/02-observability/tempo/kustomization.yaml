@@ -22,9 +22,8 @@ resources:
   - deployment.yaml
   - service.yaml
   - configmap.yaml
-  - tempo-query.yaml
-  # HTTPRoute removed - Tempo is now accessed via OAuth2 Proxy
-  # See: components/infrastructure/oauth2-proxy/tempo-proxy.yaml
+  # Tempo is accessed via Grafana Explore - no dedicated UI endpoint needed
+  # Grafana connects directly to Tempo API (tempo.observability.svc:3200)
 
 labels:
   - pairs:
