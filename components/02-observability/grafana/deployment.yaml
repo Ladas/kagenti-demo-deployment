@@ -15,17 +15,15 @@ data:
   datasources.yaml: |
     apiVersion: 1
     datasources:
-      - name: Prometheus
+      - name: OTEL Metrics
         type: prometheus
         access: proxy
-        url: http://prometheus.istio-system:9090
+        url: http://otel-collector.observability.svc:8888
         isDefault: true
         editable: true
-      - name: OTEL
-        type: prometheus
-        access: proxy
-        url: http://otel-collector.kagenti-system:8889
-        editable: true
+        jsonData:
+          httpMethod: POST
+          timeInterval: 30s
       - name: Tempo
         type: tempo
         access: proxy
@@ -33,22 +31,17 @@ data:
         editable: true
         jsonData:
           httpMethod: GET
-          tracesToLogsV2:
-            # Future: Enable correlation with Loki logs
-            datasourceUid: 'loki'
           tracesToMetrics:
-            # Enable correlation with Prometheus metrics
-            datasourceUid: 'prometheus'
+            datasourceUid: 'otel-metrics'
+            queries:
+              - name: 'Sample query'
+                query: 'sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m]))'
           serviceMap:
-            # Enable service graph visualization
-            datasourceUid: 'prometheus'
+            datasourceUid: 'otel-metrics'
           nodeGraph:
             enabled: true
           search:
             hide: false
-          lokiSearch:
-            # Future: Enable Loki trace discovery
-            datasourceUid: 'loki'
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -85,6 +78,8 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       containers:
       - name: grafana
