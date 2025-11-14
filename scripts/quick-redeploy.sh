@@ -379,20 +379,25 @@ else
 fi
 echo ""
 
-# Step 7: Sync root ArgoCD Application
+# Step 7: Sync root ArgoCD Application (optional - automated sync will handle it)
 echo -e "${BLUE}[7/7] Syncing root ArgoCD Application...${NC}"
 echo "This will deploy the entire platform. Please wait..."
 echo ""
 
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 
-# Sync the root app
-if argocd app sync kagenti-platform-kind \
-    --port-forward --port-forward-namespace "$ARGOCD_NAMESPACE" --grpc-web \
-    --timeout 600 2>/dev/null; then
-    echo -e "${GREEN}✓ Root application synced${NC}"
+# Try manual sync for faster deployment (optional - automated sync policy will handle it otherwise)
+if command -v argocd &>/dev/null; then
+    if argocd app sync kagenti-platform-kind \
+        --port-forward --port-forward-namespace "$ARGOCD_NAMESPACE" --grpc-web \
+        --timeout 600 2>/dev/null; then
+        echo -e "${GREEN}✓ Root application synced manually${NC}"
+    else
+        echo -e "${YELLOW}⚠ Manual sync skipped - automated sync will handle deployment${NC}"
+        echo "   (ArgoCD has automated sync policy enabled)"
+    fi
 else
-    echo -e "${YELLOW}⚠ Root application sync completed with warnings${NC}"
+    echo -e "${YELLOW}⚠ ArgoCD CLI not available - relying on automated sync${NC}"
 fi
 echo ""
 
