@@ -100,11 +100,74 @@ jobs:
           # CI mode skips interactive prompts automatically
           ./scripts/quick-redeploy.sh
 
-      - name: Wait for applications to stabilize
+      - name: Wait for ArgoCD applications to sync and become healthy
         run: |
-          echo "Waiting for applications to stabilize (15 minutes)..."
-          echo "ArgoCD's automated sync policy will deploy all applications."
-          sleep 900
+          echo "Waiting for ArgoCD applications to sync and become healthy..."
+          echo "Monitoring ArgoCD application status via kubectl..."
+
+          TIMEOUT=1800  # 30 minutes maximum
+          INTERVAL=10   # Check every 10 seconds
+          ELAPSED=0
+
+          # List of critical applications to monitor (excluding agents and observability as per test params)
+          CRITICAL_APPS="infrastructure gateway-api cert-manager istio-base istiod istio-config keycloak kagenti-operator kagenti-platform-operator platform"
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            echo ""
+            echo "=== Check at ${ELAPSED}s / ${TIMEOUT}s ==="
+
+            # Get all applications
+            ALL_APPS=$(kubectl get applications -n argocd -o json | jq -r '.items[].metadata.name')
+
+            # Count apps by status
+            TOTAL=0
+            SYNCED=0
+            HEALTHY=0
+
+            for app in $ALL_APPS; do
+              # Skip agents and observability (excluded in test params)
+              if [[ "$app" == *"agent"* ]] || [[ "$app" == "observability" ]]; then
+                continue
+              fi
+
+              TOTAL=$((TOTAL + 1))
+
+              # Get app status
+              APP_JSON=$(kubectl get application "$app" -n argocd -o json)
+              SYNC_STATUS=$(echo "$APP_JSON" | jq -r '.status.sync.status // "Unknown"')
+              HEALTH_STATUS=$(echo "$APP_JSON" | jq -r '.status.health.status // "Unknown"')
+
+              echo "  $app: sync=$SYNC_STATUS, health=$HEALTH_STATUS"
+
+              if [ "$SYNC_STATUS" = "Synced" ]; then
+                SYNCED=$((SYNCED + 1))
+              fi
+
+              if [ "$HEALTH_STATUS" = "Healthy" ]; then
+                HEALTHY=$((HEALTHY + 1))
+              fi
+            done
+
+            echo ""
+            echo "Summary: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced"
+
+            # Check if all apps are healthy and synced
+            if [ $TOTAL -gt 0 ] && [ $HEALTHY -eq $TOTAL ] && [ $SYNCED -eq $TOTAL ]; then
+              echo ""
+              echo "✅ All applications are healthy and synced!"
+              echo "Total time waited: ${ELAPSED}s"
+              exit 0
+            fi
+
+            # Wait before next check
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo ""
+          echo "⚠️  Timeout reached after ${TIMEOUT}s"
+          echo "Final status: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced"
+          echo "Proceeding with tests anyway..."
 
       - name: Set test parameters
         id: test_params
