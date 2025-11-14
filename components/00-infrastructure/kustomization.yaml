@@ -27,7 +27,8 @@ resources:
   - keycloak/
 
   # SPIRE (Workload Identity)
-  - spire/
+  # DISABLED: SPIRE failing - temporarily disabled
+  # - spire/
 
 # NOTE: Istio base/istiod deployed via Helm (argocd/applications/helm/istio-*.yaml)
 # NOTE: Container Registry deployed as separate Application (argocd/applications/base/container-registry.yaml)

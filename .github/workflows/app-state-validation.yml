@@ -1,4 +1,4 @@
-name: ArgoCD App State Validation
+name: Platform Validation & E2E Tests
 
 on:
   push:
@@ -124,7 +124,7 @@ jobs:
       - name: Run app state validation
         id: validation
         run: |
-          PYTEST_ARGS="-v --html=report.html --self-contained-html --json-report --json-report-file=report.json"
+          PYTEST_ARGS="-v --html=app-state-report.html --self-contained-html --json-report --json-report-file=app-state-report.json"
 
           if [[ -n "${{ steps.test_params.outputs.exclude_apps }}" ]]; then
             PYTEST_ARGS="$PYTEST_ARGS --exclude-app=${{ steps.test_params.outputs.exclude_apps }}"
@@ -136,33 +136,75 @@ jobs:
 
           pytest tests/validation/test_app_state.py $PYTEST_ARGS
 
+      - name: Run E2E platform tests
+        id: e2e_tests
+        continue-on-error: true
+        run: |
+          echo "Running E2E platform tests..."
+          pytest tests/e2e/test_platform_e2e.py \
+            -v \
+            --tb=short \
+            --html=e2e-report.html \
+            --self-contained-html \
+            --json-report \
+            --json-report-file=e2e-report.json \
+            --continue-on-collection-errors
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: validation-results
           path: |
-            report.html
-            report.json
+            app-state-report.html
+            app-state-report.json
+            e2e-report.html
+            e2e-report.json
           retention-days: 30
 
       - name: Parse test results
         if: always()
         id: parse_results
         run: |
-          if [[ -f report.json ]]; then
-            TOTAL=$(jq -r '.summary.total // 0' report.json)
-            PASSED=$(jq -r '.summary.passed // 0' report.json)
-            FAILED=$(jq -r '.summary.failed // 0' report.json)
-
-            echo "total=${TOTAL}" >> $GITHUB_OUTPUT
-            echo "passed=${PASSED}" >> $GITHUB_OUTPUT
-            echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          # Parse app state validation results
+          if [[ -f app-state-report.json ]]; then
+            APP_TOTAL=$(jq -r '.summary.total // 0' app-state-report.json)
+            APP_PASSED=$(jq -r '.summary.passed // 0' app-state-report.json)
+            APP_FAILED=$(jq -r '.summary.failed // 0' app-state-report.json)
           else
-            echo "total=0" >> $GITHUB_OUTPUT
-            echo "passed=0" >> $GITHUB_OUTPUT
-            echo "failed=0" >> $GITHUB_OUTPUT
+            APP_TOTAL=0
+            APP_PASSED=0
+            APP_FAILED=0
           fi
+
+          # Parse E2E test results
+          if [[ -f e2e-report.json ]]; then
+            E2E_TOTAL=$(jq -r '.summary.total // 0' e2e-report.json)
+            E2E_PASSED=$(jq -r '.summary.passed // 0' e2e-report.json)
+            E2E_FAILED=$(jq -r '.summary.failed // 0' e2e-report.json)
+            E2E_XFAILED=$(jq -r '.summary.xfailed // 0' e2e-report.json)
+          else
+            E2E_TOTAL=0
+            E2E_PASSED=0
+            E2E_FAILED=0
+            E2E_XFAILED=0
+          fi
+
+          # Combined totals
+          TOTAL=$((APP_TOTAL + E2E_TOTAL))
+          PASSED=$((APP_PASSED + E2E_PASSED))
+          FAILED=$((APP_FAILED + E2E_FAILED))
+
+          echo "total=${TOTAL}" >> $GITHUB_OUTPUT
+          echo "passed=${PASSED}" >> $GITHUB_OUTPUT
+          echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          echo "app_total=${APP_TOTAL}" >> $GITHUB_OUTPUT
+          echo "app_passed=${APP_PASSED}" >> $GITHUB_OUTPUT
+          echo "app_failed=${APP_FAILED}" >> $GITHUB_OUTPUT
+          echo "e2e_total=${E2E_TOTAL}" >> $GITHUB_OUTPUT
+          echo "e2e_passed=${E2E_PASSED}" >> $GITHUB_OUTPUT
+          echo "e2e_failed=${E2E_FAILED}" >> $GITHUB_OUTPUT
+          echo "e2e_xfailed=${E2E_XFAILED}" >> $GITHUB_OUTPUT
 
       - name: Comment on PR
         if: github.event_name == 'pull_request' && always()
@@ -173,12 +215,32 @@ jobs:
             const passed = '${{ steps.parse_results.outputs.passed }}';
             const failed = '${{ steps.parse_results.outputs.failed }}';
 
+            const appTotal = '${{ steps.parse_results.outputs.app_total }}';
+            const appPassed = '${{ steps.parse_results.outputs.app_passed }}';
+            const appFailed = '${{ steps.parse_results.outputs.app_failed }}';
+
+            const e2eTotal = '${{ steps.parse_results.outputs.e2e_total }}';
+            const e2ePassed = '${{ steps.parse_results.outputs.e2e_passed }}';
+            const e2eFailed = '${{ steps.parse_results.outputs.e2e_failed }}';
+            const e2eXFailed = '${{ steps.parse_results.outputs.e2e_xfailed }}';
+
             const status = failed === '0' ? '✅ PASSED' : '❌ FAILED';
             const color = failed === '0' ? '🟢' : '🔴';
 
-            const comment = `## ${color} ArgoCD App State Validation ${status}
+            const comment = `## ${color} Platform Validation & E2E Tests ${status}
 
-            **Test Results:**
+            ### 📋 App State Validation
+            - Total: ${appTotal}
+            - Passed: ✅ ${appPassed}
+            - Failed: ❌ ${appFailed}
+
+            ### 🧪 E2E Platform Tests
+            - Total: ${e2eTotal}
+            - Passed: ✅ ${e2ePassed}
+            - Failed: ❌ ${e2eFailed}
+            - Expected Failures: ⚠️ ${e2eXFailed}
+
+            ### 📊 Combined Results
             - Total Tests: ${total}
             - Passed: ✅ ${passed}
             - Failed: ❌ ${failed}
@@ -200,13 +262,30 @@ jobs:
       - name: Generate summary
         if: always()
         run: |
-          echo "## ArgoCD App State Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Platform Validation & E2E Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 📋 App State Validation" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ${{ steps.validation.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total:** ${{ steps.parse_results.outputs.app_total }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Passed:** ${{ steps.parse_results.outputs.app_passed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed:** ${{ steps.parse_results.outputs.app_failed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 🧪 E2E Platform Tests" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.e2e_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total:** ${{ steps.parse_results.outputs.e2e_total }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Passed:** ${{ steps.parse_results.outputs.e2e_passed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed:** ${{ steps.parse_results.outputs.e2e_failed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Expected Failures:** ${{ steps.parse_results.outputs.e2e_xfailed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 📊 Combined Results" >> $GITHUB_STEP_SUMMARY
           echo "**Total Tests:** ${{ steps.parse_results.outputs.total }}" >> $GITHUB_STEP_SUMMARY
           echo "**Passed:** ${{ steps.parse_results.outputs.passed }}" >> $GITHUB_STEP_SUMMARY
           echo "**Failed:** ${{ steps.parse_results.outputs.failed }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
           echo "**Cluster Mode:** ${{ steps.cluster_mode.outputs.mode }}" >> $GITHUB_STEP_SUMMARY
           echo "**Excluded Apps:** ${{ steps.test_params.outputs.exclude_apps || 'None' }}" >> $GITHUB_STEP_SUMMARY
           echo "**Only Critical:** ${{ steps.test_params.outputs.only_critical }}" >> $GITHUB_STEP_SUMMARY

@@ -9,7 +9,8 @@ resources:
   - gateway/
 
   # SPIRE (Workload identity - platform-specific HTTPRoutes)
-  - spire/
+  # DISABLED: SPIRE failing - temporarily disabled
+  # - spire/
 
   # Kagenti UI
   - kagenti-ui/

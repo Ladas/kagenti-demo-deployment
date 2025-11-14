@@ -7,8 +7,9 @@ resources:
   - istiod.yaml
 
   # Wave 5 - Infrastructure Services (Helm-based)
-  - spire-crds.yaml
-  - spire.yaml
+  # DISABLED: SPIRE apps failing - temporarily disabled
+  # - spire-crds.yaml
+  # - spire.yaml
   - container-registry.yaml
   - kiali.yaml
 

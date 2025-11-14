@@ -1,22 +1,10 @@
 name: Agent Integration Tests
 
+# DISABLED: Agent tests temporarily disabled - will be re-enabled when agent images are available
+# See: Platform Validation & E2E Tests workflow for current test coverage
+
 on:
-  push:
-    branches:
-      - main
-      - argocd-gitops-dev
-    paths:
-      - 'components/03-applications/agents/**'
-      - 'tests/integration/test_agents.py'
-      - '.github/workflows/agent-integration-tests.yml'
-  pull_request:
-    branches:
-      - main
-      - argocd-gitops-dev
-    paths:
-      - 'components/03-applications/agents/**'
-      - 'tests/integration/test_agents.py'
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
     inputs:
       cluster_mode:
         description: 'Cluster mode (kind/existing)'
