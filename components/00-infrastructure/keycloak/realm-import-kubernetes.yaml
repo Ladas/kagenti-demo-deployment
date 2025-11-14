@@ -32,6 +32,16 @@ spec:
     attributes:
       frontendUrl: "https://keycloak.localtest.me:9443"
 
+    # Realm roles for RBAC
+    roles:
+      realm:
+        - name: admin
+          description: "Admin role for Grafana"
+        - name: editor
+          description: "Editor role for Grafana"
+        - name: viewer
+          description: "Viewer role for Grafana"
+
     # Platform services clients
     clients:
       - clientId: grafana
@@ -49,6 +59,18 @@ spec:
         directAccessGrantsEnabled: false
         serviceAccountsEnabled: false
         authorizationServicesEnabled: false
+        protocolMappers:
+          - name: "realm roles"
+            protocol: "openid-connect"
+            protocolMapper: "oidc-usermodel-realm-role-mapper"
+            consentRequired: false
+            config:
+              "multivalued": "true"
+              "userinfo.token.claim": "true"
+              "id.token.claim": "true"
+              "access.token.claim": "true"
+              "claim.name": "roles"
+              "jsonType.label": "String"
 
       - clientId: k8s-dashboard
         name: "Kubernetes Dashboard"
