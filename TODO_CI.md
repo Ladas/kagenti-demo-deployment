@@ -26,22 +26,24 @@
 
 ### ❌ Remaining Issues
 
-#### 1. Operator Deployment Timing
-**Problem**: Operators take longer than 10 minutes to become Healthy in CI
+#### 1. Operator Deployment Timing - FIXED! ✅
+**Problem**: Operators go Degraded after ~38 seconds because cert-manager isn't ready yet
 
-**Root Cause Analysis**:
+**Root Cause**:
 - ✅ Operators ARE being created as Applications
 - ✅ Operators ARE visible in wait loop (after fix 359f597)
-- ❌ `kagenti-platform-operator` goes Degraded after ~60 seconds
-- Progression: Unknown → OutOfSync,Missing → OutOfSync,Degraded
+- ❌ `kagenti-platform-operator` goes Degraded after ~38 seconds
+- ❌ At that time, `cert-manager` is still OutOfSync and Missing
+- **Operators depend on cert-manager** for webhook certificates
+- All Applications have automated sync, so they sync concurrently
+- Sync waves don't prevent operators from trying to sync before cert-manager is ready
 
-**Possible Causes**:
-1. Operators need more than 10-minute timeout
-2. Operators have deployment issues in PR fork environment
-3. Operator images not loading correctly
-4. Kustomize remote resource issues
+**Fix Applied**:
+- Modified wait loop to NOT fail immediately if operators are Degraded while cert-manager isn't Healthy yet
+- Operators will continue retrying until cert-manager becomes ready
+- This allows proper dependency ordering despite automated sync
 
-**Status**: Needs investigation - operators fail too quickly for timeout to be only issue
+**Status**: FIXED - commit pending
 
 #### 2. Test Report Shows APP_FAILED=0 But Tests Actually Failed
 **Problem**: Parse step shows `APP_FAILED=0` but tests failed

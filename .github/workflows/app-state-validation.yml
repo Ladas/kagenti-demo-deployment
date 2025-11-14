@@ -175,10 +175,20 @@ jobs:
             echo "Summary: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced, $PROGRESSING progressing, $DEGRADED degraded"
 
             # FAIL immediately if a REQUIRED app is Degraded
+            # EXCEPT: Don't fail operators if cert-manager isn't Healthy yet (dependency issue)
             if [ $DEGRADED -gt 0 ]; then
+              # Check if cert-manager is healthy
+              CERT_MANAGER_HEALTH=$(kubectl get application cert-manager -n argocd -o json 2>/dev/null | jq -r '.status.health.status // "Unknown"')
+
               for app in $DEGRADED_APPS; do
                 # Use word boundaries to avoid substring matches (e.g., "platform" in "kagenti-platform-operator")
                 if [[ " $REQUIRED_APPS " =~ " $app " ]]; then
+                  # Special case: Operators can be temporarily Degraded if cert-manager isn't ready yet
+                  if [[ "$app" == *"-operator" ]] && [ "$CERT_MANAGER_HEALTH" != "Healthy" ]; then
+                    echo "    ⚠️  Operator $app is Degraded, but cert-manager not ready yet (${CERT_MANAGER_HEALTH}) - will retry"
+                    continue
+                  fi
+
                   echo ""
                   echo "❌ FAIL: Required application '$app' is Degraded"
                   echo "Cannot proceed with degraded required applications"
