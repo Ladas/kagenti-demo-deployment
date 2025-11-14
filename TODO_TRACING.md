@@ -174,19 +174,26 @@ OpenInference is a set of OpenTelemetry conventions specifically for AI/LLM appl
 
 ### ❌ Missing / Needs Implementation
 
-1. **Grafana Tempo** - Not deployed yet
-2. **Loki** - Not deployed yet (log aggregation)
-3. **Korrel8r** - Not deployed yet (signal correlation)
-4. **Alertmanager** - Not deployed yet (alert aggregation and routing)
-5. **OTEL Operator** - For auto-instrumentation
-5. **Baggage propagation** - Not configured in OTEL collector
-6. **Resource detection** - Not configured in OTEL collector
-7. **OTEL Logs export** - Not configured (need Loki backend)
-8. **Span metrics generation** - For RED metrics from traces
-9. **Service graph generation** - For dependency visualization
-10. **Sampling strategy** - For production scale
-11. **Trace correlation across ALL services** - UI, MCP Gateway, Agents, LLMs
-12. **Log correlation** - request_id in all logs for trace→log linking
+**Infrastructure Components**:
+1. ~~**Grafana Tempo**~~ - ✅ **DEPLOYED** (distributed tracing backend)
+2. ~~**Loki**~~ - ✅ **DEPLOYED** (log aggregation with Promtail)
+3. ~~**Prometheus**~~ - ✅ **DEPLOYED** (metrics storage and HTTP API)
+4. **Korrel8r** - ⚠️ **DISABLED** - CrashLoopBackOff (see Known Issues section)
+5. **Alertmanager** - ❌ Not deployed yet (documented in Phase 4.5, blocked by Korrel8r)
+
+**OTEL Collector Configuration**:
+6. **OTEL Operator** - ❌ Not deployed (for auto-instrumentation)
+7. **Baggage propagation** - ❌ Not configured in OTEL collector (Phase 7)
+8. **Resource detection** - ❌ Not configured in OTEL collector
+9. **OTEL Logs export** - ⚠️ **PARTIAL** - Loki deployed but OTEL→Loki pipeline not configured
+10. **Span metrics generation** - ❌ Not configured (for RED metrics from traces)
+11. **Service graph generation** - ❌ Not configured (for dependency visualization)
+
+**Application Instrumentation**:
+12. **Trace correlation across ALL services** - ❌ Not implemented (UI, MCP Gateway, Agents, LLMs)
+13. **Log correlation** - ❌ Not implemented (request_id in all logs for trace→log linking)
+14. **GenAI semantic conventions** - ❌ Not implemented in agents (Phase 8 - MANDATORY)
+15. **Sampling strategy** - ❌ Not configured (for production scale)
 
 ## Implementation Plan
 
@@ -254,17 +261,14 @@ processors:
 ```
 
 **Tasks**:
-- [ ] Add `resourcedetection` processor to OTEL collector ConfigMap
-- [ ] Add `attributes` processor for baggage handling
-- [ ] Add `transform` processor for optimization
-- [ ] Update pipeline to include new processors:
-  ```yaml
-  pipelines:
-    traces/phoenix:
-      receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, attributes, transform, batch]
-      exporters: [otlp/phoenix, otlp/tempo]  # Add Tempo when ready
-  ```
+- [x] Add `resourcedetection` processor to OTEL collector ConfigMap - ✅ **COMPLETED 2025-11-14**
+- [x] Add `attributes` processor for baggage handling - ✅ **COMPLETED 2025-11-14**
+- [x] Add `transform` processor for optimization - ✅ **COMPLETED 2025-11-14**
+- [x] Update pipeline to include new processors - ✅ **COMPLETED 2025-11-14**
+  - Pipeline now: `processors: [memory_limiter, resourcedetection, attributes, transform, batch, routing]`
+  - Note: `kubernetes` detector removed from resourcedetection (not available in otel-collector-contrib:0.93.0)
+  - Using detectors: `[env, system, docker]`
+  - Deployment verified: 2/2 pods running successfully
 
 ### Phase 2: Deploy Loki for Log Aggregation (Priority: HIGH)
 
