@@ -12,6 +12,7 @@ namespace: observability
 resources:
   - deployment.yaml
   - service.yaml
+  - destinationrule.yaml
   # HTTPRoute removed - Phoenix is now accessed via OAuth2 Proxy
   # See: components/infrastructure/oauth2-proxy/phoenix-proxy.yaml
 
