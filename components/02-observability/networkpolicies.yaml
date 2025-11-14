@@ -188,12 +188,9 @@ spec:
     - protocol: TCP
       port: 14268  # Jaeger HTTP
 
-  # Allow from Prometheus (metrics scraping)
+  # Allow from Prometheus (metrics scraping in same namespace)
   - from:
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: istio-system
-      podSelector:
+    - podSelector:
         matchLabels:
           app: prometheus
     ports:
