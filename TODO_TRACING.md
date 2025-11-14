@@ -2901,6 +2901,52 @@ pytest tests/integration/test_otel_signal_flows.py -v --tb=short
 
 ---
 
+## 🚨 Known Issues
+
+### Issue 1: Korrel8r CrashLoopBackOff (2025-11-14)
+
+**Status**: BLOCKED - Requires upstream fix
+
+**Problem**: Korrel8r pod crashes with Go runtime fatal error during initialization:
+```
+runtime: lfstack.push invalid packing: node=0xffff8e7bd340 cnt=0x1 packed=0xffff8e7bd3400001 -> node=0xffffffff8e7bd340
+fatal error: lfstack.push
+```
+
+**Root Cause**: Go runtime error in `quay.io/korrel8r/korrel8r:latest` image during:
+- Garbage collector initialization
+- Regex compilation in `github.com/getkin/kin-openapi/openapi3` library
+- Before Korrel8r application code even starts
+
+**Investigation Results**:
+- ✅ Architecture matches (amd64/x86_64 cluster vs amd64 image)
+- ✅ Resource limits are reasonable (500m CPU, 512Mi memory)
+- ❌ No stable releases on GitHub (https://github.com/korrel8r/korrel8r/releases shows "There aren't any releases here")
+- ❌ `quay.io/korrel8r/korrel8r:v0.7.1` does not exist (ImagePullBackOff)
+- ❌ `quay.io/korrel8r/korrel8r:latest` crashes with Go runtime error (CrashLoopBackOff)
+
+**Impact**:
+- ⚠️ Signal correlation (trace↔log↔metric) not available via Korrel8r
+- ✅ Manual correlation still works via Grafana datasource links
+- ✅ Tempo, Loki, and Prometheus all functional independently
+
+**Temporary Workaround**:
+- Korrel8r deployment disabled in `components/02-observability/kustomization.yaml`
+- Grafana datasource correlation configured as fallback (derivedFields in Loki, tracesToLogsV2 in Tempo)
+- Alert correlation documented but requires Korrel8r to be operational
+
+**Next Steps**:
+1. Monitor Korrel8r GitHub for stable releases
+2. Try alternative correlation tools (e.g., Grafana native correlation features)
+3. Consider implementing basic correlation via Prometheus Alertmanager + custom scripts
+4. **BLOCKER**: Cannot proceed with Phase 4.3 (Korrel8r + Alertmanager integration) until Korrel8r is stable
+
+**References**:
+- Korrel8r manifests: `components/02-observability/korrel8r/`
+- Grafana correlation config: `components/02-observability/grafana/datasources.yaml`
+
+---
+
 **Last Updated**: 2025-11-14
 **Maintained By**: Kagenti Platform Team
-**Status**: **FULLY OPERATIONAL** - All tests passing
+**Status**: **PARTIALLY OPERATIONAL** - Korrel8r disabled due to crash (see Known Issues)
