@@ -8,6 +8,7 @@ namespace: team1
 
 resources:
   - namespace.yaml
+  - github-token-secret.yaml
   - research-agent.yaml
   - code-agent.yaml
   - orchestrator-agent.yaml
