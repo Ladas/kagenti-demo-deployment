@@ -9,6 +9,7 @@ This document outlines the implementation plan for production-grade **observabil
 - **Grafana Loki**: Log aggregation backend (all logs)
 - **Arize Phoenix**: LLM-specific tracing backend (OpenInference format)
 - **Korrel8r**: Signal correlation engine (trace↔log↔metric)
+- **Alertmanager**: Alert aggregation and routing
 - **Grafana**: Unified visualization and correlation
 
 **Goals**:
@@ -42,26 +43,36 @@ This document outlines the implementation plan for production-grade **observabil
             │   - Routing: traces/logs → backends        │
             └───────────────────────────────────────────┘
                     ↓             ↓             ↓
-        ┌──────────────┐  ┌─────────────┐  ┌─────────────┐
-        │ Grafana Tempo│  │    Loki     │  │   Phoenix   │
-        │ (All traces) │  │ (All logs)  │  │(LLM traces) │
-        │ - 7-30 days  │  │ - 30+ days  │  │- OpenInfer  │
-        └──────────────┘  └─────────────┘  └─────────────┘
-                    ↓             ↓             ↓
-                ┌──────────────────────────────────┐
-                │          Korrel8r                │
-                │  - Trace → Log correlation       │
-                │  - Log → Trace correlation       │
-                │  - Trace → Metric correlation    │
-                │  - Graph query across signals    │
-                └──────────────────────────────────┘
-                              ↓
-                    ┌──────────────────┐
-                    │     Grafana      │
-                    │  - Unified view  │
-                    │  - Dashboards    │
-                    │  - Explore       │
-                    └──────────────────┘
+        ┌──────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐
+        │ Grafana Tempo│  │    Loki     │  │   Phoenix   │  │  Prometheus  │
+        │ (All traces) │  │ (All logs)  │  │(LLM traces) │  │  (Metrics)   │
+        │ - 7-30 days  │  │ - 30+ days  │  │- OpenInfer  │  │- Alert Rules │
+        └──────────────┘  └─────────────┘  └─────────────┘  └──────────────┘
+                    ↓             ↓             ↓                   ↓
+                    │             │             │                   │
+                    │             │             │        ┌──────────────────┐
+                    │             │             │        │  Alertmanager    │
+                    │             │             │        │ - Aggregation    │
+                    │             │             │        │ - Routing        │
+                    │             │             │        │ - Deduplication  │
+                    │             │             │        └──────────────────┘
+                    │             │             │                   │
+                    └─────────────┼─────────────┼───────────────────┘
+                                  ↓             ↓
+                    ┌────────────────────────────────────────────┐
+                    │             Korrel8r                       │
+                    │  - Trace ↔ Log ↔ Metric ↔ Alert           │
+                    │  - Graph query across all signals          │
+                    │  - Automatic correlation discovery         │
+                    └────────────────────────────────────────────┘
+                                       ↓
+                             ┌──────────────────┐
+                             │     Grafana      │
+                             │  - Unified view  │
+                             │  - Dashboards    │
+                             │  - Explore       │
+                             │  - Alerting      │
+                             └──────────────────┘
 ```
 
 ## Key Concepts
@@ -166,7 +177,8 @@ OpenInference is a set of OpenTelemetry conventions specifically for AI/LLM appl
 1. **Grafana Tempo** - Not deployed yet
 2. **Loki** - Not deployed yet (log aggregation)
 3. **Korrel8r** - Not deployed yet (signal correlation)
-4. **OTEL Operator** - For auto-instrumentation
+4. **Alertmanager** - Not deployed yet (alert aggregation and routing)
+5. **OTEL Operator** - For auto-instrumentation
 5. **Baggage propagation** - Not configured in OTEL collector
 6. **Resource detection** - Not configured in OTEL collector
 7. **OTEL Logs export** - Not configured (need Loki backend)
@@ -774,6 +786,317 @@ datasources:
 - [ ] Configure Loki datasource with `derivedFields` (log→trace)
 - [ ] Test clicking trace ID in logs → opens trace in Tempo
 - [ ] Test "Logs for this span" button in Tempo → opens logs in Loki
+
+### Phase 4.5: Deploy Alertmanager for Alert Management (Priority: HIGH)
+
+**Goal**: Deploy Alertmanager to aggregate, deduplicate, and route alerts from Prometheus and integrate with Korrel8r for alert↔trace/log correlation.
+
+#### 4.5.1. Deploy Alertmanager
+
+**Alertmanager Deployment**:
+```yaml
+# components/02-observability/alertmanager/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.27.0
+        args:
+          - --config.file=/etc/alertmanager/alertmanager.yml
+          - --storage.path=/alertmanager
+          - --web.listen-address=:9093
+        ports:
+        - containerPort: 9093
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alertmanager
+        - name: storage
+          mountPath: /alertmanager
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      volumes:
+      - name: config
+        configMap:
+          name: alertmanager-config
+      - name: storage
+        emptyDir: {}
+```
+
+**Alertmanager Configuration**:
+```yaml
+# components/02-observability/alertmanager/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: observability
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'default'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical'
+      - match:
+          severity: warning
+        receiver: 'warning'
+
+    receivers:
+    - name: 'default'
+      # Configure default notification channel (e.g., webhook, email)
+
+    - name: 'critical'
+      # Configure critical alert notification
+
+    - name: 'warning'
+      # Configure warning alert notification
+
+    inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'cluster', 'service']
+```
+
+**Service**:
+```yaml
+# components/02-observability/alertmanager/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: observability
+spec:
+  selector:
+    app: alertmanager
+  ports:
+  - port: 9093
+    targetPort: 9093
+    name: http
+  type: ClusterIP
+```
+
+**Tasks**:
+- [ ] Create Alertmanager deployment manifests
+- [ ] Configure alert routing and receivers
+- [ ] Deploy Alertmanager via ArgoCD
+- [ ] Verify Alertmanager is running
+
+#### 4.5.2. Configure Prometheus to Send Alerts
+
+**Update Prometheus Configuration**:
+```yaml
+# components/02-observability/prometheus/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: observability
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    # Alertmanager configuration
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager.observability.svc:9093
+
+    # Load alerting rules
+    rule_files:
+      - /etc/prometheus/rules/*.yml
+
+    scrape_configs:
+      # ... existing scrape configs ...
+```
+
+**Example Alert Rules**:
+```yaml
+# components/02-observability/prometheus/alert-rules.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: observability
+data:
+  agent-alerts.yml: |
+    groups:
+    - name: agent_alerts
+      interval: 30s
+      rules:
+      - alert: AgentHighErrorRate
+        expr: rate(agent_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in {{ $labels.agent_name }}"
+          description: "Agent {{ $labels.agent_name }} has error rate > 10% for 5 minutes"
+
+      - alert: AgentDown
+        expr: up{job="agents"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent {{ $labels.instance }} is down"
+          description: "Agent has been down for more than 2 minutes"
+
+      - alert: LLMHighLatency
+        expr: histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High LLM latency in {{ $labels.service_name }}"
+          description: "P95 latency > 10s for 5 minutes"
+```
+
+**Tasks**:
+- [ ] Update Prometheus config to send alerts to Alertmanager
+- [ ] Create alert rules for agents, LLMs, and infrastructure
+- [ ] Test alert firing and routing
+- [ ] Verify alerts appear in Alertmanager UI
+
+#### 4.5.3. Integrate Alertmanager with Korrel8r
+
+**Add Alert Domain to Korrel8r**:
+```yaml
+# components/02-observability/korrel8r/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: korrel8r-config
+  namespace: observability
+data:
+  korrel8r.yaml: |
+    stores:
+      # ... existing stores (tempo, loki, prometheus) ...
+
+      # Alertmanager for alerts
+      - domain: alert
+        store:
+          type: alertmanager
+          url: http://alertmanager.observability.svc:9093
+          timeout: 30s
+
+    rules:
+      # ... existing rules ...
+
+      # Alert → Trace correlation (via alert labels)
+      - name: alert_to_trace
+        start: alert
+        goal: trace
+        query: |
+          service.name="${service_name}" AND timestamp >= ${start_time} AND timestamp <= ${end_time}
+
+      # Alert → Log correlation (via service name + time range)
+      - name: alert_to_log
+        start: alert
+        goal: log
+        query: |
+          {app="${service_name}"} |~ "${alert_name}"
+
+      # Alert → Metric correlation (via alert labels)
+      - name: alert_to_metric
+        start: alert
+        goal: metric
+        query: |
+          {job="${job}", instance="${instance}"}
+
+      # Trace → Alert correlation (find alerts for trace time range)
+      - name: trace_to_alert
+        start: trace
+        goal: alert
+        query: |
+          {service_name="${service_name}"}
+```
+
+**Tasks**:
+- [ ] Add Alertmanager store to Korrel8r configuration
+- [ ] Define alert correlation rules (alert→trace, alert→log, alert→metric)
+- [ ] Restart Korrel8r with updated configuration
+- [ ] Test alert correlation via Korrel8r API
+
+#### 4.5.4. Integrate Alertmanager with Grafana
+
+**Grafana Alertmanager Datasource**:
+```yaml
+# components/02-observability/grafana/datasources.yaml
+apiVersion: 1
+datasources:
+  # ... existing datasources ...
+
+  - name: Alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager.observability:9093
+    jsonData:
+      implementation: prometheus  # Use Prometheus-compatible Alertmanager
+```
+
+**Tasks**:
+- [ ] Add Alertmanager as Grafana datasource
+- [ ] Create Grafana dashboards for alert visualization
+- [ ] Test alert→trace navigation from Grafana
+- [ ] Configure alert notifications from Grafana
+
+#### 4.5.5. Test Alert Correlation
+
+**End-to-end Test Scenarios**:
+
+1. **Alert → Trace**:
+   - Fire an alert (e.g., high error rate)
+   - Use Korrel8r to find related traces
+   - Verify traces show the error condition
+
+2. **Alert → Log**:
+   - Fire an alert
+   - Use Korrel8r to find related logs
+   - Verify logs contain error messages
+
+3. **Trace → Alert**:
+   - Find a failing trace
+   - Use Korrel8r to find related alerts
+   - Verify alerts fired for the same issue
+
+**Tasks**:
+- [ ] Create test alerts with known conditions
+- [ ] Test alert→trace correlation
+- [ ] Test alert→log correlation
+- [ ] Test trace→alert correlation
+- [ ] Verify correlation results are accurate
 
 ### Phase 5: OpenTelemetry Auto-Instrumentation (Priority: MEDIUM)
 
