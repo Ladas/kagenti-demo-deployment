@@ -122,6 +122,36 @@ data:
             action: drop
             regex: metallb-system
 
+          # Drop argocd namespace logs to reduce file count
+          - source_labels:
+              - __meta_kubernetes_namespace
+            action: drop
+            regex: argocd
+
+          # Drop istio-system namespace logs to reduce file count
+          - source_labels:
+              - __meta_kubernetes_namespace
+            action: drop
+            regex: istio-system
+
+          # Drop cert-manager namespace logs to reduce file count
+          - source_labels:
+              - __meta_kubernetes_namespace
+            action: drop
+            regex: cert-manager
+
+          # Drop tekton-pipelines namespace logs to reduce file count
+          - source_labels:
+              - __meta_kubernetes_namespace
+            action: drop
+            regex: tekton-pipelines
+
+          # Drop reflector namespace logs to reduce file count
+          - source_labels:
+              - __meta_kubernetes_namespace
+            action: drop
+            regex: reflector
+
           # Set log path to container logs
           - source_labels:
               - __meta_kubernetes_pod_uid
