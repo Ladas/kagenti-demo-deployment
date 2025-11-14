@@ -11,6 +11,10 @@ resources:
   - 00-infrastructure
   - reflector.yaml  # Kubernetes Reflector for OAuth secret mirroring
 
+  # Wave 10 - Operators
+  - kagenti-operator.yaml
+  - platform-operator.yaml
+
   # Wave 15 - Platform
   - platform.yaml
 
