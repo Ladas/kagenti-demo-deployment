@@ -13,8 +13,6 @@ Thumbs.db
 .idea/
 
 # Kubernetes secrets (if any get created)
-*-secret.yaml
-!components/00-infrastructure/github-token-secret.yaml  # Exception: dev placeholder secret (no real credentials)
 credentials.json
 
 # Backup files
