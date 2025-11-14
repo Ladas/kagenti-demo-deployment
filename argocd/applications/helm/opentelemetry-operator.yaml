@@ -21,7 +21,6 @@ spec:
       values: |
         # Manager configuration
         manager:
-          replicas: 1
           resources:
             requests:
               cpu: 100m
@@ -33,6 +32,9 @@ spec:
           collectorImage:
             repository: otel/opentelemetry-collector-k8s
           featureGates: operator.autoinstrumentation.multi-instrumentation
+
+        # Replicas configuration (moved out of manager in v0.72.0)
+        replicaCount: 1
 
         # Admission webhooks (required for auto-instrumentation)
         admissionWebhooks:
