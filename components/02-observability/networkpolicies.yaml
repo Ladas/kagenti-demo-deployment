@@ -353,6 +353,90 @@ spec:
       port: 8888
 
 ---
+# Prometheus - Metrics Storage
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus
+  namespace: observability
+  labels:
+    app: prometheus
+spec:
+  podSelector:
+    matchLabels:
+      app: prometheus
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from Grafana (datasource queries)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 9090
+
+  egress:
+  # Allow to OTEL Collector (scrape metrics)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 8888
+
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow to Kubernetes API (service discovery)
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          component: apiserver
+    ports:
+    - protocol: TCP
+      port: 443
+
+  # Allow to all pods for Kubernetes service discovery scraping
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 10250  # kubelet
+    - protocol: TCP
+      port: 10255  # kubelet read-only
+    - protocol: TCP
+      port: 9100   # node-exporter
+    - protocol: TCP
+      port: 8080   # common metrics port
+    - protocol: TCP
+      port: 3000   # grafana
+    - protocol: TCP
+      port: 3100   # loki
+    - protocol: TCP
+      port: 3200   # tempo
+    - protocol: TCP
+      port: 9090   # prometheus
+    - protocol: TCP
+      port: 15020  # istio envoy stats
+    - protocol: TCP
+      port: 15014  # istio pilot metrics
+    - protocol: TCP
+      port: 7472   # metallb metrics
+    - protocol: TCP
+      port: 9402   # kube-state-metrics
+
+---
 # Keycloak - Authentication
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
