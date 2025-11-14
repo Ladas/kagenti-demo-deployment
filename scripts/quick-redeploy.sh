@@ -51,13 +51,24 @@ detect_branch() {
 detect_repo_url() {
     local repo_url=""
 
-    # Method 1: Check GitHub Actions environment variables
-    if [ -n "${GITHUB_REPOSITORY:-}" ]; then
+    # Method 1: For GitHub Actions PR events, check if it's a fork PR
+    if [ -n "${GITHUB_EVENT_PATH:-}" ] && [ -f "${GITHUB_EVENT_PATH}" ]; then
+        # Try to get head repository from event payload (for fork PRs)
+        local head_repo=$(jq -r '.pull_request.head.repo.clone_url // empty' "${GITHUB_EVENT_PATH}" 2>/dev/null)
+        if [ -n "$head_repo" ]; then
+            repo_url="$head_repo"
+            # Remove .git suffix if present
+            repo_url="${repo_url%.git}"
+        fi
+    fi
+
+    # Method 2: Check GitHub Actions environment variables (for non-fork PRs and pushes)
+    if [ -z "$repo_url" ] && [ -n "${GITHUB_REPOSITORY:-}" ]; then
         # GITHUB_REPOSITORY is in format "owner/repo"
         repo_url="https://github.com/${GITHUB_REPOSITORY}"
     fi
 
-    # Method 2: Get from git remote (works locally)
+    # Method 3: Get from git remote (works locally)
     if [ -z "$repo_url" ]; then
         repo_url=$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null || echo "")
 
