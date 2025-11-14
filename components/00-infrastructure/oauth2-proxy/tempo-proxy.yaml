@@ -35,8 +35,8 @@ spec:
           - --redeem-url=http://keycloak.keycloak.svc:8080/realms/kubernetes/protocol/openid-connect/token
           - --oidc-jwks-url=http://keycloak.keycloak.svc:8080/realms/kubernetes/protocol/openid-connect/certs
 
-          # Upstream (Tempo)
-          - --upstream=http://tempo.observability.svc:3200
+          # Upstream (Tempo Query - Jaeger UI)
+          - --upstream=http://tempo-query.observability.svc:16686
 
           # Cookie settings
           - --cookie-name=_oauth2_proxy_tempo

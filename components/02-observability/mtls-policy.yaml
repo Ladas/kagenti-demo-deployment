@@ -25,21 +25,21 @@ spec:
   mtls:
     mode: PERMISSIVE
   portLevelMtls:
-    6006:
+    "6006":
       mode: PERMISSIVE
 ---
-# Allow OAuth2-Proxy to connect to Tempo without mTLS on port 3100
+# Allow OAuth2-Proxy to connect to Tempo Query (Jaeger UI) without mTLS on port 16686
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
-  name: tempo-permissive
+  name: tempo-query-permissive
   namespace: observability
 spec:
   selector:
     matchLabels:
-      app: tempo
+      app: tempo-query
   mtls:
     mode: PERMISSIVE
   portLevelMtls:
-    3100:
+    "16686":
       mode: PERMISSIVE

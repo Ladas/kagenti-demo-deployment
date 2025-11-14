@@ -22,6 +22,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - configmap.yaml
+  - tempo-query.yaml
   # HTTPRoute removed - Tempo is now accessed via OAuth2 Proxy
   # See: components/infrastructure/oauth2-proxy/tempo-proxy.yaml
 
