@@ -19,7 +19,8 @@ if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
 fi
 
 # Create cluster with port mappings for Istio Gateway
-echo "📦 Creating Kind cluster with Istio port mappings..."
+# File descriptor limits increased for Promtail log collection (requires 1M open files for large clusters)
+echo "📦 Creating Kind cluster with Istio port mappings and increased file limits..."
 cat <<EOF | kind create cluster --name "${CLUSTER_NAME}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -31,6 +32,10 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
+  - |
+    kind: KubeletConfiguration
+    maxOpenFiles: 1000000
+    maxPods: 110
   extraPortMappings:
   # HTTP - Maps host:8080 to NodePort 30080 (gateway HTTP)
   - containerPort: 30080
