@@ -31,7 +31,7 @@ spec:
           # Required in v0.72.0+
           collectorImage:
             repository: otel/opentelemetry-collector-k8s
-          featureGates: operator.autoinstrumentation.multi-instrumentation
+          # Multi-instrumentation is now enabled by default via --enable-multi-instrumentation flag
 
         # Replicas configuration (moved out of manager in v0.72.0)
         replicaCount: 1
