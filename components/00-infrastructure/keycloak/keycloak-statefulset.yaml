@@ -1,0 +1,264 @@
+# Keycloak Vanilla StatefulSet
+# Replaces Keycloak Operator deployment to avoid --optimized flag issue
+# See ISSUES.md Issue #5 for context
+# Ref: https://www.keycloak.org/server/containers
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: https
+      protocol: TCP
+      port: 8443
+      targetPort: 8443
+    - name: management
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+  type: ClusterIP
+
+---
+# Headless service for StatefulSet pod discovery (JGroups clustering)
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-discovery
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+spec:
+  clusterIP: None
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  publishNotReadyAddresses: true
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  serviceName: keycloak-discovery
+  template:
+    metadata:
+      labels:
+        app: keycloak
+        app.kubernetes.io/name: keycloak
+        app.kubernetes.io/part-of: kagenti
+        app.kubernetes.io/component: authentication
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.4.1
+          args:
+            # JGroups discovery for clustering
+            - "-Djgroups.dns.query=keycloak-discovery.keycloak"
+            - "--verbose"
+            - "start"
+            # NOTE: NO --optimized flag (this was causing the issue with Keycloak Operator)
+
+            # Hostname configuration (v2 syntax - replaces deprecated KC_HOSTNAME_PORT)
+            # Using --hostname instead of KC_HOSTNAME env var to include port in URLs
+            - "--hostname=https://keycloak.localtest.me:9443"
+            - "--hostname-admin=https://keycloak.localtest.me:9443"
+            - "--hostname-strict=false"
+
+            # Proxy configuration
+            # NOTE: --proxy option doesn't exist in KC 26.x, using --proxy-headers only
+            - "--proxy-headers=xforwarded"
+          env:
+            # NOTE: Hostname and proxy configuration moved to command-line args above (v2 syntax)
+            # Deprecated v1 env vars (KC_HOSTNAME, KC_HOSTNAME_PORT, KC_PROXY) removed
+
+            # HTTP configuration (Istio sidecar handles TLS)
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_HTTP_PORT
+              value: "8080"
+            - name: KC_HTTPS_PORT
+              value: "8443"
+
+            # Database configuration
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-db-secret
+                  key: username
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-db-secret
+                  key: password
+            - name: KC_DB_URL_DATABASE
+              value: "keycloak"
+            - name: KC_DB_URL_HOST
+              value: "postgres.keycloak.svc.cluster.local"
+            - name: KC_DB_URL_PORT
+              value: "5432"
+            # Disable SSL for PostgreSQL connection (Istio sidecar handles mTLS)
+            - name: KC_DB_URL_PROPERTIES
+              value: "?sslmode=disable"
+
+            # Admin credentials
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-initial-admin
+                  key: username
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-initial-admin
+                  key: password
+
+            # Health checks enabled
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+
+            # Caching configuration
+            - name: KC_CACHE
+              value: "ispn"
+            - name: KC_CACHE_STACK
+              value: "kubernetes"
+
+            # Truststore for Kubernetes CA
+            - name: KC_TRUSTSTORE_PATHS
+              value: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+            # Tracing configuration (for Istio/OTEL integration)
+            - name: KC_TRACING_SERVICE_NAME
+              value: "keycloak"
+            - name: KC_TRACING_RESOURCE_ATTRIBUTES
+              value: "k8s.namespace.name=keycloak"
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            - name: management
+              containerPort: 9000
+              protocol: TCP
+
+          # Health probes
+          startupProbe:
+            httpGet:
+              path: /health/started
+              port: 9000
+              scheme: HTTP
+            periodSeconds: 1
+            successThreshold: 1
+            failureThreshold: 600
+            timeoutSeconds: 1
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 9000
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 1
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 9000
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 1
+
+          # Resource limits
+          resources:
+            requests:
+              memory: "1700Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          imagePullPolicy: Always
+
+      # Pod security context
+      securityContext:
+        fsGroup: 1000
+
+      # Affinity rules (prefer spreading across zones/nodes)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: keycloak
+                topologyKey: kubernetes.io/hostname
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 10
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: keycloak
+                topologyKey: topology.kubernetes.io/zone
+
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+  # No persistent volume for dev (stateless Keycloak with external DB)
+  # For production, add volumeClaimTemplates for Keycloak data directory

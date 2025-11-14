@@ -1,0 +1,138 @@
+# SPIRE Helm Values
+# Production-like configuration for workload identity
+# Aligned with kagenti/installer but using kagenti.dev trust domain
+# Ref: https://github.com/spiffe/helm-charts-hardened
+
+global:
+  openshift: false
+  spire:
+    recommendations:
+      enabled: true
+    namespaces:
+      # Do not create namespace - managed by Kustomize
+      create: false
+    ingressControllerType: ""
+    # Production trust domain
+    clusterName: kagenti-platform
+    trustDomain: kagenti.dev
+    caSubject:
+      country: US
+      organization: Kagenti
+      commonName: kagenti.dev
+
+spire-server:
+  # Controller Manager for automatic ClusterSPIFFEID management
+  controllerManager:
+    enabled: true
+    # Ignore system namespaces
+    ignoreNamespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - local-path-storage
+      - tekton-pipelines
+      - tekton-pipelines-resolvers
+      - istio-system
+      - istio-ingress
+    # Automatic identity configuration
+    identities:
+      clusterSPIFFEIDs:
+        default:
+          # Automatically populate DNS names for workloads
+          autoPopulateDNSNames: true
+          # Enable for all namespaces except ignored ones
+          enabled: true
+
+  # Tornjak management UI
+  tornjak:
+    enabled: true
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 10000
+
+  # Server configuration
+  logLevel: INFO
+
+  # Persistence for production-like setup
+  persistence:
+    type: pvc
+    size: 1Gi
+    accessMode: ReadWriteOnce
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# SPIFFE OIDC Discovery Provider
+# Exposes OIDC endpoint for external services (like Keycloak)
+spiffe-oidc-discovery-provider:
+  enabled: true
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # TLS configuration
+  # Istio sidecar handles TLS, so disable SPIRE-native TLS
+  tls:
+    spire:
+      enabled: false
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+# Tornjak Frontend UI
+tornjak-frontend:
+  enabled: true
+
+  # Image configuration
+  image:
+    tag: v2.0.0
+
+  # API server URL (will be patched in overlays)
+  apiServerURL: http://spire-server-tornjak-backend.spire-system.svc.cluster.local:10000
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3000
+
+  # Ingress disabled - using Istio Gateway API
+  ingress:
+    enabled: false
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 512Mi
+
+# Spire Agent configuration
+spire-agent:
+  # Agent runs on every node as DaemonSet
+  logLevel: INFO
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi

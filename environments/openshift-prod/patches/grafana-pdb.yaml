@@ -1,0 +1,12 @@
+# Pod Disruption Budget for Production HA
+# Ensures at least 1 pod is always available during updates
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: grafana-pdb
+  namespace: observability
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: grafana

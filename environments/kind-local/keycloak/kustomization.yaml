@@ -1,0 +1,15 @@
+# Kind-local overlay for Keycloak
+# Patches hostnames to use localtest.me wildcard DNS
+# NOTE: Using vanilla StatefulSet (not Keycloak CR), so no Keycloak CR hostname patch
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../components/00-infrastructure/keycloak
+  - ../../../components/00-infrastructure/keycloak-cross-ns-rbac
+
+patchesStrategicMerge:
+  - httproute-hostname-patch.yaml
+  # Disabled - vanilla StatefulSet doesn't need hostname patch (uses env var)
+  # - keycloak-hostname-patch.yaml

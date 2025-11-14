@@ -1,0 +1,51 @@
+# SPIRE Base Configuration
+# Shared across all environments (Kind, OpenShift)
+# Uses SPIRE Helm charts with CRD-based deployment
+# Ref: https://github.com/spiffe/helm-charts-hardened
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: spire-system
+
+resources:
+  - namespace.yaml
+  - httproutes.yaml
+  - mtls-policy.yaml
+
+# Helm chart installation
+# Note: ArgoCD will handle this via Application CR
+# This is for reference and kustomize build validation
+helmCharts:
+  - name: spire-crds
+    repo: https://spiffe.github.io/helm-charts-hardened/
+    version: "0.2.0"
+    namespace: spire-system
+    releaseName: spire-crds
+
+  - name: spire
+    repo: https://spiffe.github.io/helm-charts-hardened/
+    version: "0.24.0"
+    namespace: spire-system
+    releaseName: spire
+    valuesFile: spire-helm-values.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: spire
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: identity
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components-new/base/spire-operator/kustomization.yaml
+  description: |
+    SPIRE with production-like configuration
+    - Trust domain: kagenti.dev
+    - Controller Manager for automatic identity management
+    - SPIFFE OIDC Discovery Provider for Keycloak integration
+    - Tornjak management UI
+    - mTLS STRICT mode via Istio
+    - HTTPRoutes for ingress via Istio Gateway API

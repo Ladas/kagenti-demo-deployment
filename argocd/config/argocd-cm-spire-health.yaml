@@ -1,0 +1,163 @@
+# ArgoCD Custom Health Checks for SPIRE CRDs
+# Provides accurate health status reporting for SPIRE resources
+# Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/health/
+# Ref: TODO_ARGOCD_HEALTH_CHECKS.md for comprehensive patterns
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Health check for ClusterSPIFFEID CRD
+  # Checks stats for failures and successful pod/namespace selection
+  resource.customizations.health.spire.spiffe.io_ClusterSPIFFEID: |
+    hs = {}
+
+    -- Check if status and stats exist
+    if obj.status ~= nil and obj.status.stats ~= nil then
+      local stats = obj.status.stats
+
+      -- Calculate total failures
+      local render_failures = stats.podEntryRenderFailures or 0
+      local entry_failures = stats.entryFailures or 0
+      local total_failures = render_failures + entry_failures
+
+      -- Degraded if any failures
+      if total_failures > 0 then
+        hs.status = "Degraded"
+        hs.message = string.format(
+          "Failures detected - Render: %d, Entry: %d",
+          render_failures,
+          entry_failures
+        )
+        return hs
+      end
+
+      -- Healthy if applied to resources
+      local pods_selected = stats.podsSelected or 0
+      local ns_selected = stats.namespaceSelected or 0
+
+      if pods_selected > 0 or ns_selected > 0 then
+        hs.status = "Healthy"
+        hs.message = string.format(
+          "Applied to %d namespaces, %d pods",
+          ns_selected,
+          pods_selected
+        )
+        return hs
+      end
+    end
+
+    -- Still waiting for status
+    hs.status = "Progressing"
+    hs.message = "Waiting for ClusterSPIFFEID to be processed"
+    return hs
+
+  # Health check for ClusterStaticEntry CRD
+  # Checks if entry has been successfully registered with SPIRE Server
+  resource.customizations.health.spire.spiffe.io_ClusterStaticEntry: |
+    hs = {}
+
+    if obj.status ~= nil then
+      if obj.status.set == true then
+        hs.status = "Healthy"
+        hs.message = "Entry registered with SPIRE Server"
+        return hs
+      elseif obj.status.set == false then
+        hs.status = "Degraded"
+        hs.message = "Entry registration failed"
+        return hs
+      end
+    end
+
+    hs.status = "Progressing"
+    hs.message = "Waiting for entry registration"
+    return hs
+
+  # Health check for ClusterFederatedTrustDomain CRD
+  # Checks federation status with remote SPIRE deployments
+  resource.customizations.health.spire.spiffe.io_ClusterFederatedTrustDomain: |
+    hs = {}
+
+    if obj.status ~= nil and obj.status.conditions ~= nil then
+      for i, condition in ipairs(obj.status.conditions) do
+        if condition.type == "Ready" then
+          if condition.status == "True" then
+            hs.status = "Healthy"
+            hs.message = "Trust bundle federated successfully"
+            return hs
+          elseif condition.status == "False" then
+            hs.status = "Degraded"
+            hs.message = condition.message or "Federation failed"
+            return hs
+          end
+        end
+      end
+    end
+
+    hs.status = "Progressing"
+    hs.message = "Waiting for trust domain federation"
+    return hs
+
+  # Health check for Gateway API Gateway
+  # Checks Programmed and Accepted conditions
+  resource.customizations.health.gateway.networking.k8s.io_Gateway: |
+    hs = {}
+
+    if obj.status ~= nil and obj.status.conditions ~= nil then
+      local programmed = false
+      local accepted = false
+
+      for i, condition in ipairs(obj.status.conditions) do
+        if condition.type == "Programmed" and condition.status == "True" then
+          programmed = true
+        end
+        if condition.type == "Accepted" and condition.status == "True" then
+          accepted = true
+        end
+        if condition.type == "Programmed" and condition.status == "False" then
+          hs.status = "Degraded"
+          hs.message = "Gateway not programmed: " .. (condition.message or "unknown")
+          return hs
+        end
+      end
+
+      if programmed and accepted then
+        hs.status = "Healthy"
+        hs.message = "Gateway accepted and programmed"
+        return hs
+      end
+    end
+
+    hs.status = "Progressing"
+    hs.message = "Gateway configuration in progress"
+    return hs
+
+  # Health check for Cert-Manager Certificate
+  # Checks Ready condition for certificate issuance
+  resource.customizations.health.cert-manager.io_Certificate: |
+    hs = {}
+
+    if obj.status ~= nil and obj.status.conditions ~= nil then
+      for i, condition in ipairs(obj.status.conditions) do
+        if condition.type == "Ready" then
+          if condition.status == "True" then
+            hs.status = "Healthy"
+            hs.message = "Certificate issued and ready"
+            return hs
+          elseif condition.status == "False" then
+            hs.status = "Degraded"
+            hs.message = condition.message or "Certificate not ready"
+            return hs
+          end
+        end
+      end
+    end
+
+    hs.status = "Progressing"
+    hs.message = "Certificate issuance in progress"
+    return hs

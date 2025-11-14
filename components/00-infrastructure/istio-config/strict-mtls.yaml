@@ -1,0 +1,48 @@
+# Istio Strict mTLS Policy
+# Enforces mutual TLS for all service-to-service communication
+# Production-grade security requirement
+
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-strict-mtls
+  namespace: istio-system
+spec:
+  mtls:
+    mode: STRICT
+---
+# Apply strict mTLS to kagenti-system namespace (created by infrastructure layer)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-strict-mtls
+  namespace: kagenti-system
+spec:
+  mtls:
+    mode: STRICT
+---
+# NOTE: Other namespace-specific PeerAuthentication resources will be created
+# by their respective Applications (platform, observability) once namespaces exist
+
+# DestinationRule to enforce TLS for all traffic
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: default-strict-mtls-local
+  namespace: istio-system
+spec:
+  host: "*.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: default-strict-mtls-cluster
+  namespace: istio-system
+spec:
+  host: "*.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL

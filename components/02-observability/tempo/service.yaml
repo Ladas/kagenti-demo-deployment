@@ -1,0 +1,74 @@
+# Tempo Services
+# Expose Tempo endpoints for UI and trace ingestion
+
+---
+# Main service for UI and query API
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: observability
+  labels:
+    app: tempo
+    app.kubernetes.io/name: tempo
+spec:
+  type: ClusterIP
+  selector:
+    app: tempo
+  ports:
+  # HTTP API / Web UI
+  - name: http
+    port: 3200
+    targetPort: http
+    protocol: TCP
+
+  # gRPC API
+  - name: grpc
+    port: 9096
+    targetPort: grpc
+    protocol: TCP
+
+---
+# Collector service for trace ingestion
+# Separate service for better DNS resolution and load balancing
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo-collector
+  namespace: observability
+  labels:
+    app: tempo
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: collector
+spec:
+  type: ClusterIP
+  selector:
+    app: tempo
+  ports:
+  # OTLP receivers (primary)
+  - name: otlp-grpc
+    port: 4317
+    targetPort: otlp-grpc
+    protocol: TCP
+
+  - name: otlp-http
+    port: 4318
+    targetPort: otlp-http
+    protocol: TCP
+
+  # Jaeger receivers (compatibility)
+  - name: jaeger-grpc
+    port: 14250
+    targetPort: jaeger-grpc
+    protocol: TCP
+
+  - name: jaeger-http
+    port: 14268
+    targetPort: jaeger-http
+    protocol: TCP
+
+  # Zipkin receiver (compatibility)
+  - name: zipkin
+    port: 9411
+    targetPort: zipkin
+    protocol: TCP

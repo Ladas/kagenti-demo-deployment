@@ -1,0 +1,14 @@
+# SPIRE System Namespace
+# Unified namespace for SPIRE Server, Agent, and Controller Manager
+# Ref: https://github.com/spiffe/spire-controller-manager
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spire-system
+  labels:
+    app.kubernetes.io/name: spire
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: identity
+    # Enable Istio sidecar injection for mTLS
+    istio-injection: enabled

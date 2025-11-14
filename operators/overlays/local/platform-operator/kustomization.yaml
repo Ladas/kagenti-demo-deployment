@@ -1,0 +1,64 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference remote operator configuration
+# NOTE: ArgoCD doesn't support remote HTTPS resources, so we use the GitHub repo directly in Application spec
+resources:
+  - https://github.com/Ladas/kagenti-operator/platform-operator/config/default?ref=fix/add-kagenti-operator-image-build
+
+namespace: kagenti-system
+
+# Substitute image for local development
+images:
+  - name: ko.local/kagenti-operator
+    newName: localhost:5001/kagenti-platform-operator
+    newTag: dev
+
+# Patch deployment to use correct command path
+patches:
+  - target:
+      kind: Deployment
+      name: controller-manager
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/command/0
+        value: /manager
+      # Update webhook certificate secret name to avoid conflict with kagenti-operator
+      - op: replace
+        path: /spec/template/spec/volumes/0/secret/secretName
+        value: kagenti-platform-webhook-cert
+  # Ensure istio-injection label is always present on namespace (strategic merge)
+  - target:
+      kind: Namespace
+      name: kagenti-system
+    patch: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: kagenti-system
+        labels:
+          istio-injection: enabled
+  # Change certificate secret name to avoid conflict with kagenti-operator
+  # (both operators use default "webhook-server-cert" which causes IncorrectIssuer errors)
+  - target:
+      kind: Certificate
+      name: serving-cert
+    patch: |-
+      - op: replace
+        path: /spec/secretName
+        value: kagenti-platform-webhook-cert
+  # Update webhook to use the new secret name
+  - target:
+      kind: MutatingWebhookConfiguration
+      name: mutating-webhook-configuration
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1inject-ca-from
+        value: kagenti-system/kagenti-serving-cert
+  - target:
+      kind: ValidatingWebhookConfiguration
+      name: validating-webhook-configuration
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1inject-ca-from
+        value: kagenti-system/kagenti-serving-cert

@@ -1,0 +1,49 @@
+# HTTPRoute for Tempo UI
+# Exposes Tempo query interface via Gateway API with HTTPS enforcement
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: tempo
+  namespace: observability
+  labels:
+    app: tempo
+    app.kubernetes.io/name: tempo
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: https  # Use HTTPS listener
+
+  hostnames:
+  - "tempo.localtest.me"
+
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: tempo
+      port: 3200
+
+---
+# HTTP to HTTPS redirect for Tempo
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: tempo-http-redirect
+  namespace: observability
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: http-redirect
+  hostnames:
+  - "tempo.localtest.me"
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301

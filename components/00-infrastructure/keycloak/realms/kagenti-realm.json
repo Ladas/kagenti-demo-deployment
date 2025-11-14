@@ -1,0 +1,203 @@
+{
+  "realm": "kagenti",
+  "displayName": "Kagenti Application",
+  "enabled": true,
+  "sslRequired": "all",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "defaultSignatureAlgorithm": "RS256",
+  "offlineSessionMaxLifespan": 5184000,
+  "offlineSessionMaxLifespanEnabled": false,
+  "clientSessionIdleTimeout": 1800,
+  "clientSessionMaxLifespan": 28800,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "loginTheme": "keycloak",
+  "accountTheme": "keycloak",
+  "adminTheme": "keycloak",
+  "emailTheme": "keycloak",
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Application administrator role",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "developer",
+        "description": "Application developer role",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "user",
+        "description": "Application user role",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "kagenti-admins",
+      "path": "/kagenti-admins",
+      "realmRoles": ["admin"]
+    },
+    {
+      "name": "kagenti-developers",
+      "path": "/kagenti-developers",
+      "realmRoles": ["developer"]
+    },
+    {
+      "name": "kagenti-users",
+      "path": "/kagenti-users",
+      "realmRoles": ["user"]
+    },
+    {
+      "name": "phoenix-admins",
+      "path": "/phoenix-admins"
+    },
+    {
+      "name": "phoenix-viewers",
+      "path": "/phoenix-viewers"
+    }
+  ],
+  "users": [
+    {
+      "username": "kagenti-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kagenti-admin@localtest.me",
+      "firstName": "Kagenti",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "groups": ["/kagenti-admins", "/phoenix-admins"],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "kagenti-developer",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kagenti-developer@localtest.me",
+      "firstName": "Kagenti",
+      "lastName": "Developer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "developer123",
+          "temporary": false
+        }
+      ],
+      "groups": ["/kagenti-developers", "/phoenix-viewers"],
+      "realmRoles": ["developer"]
+    },
+    {
+      "username": "kagenti-user",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kagenti-user@localtest.me",
+      "firstName": "Kagenti",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "groups": ["/kagenti-users"],
+      "realmRoles": ["user"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "phoenix",
+      "name": "Phoenix",
+      "description": "Agent/LLM trace observability",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "https://phoenix.localtest.me:8080/oauth2/callback",
+        "https://phoenix.localtest.me:8080/*"
+      ],
+      "webOrigins": [
+        "https://phoenix.localtest.me:8080"
+      ]
+    },
+    {
+      "clientId": "kagenti-ui",
+      "name": "Kagenti UI",
+      "description": "Kagenti application frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "https://kagenti.localtest.me:8080/*",
+        "https://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "https://kagenti.localtest.me:8080",
+        "https://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "kagenti-api",
+      "name": "Kagenti API",
+      "description": "Kagenti application backend API",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ]
+}

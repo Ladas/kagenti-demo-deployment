@@ -1,0 +1,58 @@
+# Strict mTLS for keycloak namespace (default policy)
+# Ensures all service-to-service communication is encrypted
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-strict-mtls
+  namespace: keycloak
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# Port-level mTLS policy for Keycloak (ingress from Istio Gateway)
+# Gateway pod HAS Istio sidecar, uses mTLS for all traffic
+# STRICT mode enforces encryption for all service-to-service traffic
+# Gateway terminates TLS from client, sends mTLS to Keycloak sidecar
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: keycloak-gateway-ingress
+  namespace: keycloak
+spec:
+  selector:
+    matchLabels:
+      app: keycloak
+  mtls:
+    mode: STRICT  # Enforce mTLS on all ports including 8080
+
+---
+# Disable mTLS for PostgreSQL service
+# PostgreSQL does NOT have Istio sidecar (plain postgres container)
+# Keycloak connects to Postgres via plain TCP (no TLS/SSL)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: postgres-mtls
+  namespace: keycloak
+spec:
+  host: postgres.keycloak.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+
+---
+# Disable mTLS for Keycloak service
+# Keycloak does NOT have Istio sidecar (plain keycloak container)
+# Pods with sidecars connect to Keycloak via plain HTTP (no mTLS)
+# Service name: 'keycloak' (vanilla StatefulSet deployment, not operator)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: keycloak-mtls
+  namespace: keycloak
+spec:
+  host: keycloak.keycloak.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE

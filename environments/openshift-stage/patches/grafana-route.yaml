@@ -1,0 +1,21 @@
+# OpenShift Route for Grafana
+# Replace this hostname with your actual OpenShift cluster domain
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: grafana
+  namespace: observability
+  labels:
+    app: grafana
+spec:
+  host: grafana-stage.apps.your-cluster.example.com
+  to:
+    kind: Service
+    name: grafana
+    weight: 100
+  port:
+    targetPort: 3000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

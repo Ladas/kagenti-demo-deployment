@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Agent applications
+  - agents/
+
+# Tools will be added here in future (MCP Inspector, etc.)
+# - tools/
+
+# NOTE: This layer depends on all previous layers (sync wave 30)
+# - Requires 00-infrastructure (Istio, Tekton)
+# - Requires 01-platform (Operator, MCP Gateway, Keycloak)
+# - Requires 02-observability (for monitoring agents)

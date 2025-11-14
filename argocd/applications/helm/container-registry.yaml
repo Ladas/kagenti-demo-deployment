@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: container-registry
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    kagenti.dev/layer: infrastructure
+    kagenti.dev/component: registry
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.helm.sh/stable
+    chart: docker-registry
+    targetRevision: 1.9.4
+    helm:
+      values: |
+        replicaCount: 1
+
+        image:
+          repository: registry
+          tag: 2.8.3
+          pullPolicy: IfNotPresent
+
+        service:
+          type: ClusterIP
+          port: 5000
+          targetPort: 5000
+
+        persistence:
+          enabled: true
+          size: 20Gi
+          storageClass: standard
+
+        storage: filesystem
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cr-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

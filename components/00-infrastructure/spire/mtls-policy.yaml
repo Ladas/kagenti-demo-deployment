@@ -1,0 +1,38 @@
+# mTLS Policy for SPIRE
+# Enforces STRICT mTLS for all SPIRE service-to-service communication
+# Ref: https://istio.io/latest/docs/reference/config/security/peer_authentication/
+
+---
+# Namespace-wide STRICT mTLS enforcement
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: spire-strict-mtls
+  namespace: spire-system
+  labels:
+    app.kubernetes.io/name: spire
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: identity
+spec:
+  # Enforce STRICT mTLS for all services in namespace
+  mtls:
+    mode: STRICT
+
+---
+# DestinationRule for SPIRE services
+# Configures client-side mTLS settings
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: spire-mtls
+  namespace: spire-system
+  labels:
+    app.kubernetes.io/name: spire
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: identity
+spec:
+  host: "*.spire-system.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      # Use Istio's automatic mTLS
+      mode: ISTIO_MUTUAL

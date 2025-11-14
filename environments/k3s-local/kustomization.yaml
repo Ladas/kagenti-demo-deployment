@@ -1,0 +1,44 @@
+# K3s Local Environment (Rancher Desktop)
+# Target: Local K3s cluster via Rancher Desktop
+# Access: http://grafana.local (via Traefik Ingress)
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+# Reference components
+resources:
+  # Infrastructure
+  - ../../components/infrastructure/tekton
+
+  # Platform
+  - ../../components/platform/operator
+
+  # Observability
+  - ../../components/observability
+  - ../../components/observability/kiali
+  - ../../components/observability/phoenix
+
+  # Agents
+  - ../../components/agents
+
+# Environment-specific patches
+patchesStrategicMerge:
+  - patches/grafana-resources.yaml
+  - patches/grafana-ingress.yaml
+
+# Environment labels
+commonLabels:
+  environment: k3s-local
+  cluster-type: k3s
+
+# Environment-specific config
+configMapGenerator:
+  - name: environment-config
+    namespace: observability
+    literals:
+      - CLUSTER_TYPE=k3s
+      - ENVIRONMENT=local
+      - DOMAIN=local
+      - INGRESS_CLASS=traefik

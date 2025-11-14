@@ -1,0 +1,20 @@
+# OpenShift Stage resource limits
+# Staging environment with moderate resources
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: grafana
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: "500m"
+              memory: 2Gi

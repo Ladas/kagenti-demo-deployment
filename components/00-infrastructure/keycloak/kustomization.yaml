@@ -1,0 +1,46 @@
+# Keycloak Base Configuration
+# Shared across all environments (Kind, OpenShift)
+# Uses vanilla StatefulSet deployment (no operator)
+# NOTE: Switched from Keycloak Operator to vanilla StatefulSet
+# See ISSUES.md Issue #5 for context (operator --optimized flag issue)
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: keycloak
+
+resources:
+  - namespace.yaml
+  - postgres-statefulset.yaml
+  - keycloak-admin-credentials.yaml  # Sync wave -2 (Keycloak admin credentials - dev only)
+  - db-secret-generator-rbac.yaml  # Sync wave -2 (before job)
+  - db-secret-generation-job.yaml  # Sync wave -1 (PreSync hook)
+  - keycloak-statefulset.yaml      # Vanilla StatefulSet (replaces keycloak-cr.yaml)
+  - realm-import-rbac.yaml         # Sync wave -1 (RBAC for realm import)
+  - realm-import-job.yaml          # Sync wave 1 (PostSync - create realms via Admin API)
+  - oauth-secrets-extractor-rbac.yaml   # Sync wave 0 (RBAC for OAuth secrets extractor)
+  - oauth-secrets-extractor-job.yaml    # Sync wave 1 (PostSync - extract OAuth secrets with Reflector)
+  # TODO: Replace KeycloakRealmImport CRs with Keycloak Admin API Jobs
+  # - realm-import-kubernetes.yaml  # Disabled - requires Keycloak Operator
+  # - realm-import-kagenti.yaml     # Disabled - requires Keycloak Operator
+  - copy-admin-secret-job.yaml     # Sync wave 1 (PostSync - copy admin secret to platform namespaces)
+  - mtls-policy.yaml
+  - httproute.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: authentication
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components-new/base/keycloak-operator/kustomization.yaml
+  description: |
+    Keycloak SSO with Keycloak Operator
+    - Keycloak CR for operator-managed deployment
+    - PostgreSQL StatefulSet (dev only, use managed DB for prod)
+    - mTLS STRICT mode via Istio
+    - HTTPRoute for ingress via Istio Gateway API

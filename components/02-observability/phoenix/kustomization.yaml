@@ -1,0 +1,28 @@
+# Phoenix LLM Observability Component
+# LLM observability and evaluation platform
+#
+# Container deployment (no Helm chart available)
+# Ref: https://phoenix.arize.com/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  # HTTPRoute removed - Phoenix is now accessed via OAuth2 Proxy
+  # See: components/infrastructure/oauth2-proxy/phoenix-proxy.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: phoenix
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: observability
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/observability/phoenix/kustomization.yaml

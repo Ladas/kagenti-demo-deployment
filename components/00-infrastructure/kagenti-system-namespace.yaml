@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kagenti-system
+  labels:
+    app.kubernetes.io/name: kagenti-system
+    app.kubernetes.io/part-of: kagenti-platform
+    istio-injection: enabled

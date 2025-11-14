@@ -1,0 +1,113 @@
+# OAuth2 Proxy for Prometheus
+# Protects Prometheus UI with Keycloak authentication (kubernetes realm)
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-oauth2-proxy
+  namespace: oauth2-proxy
+  labels:
+    app: prometheus-oauth2-proxy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prometheus-oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: prometheus-oauth2-proxy
+    spec:
+      containers:
+      - name: oauth2-proxy
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+        args:
+          - --provider=oidc
+          - --oidc-issuer-url=http://keycloak.keycloak.svc:8080/realms/kubernetes
+          - --skip-oidc-discovery=true
+          - --client-id=prometheus
+          - --client-secret=$(CLIENT_SECRET)
+          - --redirect-url=https://prometheus.localtest.me:9443/oauth2/callback
+          - --insecure-oidc-skip-issuer-verification=true
+          - --login-url=https://keycloak.localtest.me:9443/realms/kubernetes/protocol/openid-connect/auth
+          - --redeem-url=http://keycloak.keycloak.svc:8080/realms/kubernetes/protocol/openid-connect/token
+          - --oidc-jwks-url=http://keycloak.keycloak.svc:8080/realms/kubernetes/protocol/openid-connect/certs
+          - --upstream=http://prometheus.istio-system.svc:9090
+          - --cookie-name=_oauth2_proxy_prometheus
+          - --cookie-secret=$(COOKIE_SECRET)
+          - --cookie-secure=true
+          - --email-domain=*
+          - --skip-provider-button=true
+          - --insecure-oidc-allow-unverified-email=true
+          - --http-address=0.0.0.0:4180
+        env:
+        - name: CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: prometheus-client-secret
+              key: CLIENT_SECRET
+        - name: COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth2-proxy-secrets
+              key: cookie-secret
+        ports:
+        - containerPort: 4180
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  ports:
+  - port: 4180
+  selector:
+    app: prometheus-oauth2-proxy
+---
+# HTTPRoute for Prometheus through OAuth2 Proxy
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: prometheus-authenticated
+  namespace: oauth2-proxy
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: https
+  hostnames:
+  - "prometheus.localtest.me"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: prometheus-oauth2-proxy
+      port: 4180
+
+---
+# HTTP to HTTPS redirect for Prometheus
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: prometheus-http-redirect
+  namespace: oauth2-proxy
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: http-redirect
+  hostnames:
+  - "prometheus.localtest.me"
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
+
+# Secret keycloak-prometheus-client-secret is created by the keycloak-config job
+# See: components/platform/keycloak/post-install-job.yaml

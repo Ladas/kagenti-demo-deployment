@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Cert-Manager CRDs and operator
+  - cert-manager.yaml
+
+  # Gateway API CRDs (from Helm chart)
+  - gateway-api-chart/crds/gateway-api-1.3.0.yaml
+
+  # Tekton Pipelines & Triggers
+  - tekton/
+
+  # Kagenti system namespace
+  - kagenti-system-namespace.yaml
+
+  # MCP Inspector (debugging tool)
+  - mcp-inspector/
+
+  # OAuth2 Proxy (if needed for infrastructure layer auth)
+  - oauth2-proxy/
+
+  # Istio strict mTLS policy (security hardening)
+  - istio/strict-mtls.yaml
+
+  # Keycloak (Operator-based, SPIFFE-enabled v26.4.1)
+  - keycloak/
+
+  # SPIRE (Workload Identity)
+  - spire/
+
+# NOTE: Istio base/istiod deployed via Helm (argocd/applications/helm/istio-*.yaml)
+# NOTE: Container Registry deployed as separate Application (argocd/applications/base/container-registry.yaml)
+# NOTE: Kiali deployed via Helm (argocd/applications/helm/kiali.yaml)
+# NOTE: kagenti-deps-rendered.yaml REMOVED - all components now deployed as separate apps

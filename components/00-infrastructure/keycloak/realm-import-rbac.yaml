@@ -1,0 +1,33 @@
+# RBAC for Keycloak Realm Import Job
+# Separated from realm-import-job.yaml to avoid ArgoCD server-side apply issues
+# Sync wave: -1 (before Job)
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keycloak-realm-import
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-realm-import
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: keycloak-realm-import
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-realm-import
+    namespace: keycloak

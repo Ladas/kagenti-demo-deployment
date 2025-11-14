@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrator-agent
+  namespace: team1
+  labels:
+    app: orchestrator-agent
+    ai.openshift.io/agent.class: "a2a"
+    ai.openshift.io/agent.name: "orchestrator-agent"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: a2a
+  selector:
+    app: orchestrator-agent
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator-agent
+  namespace: team1
+  labels:
+    app: orchestrator-agent
+    ai.openshift.io/agent.class: "a2a"
+    ai.openshift.io/agent.name: "orchestrator-agent"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrator-agent
+  template:
+    metadata:
+      labels:
+        app: orchestrator-agent
+        ai.openshift.io/agent.class: "a2a"
+        ai.openshift.io/agent.name: "orchestrator-agent"
+    spec:
+      serviceAccountName: default
+      containers:
+      - name: agent
+        image: localhost:5000/orchestrator-agent:v0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: a2a
+          protocol: TCP
+        env:
+        - name: A2A_HOST
+          value: "0.0.0.0"
+        - name: A2A_PORT
+          value: "8080"
+        - name: MCP_URL
+          value: "http://agent-discovery-mcp.team1.svc.cluster.local:8000/mcp"
+        - name: llm_api_base
+          value: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector.observability.svc.cluster.local:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "orchestrator-agent"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi

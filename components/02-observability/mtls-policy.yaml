@@ -1,0 +1,10 @@
+# Strict mTLS for observability namespace
+# Ensures all service-to-service communication is encrypted
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-strict-mtls
+  namespace: observability
+spec:
+  mtls:
+    mode: STRICT

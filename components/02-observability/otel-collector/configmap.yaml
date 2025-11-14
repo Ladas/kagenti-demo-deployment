@@ -1,0 +1,207 @@
+# OpenTelemetry Collector Configuration
+# Dual-backend trace routing: Phoenix (OpenInference) + Tempo (infrastructure)
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: observability
+  labels:
+    app: otel-collector
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      # OTLP receiver (gRPC and HTTP)
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+      # Zipkin receiver (for compatibility)
+      zipkin:
+        endpoint: 0.0.0.0:9411
+
+      # Jaeger receiver (for compatibility)
+      jaeger:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:14250
+          thrift_http:
+            endpoint: 0.0.0.0:14268
+
+      # Prometheus receiver (for collector's own metrics)
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'otel-collector'
+              scrape_interval: 10s
+              static_configs:
+                - targets: ['0.0.0.0:8888']
+
+    connectors:
+      # SpanMetrics connector - Generate metrics from traces
+      # Provides infrastructure visibility WITHOUT exposing trace content
+      #
+      # Metrics generated:
+      # - calls_total: Total number of traces
+      # - duration_milliseconds: Trace latency histogram
+      # - Dimensions: service.name, span.kind, status.code
+      #
+      # Privacy: Metrics only, no span details or conversation content
+      spanmetrics:
+        # Default dimensions: service.name, span.kind, status.code
+        # Only add additional custom dimensions here
+        dimensions:
+          - name: openinference.span.kind  # Track LLM vs infra (custom dimension)
+        histogram:
+          explicit:
+            buckets: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+        metrics_flush_interval: 30s
+
+    processors:
+      # Batch processor for better performance
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+
+      # Memory limiter to prevent OOM
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+        spike_limit_mib: 128
+
+      # Attributes processor for enrichment
+      attributes:
+        actions:
+          - key: deployment.environment
+            value: ${ENVIRONMENT}
+            action: upsert
+          - key: cluster.name
+            value: ${CLUSTER_NAME}
+            action: upsert
+
+      # Routing processor - Exclusive routing for privacy
+      #
+      # PRIVACY DECISION: Routes are EXCLUSIVE (not duplicated)
+      # - OpenInference traces (LLM conversations) → Phoenix ONLY
+      #   - Contains user prompts, agent responses, potentially sensitive data
+      #   - Visible to application/data science teams only
+      #   - Longer retention (30-90 days) for analysis
+      #
+      # - Infrastructure traces (HTTP, DB, cache) → Tempo ONLY
+      #   - Contains service health, latency, errors
+      #   - Visible to platform/SRE teams only
+      #   - Shorter retention (7-14 days) for debugging
+      #
+      # WHY NOT DUPLICATE?
+      # - Privacy: Infrastructure admins shouldn't see user conversations
+      # - Performance: Reduces trace volume and storage costs
+      # - Compliance: Supports data segregation requirements (GDPR, SOC2)
+      #
+      # ALTERNATIVE: If infra team needs LLM metrics (not traces), use
+      # metrics exporter instead to send aggregated stats (count, latency)
+      # without exposing conversation content.
+      routing:
+        from_attribute: openinference.span.kind
+        table:
+          # Any OpenInference span kind → Phoenix ONLY
+          - value: CHAIN
+            exporters: [otlp/phoenix]
+          - value: LLM
+            exporters: [otlp/phoenix]
+          - value: TOOL
+            exporters: [otlp/phoenix]
+          - value: AGENT
+            exporters: [otlp/phoenix]
+          - value: EMBEDDING
+            exporters: [otlp/phoenix]
+          - value: RETRIEVER
+            exporters: [otlp/phoenix]
+        # Everything else (no openinference.span.kind) → Tempo ONLY
+        default_exporters: [otlp/tempo]
+
+    exporters:
+      # Phoenix exporter (for agent/LLM traces)
+      otlp/phoenix:
+        endpoint: phoenix.observability.svc.cluster.local:4317
+        tls:
+          insecure: true
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 1000
+        retry_on_failure:
+          enabled: true
+          initial_interval: 1s
+          max_interval: 30s
+          max_elapsed_time: 300s
+
+      # Tempo exporter (for infrastructure traces)
+      otlp/tempo:
+        endpoint: tempo-collector.observability.svc.cluster.local:4317
+        tls:
+          insecure: true
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 1000
+        retry_on_failure:
+          enabled: true
+          initial_interval: 1s
+          max_interval: 30s
+          max_elapsed_time: 300s
+
+      # Logging exporter for debugging (optional, disable in production)
+      logging:
+        verbosity: normal
+        sampling_initial: 5
+        sampling_thereafter: 200
+
+      # Prometheus metrics exporter
+      prometheus:
+        endpoint: 0.0.0.0:8889
+
+    service:
+      # Telemetry configuration
+      telemetry:
+        logs:
+          level: info
+        metrics:
+          level: detailed
+          address: 0.0.0.0:8888
+
+      # Pipeline configuration
+      pipelines:
+        # Traces pipeline - Sends traces AND generates metrics via spanmetrics connector
+        traces:
+          receivers: [otlp, zipkin, jaeger]
+          processors: [memory_limiter, attributes, batch, routing]
+          exporters: [otlp/phoenix, otlp/tempo, spanmetrics]  # spanmetrics generates metrics
+
+        # Metrics pipeline - Collector metrics + span-derived metrics
+        metrics:
+          receivers: [prometheus, spanmetrics]  # spanmetrics provides trace metrics
+          processors: [batch]
+          exporters: [prometheus]  # Prometheus scrapes these metrics
+
+        # Alternative metrics pipeline for Prometheus remote write (optional)
+        # metrics/remote:
+        #   receivers: [spanmetrics]
+        #   processors: [batch]
+        #   exporters: [prometheusremotewrite]
+
+      # Extensions
+      extensions:
+        - health_check
+        - zpages
+
+    extensions:
+      # Health check endpoint
+      health_check:
+        endpoint: 0.0.0.0:13133
+
+      # zPages for diagnostics
+      zpages:
+        endpoint: 0.0.0.0:55679

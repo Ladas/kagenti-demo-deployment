@@ -1,0 +1,108 @@
+# OpenTelemetry Collector Deployment
+# Dual-backend trace routing
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/component: collector
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+        app.kubernetes.io/name: otel-collector
+        sidecar.istio.io/inject: "false"  # Don't inject Istio into telemetry collector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8888"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:0.93.0
+        imagePullPolicy: IfNotPresent
+
+        args:
+        - --config=/conf/otel-collector-config.yaml
+
+        env:
+        - name: ENVIRONMENT
+          value: "local"  # Override in environment-specific patches
+        - name: CLUSTER_NAME
+          value: "kind-local"  # Override in environment-specific patches
+
+        ports:
+        # OTLP receivers
+        - name: otlp-grpc
+          containerPort: 4317
+          protocol: TCP
+        - name: otlp-http
+          containerPort: 4318
+          protocol: TCP
+
+        # Legacy receivers
+        - name: zipkin
+          containerPort: 9411
+          protocol: TCP
+        - name: jaeger-grpc
+          containerPort: 14250
+          protocol: TCP
+        - name: jaeger-http
+          containerPort: 14268
+          protocol: TCP
+
+        # Health and metrics
+        - name: health
+          containerPort: 13133
+          protocol: TCP
+        - name: zpages
+          containerPort: 55679
+          protocol: TCP
+        - name: metrics
+          containerPort: 8888
+          protocol: TCP
+
+        volumeMounts:
+        - name: config
+          mountPath: /conf
+          readOnly: true
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 13133
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+      volumes:
+      - name: config
+        configMap:
+          name: otel-collector-config

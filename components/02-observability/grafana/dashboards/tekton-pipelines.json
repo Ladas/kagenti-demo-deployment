@@ -1,0 +1,307 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "id": 1,
+      "gridPos": {"h": 7, "w": 6, "x": 0, "y": 0},
+      "title": "Active Pipeline Runs",
+      "type": "stat",
+      "targets": [{
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "expr": "count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Running\"}) or vector(0)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 5, "color": "yellow"},
+              {"value": 10, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "id": 2,
+      "gridPos": {"h": 7, "w": 6, "x": 6, "y": 0},
+      "title": "Successful Builds (24h)",
+      "type": "stat",
+      "targets": [{
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "expr": "count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Succeeded\"}) or vector(0)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"value": null, "color": "green"}]
+          }
+        }
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "id": 3,
+      "gridPos": {"h": 7, "w": 6, "x": 12, "y": 0},
+      "title": "Failed Builds (24h)",
+      "type": "stat",
+      "targets": [{
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "expr": "count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Failed\"}) or vector(0)",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 1, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "id": 4,
+      "gridPos": {"h": 7, "w": 6, "x": 18, "y": 0},
+      "title": "Build Success Rate",
+      "type": "gauge",
+      "targets": [{
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "expr": "(count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Succeeded\"}) or vector(0)) / ((count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Succeeded\"}) or vector(0)) + (count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Failed\"}) or vector(0))) * 100",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "red"},
+              {"value": 80, "color": "yellow"},
+              {"value": 95, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "id": 5,
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 7},
+      "title": "Pipeline Run Status Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Running\"}) or vector(0)",
+          "refId": "A",
+          "legendFormat": "Running"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Succeeded\"}) or vector(0)",
+          "refId": "B",
+          "legendFormat": "Succeeded"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "count(kube_pod_info{namespace=~\"team.*\",pod=~\".*-run-.*\"} * on(pod, namespace) kube_pod_status_phase{phase=\"Failed\"}) or vector(0)",
+          "refId": "C",
+          "legendFormat": "Failed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "id": 6,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "title": "Build CPU Usage",
+      "type": "timeseries",
+      "targets": [{
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"team.*\",pod=~\".*-run-.*\",container!=\"\",pod!=\"\"}[5m])) by (pod)",
+        "refId": "A",
+        "legendFormat": "{{pod}}"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5
+          },
+          "unit": "cores"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "id": 7,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "title": "Build Memory Usage",
+      "type": "timeseries",
+      "targets": [{
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "expr": "sum(container_memory_working_set_bytes{namespace=~\"team.*\",pod=~\".*-run-.*\",container!=\"\",pod!=\"\"}) by (pod)",
+        "refId": "A",
+        "legendFormat": "{{pod}}"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5
+          },
+          "unit": "bytes"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["tekton", "ci-cd", "pipelines"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Tekton Pipelines - Agent Builds",
+  "uid": "kagenti-tekton",
+  "version": 1,
+  "weekStart": ""
+}

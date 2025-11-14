@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagenti-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  labels:
+    kagenti.dev/layer: infrastructure
+    kagenti.dev/component: operators
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ladas/kagenti-operator  # TODO: Change to https://github.com/kagenti/kagenti-operator when CI/CD publishes images
+    path: charts/kagenti-operator
+    targetRevision: fix/add-kagenti-operator-image-build  # TODO: Change to specific version tag (e.g., v0.2.0-alpha.16) when available
+    helm:
+      values: |
+        controllerManager:
+          replicas: 1
+          container:
+            cmd: /manager  # Override default /ko-app/cmd for local builds
+            image:
+              # TODO: TEMPORARY - Using local registry for development
+              # TODO: Change to ghcr.io/kagenti/kagenti-operator/kagenti-operator:VERSION
+              repository: localhost:5001/kagenti-operator
+              tag: dev
+              pullPolicy: Always
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagenti-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle

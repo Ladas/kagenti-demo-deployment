@@ -1,0 +1,235 @@
+# Keycloak Realm Import Job using Admin REST API
+# Replaces KeycloakRealmImport CRs (which require Keycloak Operator)
+# Imports both kubernetes and kagenti realms with OAuth clients
+#
+# Sync wave: 1 (PostSync - after Keycloak StatefulSet is ready)
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keycloak-realm-import
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-realm-import
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: keycloak-realm-import
+      annotations:
+        sidecar.istio.io/inject: "true"  # Enable Istio sidecar for mTLS to Keycloak
+        proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'  # Fix sidecar race condition
+    spec:
+      serviceAccountName: keycloak-realm-import
+      restartPolicy: OnFailure
+      containers:
+        - name: realm-import
+          image: curlimages/curl:8.5.0
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - |
+              set -e
+              echo "=== Keycloak Realm Import via Admin API ==="
+
+              # Get admin credentials
+              ADMIN_USER=$(cat /etc/keycloak-admin/username)
+              ADMIN_PASS=$(cat /etc/keycloak-admin/password)
+              KEYCLOAK_URL="http://keycloak.keycloak.svc.cluster.local:8080"
+
+              # Note: Health check on port 9000 is blocked by NetworkPolicy
+              # NetworkPolicy only allows ingress on port 8080
+              # Since this is a PostSync hook, Keycloak StatefulSet is Ready
+              # However, Keycloak application may still be initializing
+              echo "Keycloak StatefulSet is ready (PostSync hook)"
+
+              # Wait for Keycloak token endpoint to be available (with retry)
+              echo "Waiting for Keycloak token endpoint to be ready..."
+              MAX_RETRIES=30
+              RETRY_COUNT=0
+              TOKEN=""
+
+              while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ -z "$TOKEN" ]; do
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                echo "Attempt $RETRY_COUNT/$MAX_RETRIES: Getting admin access token..."
+
+                TOKEN=$(curl -sf -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+                  -H "Content-Type: application/x-www-form-urlencoded" \
+                  -d "username=${ADMIN_USER}" \
+                  -d "password=${ADMIN_PASS}" \
+                  -d "grant_type=password" \
+                  -d "client_id=admin-cli" 2>/dev/null | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+
+                if [ -n "$TOKEN" ]; then
+                  echo "✓ Access token obtained successfully"
+                  break
+                fi
+
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "Token endpoint not ready, waiting 5 seconds..."
+                  sleep 5
+                fi
+              done
+
+              if [ -z "$TOKEN" ]; then
+                echo "ERROR: Failed to get access token after $MAX_RETRIES attempts"
+                echo "Keycloak may not be fully initialized yet"
+                exit 1
+              fi
+
+              # Function to create realm
+              create_realm() {
+                REALM_NAME=$1
+                DISPLAY_NAME=$2
+                REGISTRATION=$3
+
+                echo "Creating realm: ${REALM_NAME}..."
+                curl -sf -X POST "${KEYCLOAK_URL}/admin/realms" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "{
+                    \"id\": \"${REALM_NAME}\",
+                    \"realm\": \"${REALM_NAME}\",
+                    \"enabled\": true,
+                    \"displayName\": \"${DISPLAY_NAME}\",
+                    \"registrationAllowed\": ${REGISTRATION},
+                    \"registrationEmailAsUsername\": false,
+                    \"rememberMe\": true,
+                    \"verifyEmail\": false,
+                    \"loginWithEmailAllowed\": true,
+                    \"duplicateEmailsAllowed\": false,
+                    \"resetPasswordAllowed\": true,
+                    \"editUsernameAllowed\": false,
+                    \"bruteForceProtected\": true
+                  }" || echo "Realm ${REALM_NAME} may already exist, continuing..."
+                echo "Realm ${REALM_NAME} created/verified"
+              }
+
+              # Function to create client
+              create_client() {
+                REALM=$1
+                CLIENT_ID=$2
+                CLIENT_NAME=$3
+                REDIRECT_URI=$4
+                WEB_ORIGIN=$5
+
+                echo "Creating client: ${CLIENT_ID} in realm ${REALM}..."
+                curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM}/clients" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "{
+                    \"clientId\": \"${CLIENT_ID}\",
+                    \"name\": \"${CLIENT_NAME}\",
+                    \"enabled\": true,
+                    \"publicClient\": false,
+                    \"protocol\": \"openid-connect\",
+                    \"redirectUris\": [\"${REDIRECT_URI}\"],
+                    \"webOrigins\": [\"${WEB_ORIGIN}\"],
+                    \"standardFlowEnabled\": true,
+                    \"implicitFlowEnabled\": false,
+                    \"directAccessGrantsEnabled\": false,
+                    \"serviceAccountsEnabled\": false,
+                    \"authorizationServicesEnabled\": false
+                  }" || echo "Client ${CLIENT_ID} may already exist, continuing..."
+                echo "Client ${CLIENT_ID} created/verified"
+
+                # Note: Client secret is auto-generated on first client creation
+                # DO NOT regenerate secret here - it breaks oauth-secrets-extractor job
+                # The secret must remain stable between realm-import and oauth-secrets-extractor
+                echo "Client ${CLIENT_ID} configured (secret auto-generated on creation)"
+              }
+
+              # Function to create user
+              create_user() {
+                REALM=$1
+                USERNAME=$2
+                EMAIL=$3
+                FIRSTNAME=$4
+                LASTNAME=$5
+                PASSWORD=$6
+
+                echo "Creating user: ${USERNAME} in realm ${REALM}..."
+
+                # Create user
+                curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM}/users" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "{
+                    \"username\": \"${USERNAME}\",
+                    \"enabled\": true,
+                    \"email\": \"${EMAIL}\",
+                    \"firstName\": \"${FIRSTNAME}\",
+                    \"lastName\": \"${LASTNAME}\"
+                  }" || echo "User ${USERNAME} may already exist"
+
+                # Get user ID
+                USER_ID=$(curl -sf "${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${USERNAME}" \
+                  -H "Authorization: Bearer ${TOKEN}" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+
+                if [ -n "$USER_ID" ]; then
+                  # Set password
+                  curl -sf -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM}/users/${USER_ID}/reset-password" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "Content-Type: application/json" \
+                    -d "{
+                      \"type\": \"password\",
+                      \"value\": \"${PASSWORD}\",
+                      \"temporary\": false
+                    }"
+                  echo "User ${USERNAME} password set"
+                fi
+              }
+
+              # Create kubernetes realm (includes all observability stack)
+              create_realm "kubernetes" "Kubernetes Realm" "false"
+              create_client "kubernetes" "grafana" "Grafana" "https://grafana.localtest.me:9443/*" "https://grafana.localtest.me:9443"
+              create_client "kubernetes" "k8s-dashboard" "Kubernetes Dashboard" "https://dashboard.localtest.me:9443/*" "https://dashboard.localtest.me:9443"
+              create_client "kubernetes" "kiali" "Kiali Service Mesh" "https://kiali.localtest.me:9443/*" "https://kiali.localtest.me:9443"
+              create_client "kubernetes" "prometheus" "Prometheus" "https://prometheus.localtest.me:9443/*" "https://prometheus.localtest.me:9443"
+              create_client "kubernetes" "tempo" "Tempo Tracing" "https://tempo.localtest.me:9443/*" "https://tempo.localtest.me:9443"
+              create_user "kubernetes" "admin" "admin@kagenti.local" "Admin" "User" "admin"
+              create_user "kubernetes" "platform-admin" "platform-admin@localtest.me" "Platform" "Admin" "admin123"
+
+              # Create kagenti realm
+              create_realm "kagenti" "Kagenti Realm" "true"
+              create_client "kagenti" "phoenix" "Phoenix Observability" "https://phoenix.localtest.me:9443/*" "https://phoenix.localtest.me:9443"
+              create_client "kagenti" "kagenti-ui" "Kagenti UI" "https://kagenti.localtest.me:9443/*" "https://kagenti.localtest.me:9443"
+              create_user "kagenti" "user" "user@kagenti.local" "Demo" "User" "user"
+              create_user "kagenti" "kagenti-admin" "kagenti-admin@kagenti.local" "Kagenti" "Admin" "admin123"
+
+              echo "=== Realm import completed successfully ==="
+
+              # Shutdown Istio sidecar to allow Job to complete
+              echo ""
+              echo "Shutting down Istio sidecar..."
+              curl -sf -X POST http://localhost:15020/quitquitquit || true
+              echo "✓ Istio sidecar shutdown requested"
+
+          volumeMounts:
+            - name: keycloak-admin
+              mountPath: /etc/keycloak-admin
+              readOnly: true
+      volumes:
+        - name: keycloak-admin
+          secret:
+            secretName: keycloak-initial-admin

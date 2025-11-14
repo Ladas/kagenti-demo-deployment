@@ -1,0 +1,54 @@
+# OpenShift Stage Environment
+# Target: External OpenShift staging cluster
+# Access: https://grafana-stage.apps.your-cluster.example.com
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+# Reference components
+resources:
+  # Infrastructure
+  - ../../components/infrastructure/tekton
+
+  # Platform
+  - ../../components/platform/operator
+
+  # Observability
+  - ../../components/observability
+  - ../../components/observability/kiali
+  - ../../components/observability/phoenix
+
+  # Agents
+  - ../../components/agents
+
+  # OpenShift-specific resources
+  - patches/grafana-route.yaml
+
+# Environment-specific patches
+patchesStrategicMerge:
+  - patches/grafana-resources.yaml
+  - patches/grafana-openshift-scc.yaml
+
+# Remove HTTPRoute (not used in OpenShift)
+patches:
+  - target:
+      kind: HTTPRoute
+      name: grafana
+    patch: |-
+      $patch: delete
+
+# Environment labels
+commonLabels:
+  environment: openshift-stage
+  cluster-type: openshift
+
+# Environment-specific config
+configMapGenerator:
+  - name: environment-config
+    namespace: observability
+    literals:
+      - CLUSTER_TYPE=openshift
+      - ENVIRONMENT=stage
+      - DOMAIN=apps.your-cluster.example.com

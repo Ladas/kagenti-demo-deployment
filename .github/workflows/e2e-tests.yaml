@@ -1,0 +1,259 @@
+name: E2E Platform Tests
+
+on:
+  push:
+    branches: [ main, argocd-gitops-dev ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  KIND_VERSION: v0.20.0
+  KUBECTL_VERSION: v1.27.3
+  ARGOCD_VERSION: v2.9.3
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  e2e-tests:
+    name: End-to-End Platform Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # =====================================================================
+      # Setup
+      # =====================================================================
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest kubernetes requests pyyaml pytest-html pytest-json-report
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/${{ env.KUBECTL_VERSION }}/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: Install Kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/${{ env.KIND_VERSION }}/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/download/${{ env.ARGOCD_VERSION }}/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+          argocd version --client
+
+      # =====================================================================
+      # Deploy Platform
+      # =====================================================================
+
+      - name: Create Kind cluster
+        run: |
+          ./scripts/kind/00-cleanup.sh || true
+          ./scripts/kind/01-create-cluster.sh
+
+      - name: Verify Kind cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Install ArgoCD
+        run: |
+          ./scripts/kind/02-install-argocd.sh
+
+      - name: Wait for ArgoCD to be ready
+        run: |
+          kubectl wait --for=condition=available \
+            deployment/argocd-server \
+            -n argocd \
+            --timeout=300s
+
+      - name: Bootstrap ArgoCD Applications
+        run: |
+          ./scripts/kind/03-bootstrap-apps.sh
+
+      - name: Sync Wave 0 - Infrastructure
+        run: |
+          argocd app sync gateway-api cert-manager tekton istio-base istiod istio-config \
+            --port-forward --port-forward-namespace argocd --grpc-web \
+            --timeout 300
+
+      - name: Wait for Wave 0 components
+        run: |
+          kubectl wait --for=condition=available \
+            deployment/cert-manager -n cert-manager --timeout=300s
+          kubectl wait --for=condition=available \
+            deployment/istiod -n istio-system --timeout=300s
+
+      - name: Sync Wave 5 - Infrastructure Services
+        run: |
+          argocd app sync keycloak container-registry kiali \
+            --port-forward --port-forward-namespace argocd --grpc-web \
+            --timeout 300
+
+      - name: Wait for Keycloak
+        run: |
+          kubectl wait --for=condition=ready \
+            pod -l app.kubernetes.io/name=keycloak -n keycloak \
+            --timeout=600s
+
+      - name: Sync Wave 10 - Operators
+        run: |
+          argocd app sync kagenti-operator platform-operator \
+            --port-forward --port-forward-namespace argocd --grpc-web \
+            --timeout 300 || true  # kagenti-operator will fail (image not published)
+
+      - name: Wait for platform-operator
+        run: |
+          kubectl wait --for=condition=available \
+            deployment/agentic-platform-controller-manager -n kagenti-system \
+            --timeout=300s
+
+      - name: Sync Wave 15 - Platform
+        run: |
+          argocd app sync platform \
+            --port-forward --port-forward-namespace argocd --grpc-web \
+            --timeout 300
+
+      - name: Wait for Kagenti UI
+        run: |
+          kubectl wait --for=condition=available \
+            deployment/kagenti-ui -n kagenti-system \
+            --timeout=300s
+
+      - name: Sync Wave 20 - Observability
+        run: |
+          argocd app sync observability \
+            --port-forward --port-forward-namespace argocd --grpc-web \
+            --timeout 300
+
+      - name: Wait for Observability components
+        run: |
+          kubectl wait --for=condition=available \
+            deployment/jaeger -n observability --timeout=300s
+          kubectl wait --for=condition=available \
+            deployment/tempo -n observability --timeout=300s
+          kubectl wait --for=condition=available \
+            deployment/otel-collector -n observability --timeout=300s
+
+      - name: Sync Wave 25 - Agents
+        run: |
+          argocd app sync agents \
+            --port-forward --port-forward-namespace argocd --grpc-web \
+            --timeout 300 || true  # Agents will fail (images not built)
+
+      # =====================================================================
+      # Run Tests
+      # =====================================================================
+
+      - name: Run E2E Tests
+        id: pytest
+        run: |
+          pytest tests/e2e/test_platform.py \
+            -v \
+            --tb=short \
+            --html=test-report.html \
+            --self-contained-html \
+            --json-report \
+            --json-report-file=test-report.json \
+            --junit-xml=test-results.xml \
+            --continue-on-collection-errors
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-report.html
+            test-report.json
+            test-results.xml
+
+      # =====================================================================
+      # Diagnostics on Failure
+      # =====================================================================
+
+      - name: Collect diagnostics on failure
+        if: failure()
+        run: |
+          echo "=== ArgoCD Applications ==="
+          argocd app list --port-forward --port-forward-namespace argocd --grpc-web || true
+
+          echo "=== All Pods ==="
+          kubectl get pods -A
+
+          echo "=== Failed/Pending Pods ==="
+          kubectl get pods -A | grep -v 'Running\|Completed' || true
+
+          echo "=== ArgoCD Server Logs ==="
+          kubectl logs -n argocd deployment/argocd-server --tail=100 || true
+
+          echo "=== Platform Operator Logs ==="
+          kubectl logs -n kagenti-system deployment/agentic-platform-controller-manager --tail=100 || true
+
+          echo "=== Kagenti UI Logs ==="
+          kubectl logs -n kagenti-system deployment/kagenti-ui --tail=100 || true
+
+      - name: Export cluster logs
+        if: always()
+        run: |
+          kind export logs cluster-logs --name kagenti-demo || true
+
+      - name: Upload cluster logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-logs
+          path: cluster-logs/
+
+      # =====================================================================
+      # Cleanup
+      # =====================================================================
+
+      - name: Cleanup Kind cluster
+        if: always()
+        run: |
+          ./scripts/kind/00-cleanup.sh || true
+
+      # =====================================================================
+      # Report Status
+      # =====================================================================
+
+      - name: Test Report Summary
+        if: always()
+        run: |
+          if [ -f test-report.json ]; then
+            echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+            python3 -c "
+          import json
+          with open('test-report.json') as f:
+              report = json.load(f)
+              summary = report.get('summary', {})
+              print(f\"- **Total**: {summary.get('total', 0)}\")
+              print(f\"- **Passed**: {summary.get('passed', 0)}\")
+              print(f\"- **Failed**: {summary.get('failed', 0)}\")
+              print(f\"- **Skipped**: {summary.get('skipped', 0)}\")
+              print(f\"- **xFailed**: {summary.get('xfailed', 0)}\")
+              print(f\"- **xPassed**: {summary.get('xpassed', 0)}\")
+          " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail if tests failed
+        if: steps.pytest.outcome == 'failure'
+        run: exit 1

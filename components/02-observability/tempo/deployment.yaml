@@ -1,0 +1,107 @@
+# Tempo Monolithic Deployment
+# Single deployment with all Tempo components
+# For production, consider microservices mode
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: observability
+  labels:
+    app: tempo
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: tracing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+        app.kubernetes.io/name: tempo
+        sidecar.istio.io/inject: "false"  # Don't inject Istio sidecar into tracing backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3200"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: tempo
+        image: grafana/tempo:2.6.1
+        imagePullPolicy: IfNotPresent
+        args:
+          - -config.file=/etc/tempo/tempo.yaml
+          - -target=all
+        ports:
+        # HTTP API / UI
+        - name: http
+          containerPort: 3200
+          protocol: TCP
+
+        # gRPC API
+        - name: grpc
+          containerPort: 9096
+          protocol: TCP
+
+        # OTLP receivers
+        - name: otlp-grpc
+          containerPort: 4317
+          protocol: TCP
+        - name: otlp-http
+          containerPort: 4318
+          protocol: TCP
+
+        # Jaeger receivers (compatibility)
+        - name: jaeger-grpc
+          containerPort: 14250
+          protocol: TCP
+        - name: jaeger-http
+          containerPort: 14268
+          protocol: TCP
+
+        # Zipkin receiver (compatibility)
+        - name: zipkin
+          containerPort: 9411
+          protocol: TCP
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3200
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 5
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo
+          readOnly: true
+        - name: storage
+          mountPath: /var/tempo
+
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-config
+      - name: storage
+        emptyDir: {}  # For dev/staging. Use PVC for production.

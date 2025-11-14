@@ -1,0 +1,81 @@
+# KeycloakRealmImport for kagenti realm
+# Application services: Phoenix, Kagenti UI/API
+# Ref: https://www.keycloak.org/operator/realm-import
+
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakRealmImport
+metadata:
+  name: kagenti-realm
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: authentication
+spec:
+  keycloakCRName: keycloak
+  realm:
+    id: kagenti
+    realm: kagenti
+    enabled: true
+    displayName: "Kagenti Realm"
+    registrationAllowed: true
+    registrationEmailAsUsername: false
+    rememberMe: true
+    verifyEmail: false
+    loginWithEmailAllowed: true
+    duplicateEmailsAllowed: false
+    resetPasswordAllowed: true
+    editUsernameAllowed: false
+    bruteForceProtected: true
+
+    # Frontend URL for HTTPS redirects
+    attributes:
+      frontendUrl: "https://keycloak.localtest.me:9443"
+
+    # Application services clients
+    clients:
+      - clientId: phoenix
+        name: "Phoenix Observability"
+        description: "Phoenix Observability Platform"
+        enabled: true
+        publicClient: false
+        protocol: openid-connect
+        redirectUris:
+          - "https://phoenix.localtest.me:9443/*"
+        webOrigins:
+          - "https://phoenix.localtest.me:9443"
+        standardFlowEnabled: true
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        serviceAccountsEnabled: false
+        authorizationServicesEnabled: false
+
+      - clientId: kagenti-ui
+        name: "Kagenti UI"
+        description: "Kagenti Platform UI"
+        enabled: true
+        publicClient: false
+        protocol: openid-connect
+        # Note: No 'secret' field specified - Keycloak auto-generates client secret
+        # Secret retrieved via Keycloak Admin API by oauth-secret-job (see kagenti-ui component)
+        redirectUris:
+          - "https://kagenti.localtest.me:9443/*"
+        webOrigins:
+          - "https://kagenti.localtest.me:9443"
+        standardFlowEnabled: true
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        serviceAccountsEnabled: false
+        authorizationServicesEnabled: false
+
+    # Demo users
+    users:
+      - username: user
+        enabled: true
+        email: user@kagenti.local
+        firstName: Demo
+        lastName: User
+        credentials:
+          - type: password
+            value: user
+            temporary: false

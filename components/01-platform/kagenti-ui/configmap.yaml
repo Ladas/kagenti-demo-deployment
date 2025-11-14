@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kagenti-ui-config
+  namespace: kagenti-system
+data:
+  TRACES_DASHBOARD_URL: "https://phoenix.localtest.me:9443"
+  NETWORK_TRAFFIC_DASHBOARD_URL: "https://kiali.localtest.me:9443"
+  MCP_INSPECTOR_URL: "https://mcp-inspector.localtest.me:9443"
+  MCP_PROXY_FULL_ADDRESS: "http://mcp.mcp-system.svc.cluster.local:8080"
+  KEYCLOAK_CONSOLE_URL: "https://keycloak.localtest.me:9443"

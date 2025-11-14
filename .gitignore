@@ -1,0 +1,38 @@
+# Temporary files
+*.tmp
+*.swp
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Kubernetes secrets (if any get created)
+*-secret.yaml
+credentials.json
+
+# Backup files
+*.backup
+backups/
+
+# Python
+*.pyc
+*.pyo
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test output
+/tmp/
+*.log
+istio-*/
+report.html
+report.json
+*-report.html
+*-report.json
+.pytest_cache/

@@ -1,0 +1,3 @@
+# NOTE: oauth2-proxy namespace is managed by oauth2-proxy Application (infrastructure layer)
+# NOTE: spire-system namespace is managed by SPIRE Helm chart (infrastructure layer)
+# Platform layer only manages HTTPRoutes for these services, not namespaces

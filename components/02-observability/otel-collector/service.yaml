@@ -1,0 +1,62 @@
+# OpenTelemetry Collector Service
+# Exposed as LoadBalancer or ClusterIP for trace ingestion
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/component: collector
+spec:
+  selector:
+    app: otel-collector
+  ports:
+  # OTLP receivers (primary)
+  - name: otlp-grpc
+    port: 4317
+    targetPort: 4317
+    protocol: TCP
+
+  - name: otlp-http
+    port: 4318
+    targetPort: 4318
+    protocol: TCP
+
+  # Legacy receivers (for compatibility)
+  - name: zipkin
+    port: 9411
+    targetPort: 9411
+    protocol: TCP
+
+  - name: jaeger-grpc
+    port: 14250
+    targetPort: 14250
+    protocol: TCP
+
+  - name: jaeger-http
+    port: 14268
+    targetPort: 14268
+    protocol: TCP
+
+  # Health check
+  - name: health
+    port: 13133
+    targetPort: 13133
+    protocol: TCP
+
+  # zPages (diagnostics)
+  - name: zpages
+    port: 55679
+    targetPort: 55679
+    protocol: TCP
+
+  # Metrics
+  - name: metrics
+    port: 8888
+    targetPort: 8888
+    protocol: TCP
+
+  type: ClusterIP

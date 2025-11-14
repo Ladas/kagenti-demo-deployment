@@ -1,0 +1,34 @@
+# OpenShift Production Applications Overlay
+# Patches base Applications for OpenShift cluster with automated sync
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openshift-gitops  # OpenShift uses openshift-gitops namespace
+
+resources:
+  - ../base  # Base Applications
+
+commonLabels:
+  kagenti.dev/environment: openshift-prod
+  kagenti.dev/cluster-type: openshift
+  kagenti.dev/sync-mode: automated  # Auto-sync for production
+
+patches:
+  # Patch all Applications to use in-cluster server
+  - target:
+      kind: Application
+    patch: |
+      - op: replace
+        path: /spec/destination/server
+        value: https://kubernetes.default.svc
+
+  # Add automated sync policy to all Applications
+  - target:
+      kind: Application
+    patch: |
+      - op: add
+        path: /spec/syncPolicy/automated
+        value:
+          selfHeal: true
+          prune: true

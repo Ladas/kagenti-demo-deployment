@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # OpenTelemetry Collector
+  - otel-collector/
+
+  # Tempo (distributed tracing backend - infrastructure traces)
+  - tempo/
+
+  # Phoenix (LLM observability - agent/LLM traces)
+  - phoenix/
+
+  # Grafana (dashboards and visualization)
+  - grafana/
+
+  # Kube-state-metrics (Kubernetes metrics)
+  - kube-state-metrics/deployment.yaml
+
+  # Kubernetes Dashboard
+  - kubernetes-dashboard/
+
+  # Network policies for observability stack
+  - networkpolicies.yaml
+
+  # Strict mTLS policy for observability namespace
+  - mtls-policy.yaml
+
+# NOTE: Kiali is now deployed via Helm (argocd/applications/helm/kiali.yaml)
+# NOTE: Prometheus is part of Istio/kagenti-deps (to be extracted)
+# NOTE: This layer can deploy in parallel with 01-platform (sync wave 15 or 20)
+#       OR after platform if grafana needs Keycloak OIDC (sync wave 20)

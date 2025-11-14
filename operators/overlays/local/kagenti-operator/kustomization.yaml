@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference remote operator configuration
+# NOTE: ArgoCD doesn't support remote HTTPS resources, so we use the GitHub repo directly in Application spec
+resources:
+  - https://github.com/Ladas/kagenti-operator/kagenti-operator/config/default?ref=fix/add-kagenti-operator-image-build
+
+namespace: kagenti-system
+
+# Substitute image for local development
+# NOTE: The base kustomization already transforms 'controller' -> 'kagenti-operator:v0.0.1'
+# So we need to override 'kagenti-operator' (the output of base transformation)
+images:
+  - name: kagenti-operator
+    newName: localhost:5001/kagenti-operator
+    newTag: dev
+
+# Patch deployment to use correct command path
+# Patch namespace to ensure istio-injection label is present
+patches:
+  - target:
+      kind: Deployment
+      name: controller-manager
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/command/0
+        value: /manager
+  # Ensure istio-injection label is always present on namespace (strategic merge)
+  - target:
+      kind: Namespace
+      name: kagenti-system
+    patch: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: kagenti-system
+        labels:
+          istio-injection: enabled

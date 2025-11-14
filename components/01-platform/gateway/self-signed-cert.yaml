@@ -1,0 +1,31 @@
+# Self-signed TLS Certificate for localtest.me
+# For local development only - use proper certificates in production
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-issuer
+  namespace: default
+spec:
+  selfSigned: {}
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: localtest-me-tls
+  namespace: default
+spec:
+  secretName: localtest-me-tls
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  subject:
+    organizations:
+      - Kagenti Local Development
+  commonName: "*.localtest.me"
+  dnsNames:
+    - "*.localtest.me"
+    - "localtest.me"
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer
