@@ -1,0 +1,13 @@
+# Patch to exclude Kubernetes API server from Istio traffic capture
+# This allows kagenti-ui to access K8s API (10.96.0.1:443) directly without Istio sidecar interference
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kagenti-ui
+  namespace: kagenti-system
+spec:
+  template:
+    metadata:
+      annotations:
+        traffic.sidecar.istio.io/excludeOutboundIPRanges: "10.96.0.1/32"
