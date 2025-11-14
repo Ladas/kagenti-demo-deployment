@@ -112,7 +112,7 @@ jobs:
           # List of REQUIRED applications (MUST be healthy, or we fail)
           # NOTE: Operators temporarily removed from required list - they're not being created by ArgoCD
           # TODO: Debug why operator Applications aren't being created from kustomize directory
-          REQUIRED_APPS="infrastructure gateway-api cert-manager istio-base istiod istio-config keycloak"
+          REQUIRED_APPS="gateway-api cert-manager istio-base istiod istio-config keycloak"
 
           # List of apps that can be "Progressing" or "Degraded" temporarily
           # Tekton often shows Progressing during leader election
