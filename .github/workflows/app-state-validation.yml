@@ -87,9 +87,10 @@ jobs:
 
       - name: Install ArgoCD CLI
         run: |
-          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/download/${{ env.ARGOCD_VERSION }}/argocd-linux-amd64
+          cd /tmp
+          curl -fsSL -o argocd "https://github.com/argoproj/argo-cd/releases/download/${{ env.ARGOCD_VERSION }}/argocd-linux-amd64"
           chmod +x argocd
-          sudo mv argocd /usr/local/bin/
+          sudo mv argocd /usr/local/bin/argocd
           argocd version --client
 
       - name: Create Kind cluster
@@ -107,8 +108,42 @@ jobs:
       - name: Bootstrap ArgoCD applications
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |
-          chmod +x ./scripts/kind/03-bootstrap-apps.sh
-          ./scripts/kind/03-bootstrap-apps.sh
+          # Dynamically generate root-app.yaml with PR repo/branch
+          DEPLOY_REPO="https://github.com/${{ github.repository }}"
+          DEPLOY_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+
+          echo "Bootstrapping with:"
+          echo "  Repository: ${DEPLOY_REPO}"
+          echo "  Branch: ${DEPLOY_BRANCH}"
+
+          cat > /tmp/root-app.yaml <<EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: kagenti-platform-kind
+            namespace: argocd
+            finalizers:
+              - resources-finalizer.argocd.argoproj.io
+          spec:
+            project: default
+            source:
+              repoURL: ${DEPLOY_REPO}
+              targetRevision: ${DEPLOY_BRANCH}
+              path: argocd/applications/kind-local
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: argocd
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true
+          EOF
+
+          kubectl apply -f /tmp/root-app.yaml
+          sleep 5
+          kubectl get applications -n argocd
 
       - name: Wait for ArgoCD to be ready
         if: steps.cluster_mode.outputs.mode == 'kind'
