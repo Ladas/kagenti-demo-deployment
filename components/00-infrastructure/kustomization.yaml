@@ -5,8 +5,8 @@ resources:
   # Cert-Manager CRDs and operator
   - cert-manager.yaml
 
-  # Gateway API CRDs (from Helm chart)
-  - gateway-api-chart/crds/gateway-api-1.3.0.yaml
+  # Gateway API CRDs
+  - gateway-api/
 
   # Tekton Pipelines & Triggers
   - tekton/
