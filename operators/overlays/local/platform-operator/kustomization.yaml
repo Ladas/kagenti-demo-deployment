@@ -4,7 +4,7 @@ kind: Kustomization
 # Reference remote operator configuration
 # NOTE: ArgoCD doesn't support remote HTTPS resources, so we use the GitHub repo directly in Application spec
 resources:
-  - https://github.com/Ladas/kagenti-operator/config/default/platform-operator?ref=fix/add-kagenti-operator-image-build
+  - https://github.com/Ladas/kagenti-operator/platform-operator/config/default?ref=fix/add-kagenti-operator-image-build
 
 namespace: kagenti-system
 
