@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opentelemetry-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+  labels:
+    kagenti.dev/layer: infrastructure
+    kagenti.dev/component: otel-operator
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-operator
+    targetRevision: 0.72.0
+    helm:
+      values: |
+        # Manager configuration
+        manager:
+          replicas: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+        # Enable auto-instrumentation
+        manager:
+          featureGates: operator.autoinstrumentation.multi-instrumentation
+
+        # Admission webhooks (required for auto-instrumentation)
+        admissionWebhooks:
+          create: true
+          certManager:
+            enabled: false  # Use self-signed certificates for Kind
+          autoGenerateCert:
+            enabled: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: opentelemetry-operator-system
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

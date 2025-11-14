@@ -5,6 +5,9 @@ resources:
   # OpenTelemetry Collector
   - otel-collector/
 
+  # OpenTelemetry Auto-Instrumentation
+  - otel-instrumentation/
+
   # Prometheus (metrics storage and API for Grafana)
   - prometheus/
 

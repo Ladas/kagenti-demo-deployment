@@ -1,0 +1,76 @@
+# OpenTelemetry Instrumentation Configuration
+# Auto-instrumentation for Python applications (agents)
+#
+# This Custom Resource configures the OTEL Operator to automatically inject
+# tracing instrumentation into pods with the annotation:
+#   instrumentation.opentelemetry.io/inject-python: "observability/kagenti-instrumentation"
+#
+# The operator will:
+# 1. Add an init container to copy OTEL auto-instrumentation libraries
+# 2. Set environment variables for OTEL configuration
+# 3. Configure trace propagation (W3C Trace Context + Baggage)
+# 4. Send traces to the OTEL Collector
+
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: kagenti-instrumentation
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: otel-instrumentation
+    app.kubernetes.io/part-of: observability
+spec:
+  # OTEL Collector endpoint
+  exporter:
+    endpoint: http://otel-collector.observability.svc.cluster.local:4317
+
+  # Trace propagation formats
+  propagators:
+    - tracecontext  # W3C Trace Context (traceparent header)
+    - baggage       # W3C Baggage (baggage header)
+
+  # Sampling strategy
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1.0"  # 100% sampling for development
+
+  # Python auto-instrumentation configuration
+  python:
+    image: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-python:latest
+
+    # Environment variables for Python auto-instrumentation
+    env:
+      # Exporter protocol
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: grpc
+
+      # Enable traces only (disable metrics and logs for now)
+      - name: OTEL_TRACES_EXPORTER
+        value: otlp
+      - name: OTEL_METRICS_EXPORTER
+        value: none
+      - name: OTEL_LOGS_EXPORTER
+        value: none
+
+      # Log level for troubleshooting
+      - name: OTEL_LOG_LEVEL
+        value: info
+
+      # Python-specific instrumentation libraries to enable
+      - name: OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
+        value: ""  # Enable all available instrumentations
+
+      # Resource attributes (will be merged with pod-specific attributes)
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: deployment.environment=kind-local
+
+---
+# ServiceAccount for instrumented pods (if needed for RBAC)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: instrumented-workload
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: instrumented-workload
+    app.kubernetes.io/part-of: observability
