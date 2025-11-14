@@ -132,6 +132,15 @@ spec:
     - protocol: TCP
       port: 6006  # UI
 
+  # Allow from Grafana (same namespace, for testing/connectivity checks)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 6006  # HTTP API
+
   egress:
   # Allow DNS
   - to:
