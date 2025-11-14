@@ -20,6 +20,9 @@ resources:
   # Grafana (dashboards and visualization)
   - grafana/
 
+  # Korrel8r (signal correlation engine for trace↔log↔metric)
+  - korrel8r/
+
   # Kube-state-metrics (Kubernetes metrics)
   - kube-state-metrics/deployment.yaml
 
