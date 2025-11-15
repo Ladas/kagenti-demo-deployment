@@ -22,8 +22,7 @@ resources:
   - observability.yaml
 
   # Wave 25 - Applications
-  # DISABLED: Agents app failing - temporarily disabled
-  # - agents.yaml
+  - agents.yaml
 
 # NOTE: Keycloak and SPIRE are now deployed via Helm (see ../helm/)
 # NOTE: Container Registry is deployed via Helm (see ../helm/container-registry.yaml)
