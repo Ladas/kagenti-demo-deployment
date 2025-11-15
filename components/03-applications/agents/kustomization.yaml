@@ -13,6 +13,7 @@ resources:
   - research-agent.yaml
   - code-agent.yaml
   - orchestrator-agent.yaml
+  - weather-service.yaml
 
 # Override image tags to use locally loaded images
 images:
@@ -22,6 +23,8 @@ images:
     newTag: v0.0.15
   - name: localhost:5000/orchestrator-agent
     newTag: v0.0.15
+  - name: localhost:5000/weather-service
+    newTag: v0.0.1
 
 labels:
   - pairs:
