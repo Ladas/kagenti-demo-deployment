@@ -579,3 +579,214 @@ spec:
 ---
 
 **Status**: INVESTIGATING - need crash logs from CI to confirm root cause
+
+---
+
+## 🎯 ROOT CAUSES IDENTIFIED! (CI Run #19392154035)
+
+### Debug Logs Successfully Captured ✅
+
+Downloaded crash logs from artifacts and analyzed. **TWO CRITICAL ISSUES FOUND:**
+
+---
+
+### Issue #1: Operator Binary Architecture Mismatch 🔥
+
+**File**: `kagenti-operator-controller-manager` pods
+
+**Error**:
+```
+exec /manager: exec format error
+```
+
+**Root Cause**:
+- The operator binaries are built for wrong CPU architecture
+- Likely built for ARM64 but CI runs on AMD64 (or vice versa)
+- Binary format doesn't match the runner's architecture
+
+**Evidence**:
+- `kagenti-system/kagenti-operator-controller-manager-58d6f67685-s58lx.log` line 112
+- `kagenti-system/kagenti-controller-manager-777f54df64-ssrj4.log` line 1
+- BOTH operators fail with identical "exec format error"
+
+**Why it works locally**:
+- Local machine architecture matches the binary build architecture
+- CI runners (GitHub-hosted AMD64) don't match
+
+**FIX REQUIRED**:
+1. Check how operator images are built
+2. Ensure multi-arch builds (both AMD64 and ARM64)
+3. Or ensure builds match CI runner architecture (AMD64)
+4. Update image build process in operator repository
+
+**Operator Image Sources**:
+- Check `Ladas/kagenti-operator` repository build process
+- Look for Dockerfile and build scripts
+- Verify `GOARCH` and `GOOS` env vars during build
+
+---
+
+### Issue #2: Tekton Requires Kubernetes 1.28+ (CI runs 1.27.3) 🔥
+
+**File**: `tekton-pipelines/tekton-pipelines-controller` pods
+
+**Error**:
+```json
+{
+  "severity": "fatal",
+  "timestamp": "2025-11-15T16:12:56.110Z",
+  "logger": "tekton-pipelines-controller",
+  "message": "Version check failed",
+  "error": "kubernetes version \"1.27.3\" is not compatible, need at least \"1.28.0-0\" (this can be overridden with the env var \"KUBERNETES_MIN_VERSION\")"
+}
+```
+
+**Root Cause**:
+- Tekton Pipelines requires Kubernetes >= 1.28.0
+- CI workflow uses kubectl v1.28.0 BUT Kind cluster version is 1.27.3
+- Kind cluster Kubernetes version is too old
+
+**Evidence**:
+- `tekton-pipelines/tekton-pipelines-controller-855757bd9c-n86vk.log` line 8
+- Fatal error on startup - version check
+
+**Why it works locally**:
+- Local Kind cluster likely uses newer Kubernetes version (1.28+)
+- Or local has different Kind version configured
+
+**FIX OPTIONS**:
+
+**Option A: Upgrade Kind Cluster Kubernetes Version (Preferred)**
+```yaml
+# .github/workflows/app-state-validation.yml
+- name: Create Kind cluster
+  run: |
+    kind create cluster --name kagenti-demo --config - <<EOF
+    kind: Cluster
+    apiVersion: kind.x-k8s.io/v1alpha4
+    nodes:
+    - role: control-plane
+      image: kindest/node:v1.28.0@sha256:... # Upgrade from v1.27.3
+    EOF
+```
+
+**Option B: Override Tekton Version Check (Workaround)**
+```yaml
+# Add env var to Tekton controller deployment
+- name: KUBERNETES_MIN_VERSION
+  value: "1.27.0"
+```
+
+**Option C: Downgrade Tekton Version**
+- Use older Tekton version that supports Kubernetes 1.27.3
+- Not recommended - we want latest features
+
+---
+
+### Summary of Findings
+
+| Issue | Component | Root Cause | Impact | Fix Priority |
+|-------|-----------|------------|--------|--------------|
+| exec format error | kagenti-operator | Wrong CPU architecture binary | CrashLoopBackOff | CRITICAL |
+| exec format error | kagenti-controller | Wrong CPU architecture binary | CrashLoopBackOff | CRITICAL |
+| Version check failed | Tekton | K8s 1.27.3 < required 1.28.0 | Fatal startup error | CRITICAL |
+
+---
+
+### Why These Issues Don't Occur Locally
+
+1. **Operator Architecture**:
+   - Local machine CPU architecture matches operator binary build
+   - CI runners (GitHub AMD64) have different architecture
+
+2. **Tekton Kubernetes Version**:
+   - Local Kind cluster uses Kubernetes 1.28+
+   - CI Kind cluster stuck on 1.27.3
+
+---
+
+### Immediate Action Items
+
+#### 1. Fix Operator Architecture Mismatch
+
+**Step 1**: Check operator image build process
+```bash
+# In Ladas/kagenti-operator repo
+grep -r "GOARCH\|GOOS\|docker build" .
+```
+
+**Step 2**: Verify current image architecture
+```bash
+docker image inspect quay.io/kagenti/kagenti-operator:latest | jq '.[0].Architecture'
+docker image inspect quay.io/kagenti/kagenti-platform-operator:latest | jq '.[0].Architecture'
+```
+
+**Step 3**: Build multi-arch images
+```bash
+# Use docker buildx for multi-platform builds
+docker buildx build --platform linux/amd64,linux/arm64 -t quay.io/kagenti/kagenti-operator:latest .
+```
+
+**Step 4**: Update CI to use correct arch images
+```yaml
+# Ensure image pull uses amd64 variant
+docker pull --platform linux/amd64 quay.io/kagenti/kagenti-operator:latest
+```
+
+---
+
+#### 2. Fix Tekton Kubernetes Version
+
+**Immediate Fix**: Update CI workflow Kind cluster version
+
+```yaml
+# .github/workflows/app-state-validation.yml
+env:
+  KIND_VERSION: v0.20.0  # Keep same
+  KUBECTL_VERSION: v1.28.0  # Keep same
+  KIND_NODE_VERSION: v1.28.0  # ADD THIS - was implicitly v1.27.3
+
+- name: Create Kind cluster
+  run: |
+    cat <<EOF | kind create cluster --name kagenti-demo --config=-
+    kind: Cluster
+    apiVersion: kind.x-k8s.io/v1alpha4
+    nodes:
+    - role: control-plane
+      image: kindest/node:${KIND_NODE_VERSION}
+    EOF
+```
+
+**Alternative Quick Fix**: Set env var in Tekton deployment
+
+```yaml
+# components/00-infrastructure/tekton/controller-deployment-patch.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tekton-pipelines-controller
+  namespace: tekton-pipelines
+spec:
+  template:
+    spec:
+      containers:
+      - name: tekton-pipelines-controller
+        env:
+        - name: KUBERNETES_MIN_VERSION
+          value: "1.27.0"  # Override version check
+```
+
+---
+
+### Next Steps
+
+1. ✅ **DONE**: Captured crash logs
+2. ✅ **DONE**: Identified root causes  
+3. **TODO**: Fix operator image architecture
+4. **TODO**: Upgrade Kind cluster to Kubernetes 1.28.0
+5. **TODO**: Test fixes in CI
+6. **TODO**: Verify all apps become Healthy
+
+---
+
+**Status**: ROOT CAUSES IDENTIFIED - ready to implement fixes
