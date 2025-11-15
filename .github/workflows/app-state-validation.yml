@@ -266,6 +266,60 @@ jobs:
 
           pytest tests/validation/test_app_state.py $PYTEST_ARGS
 
+      - name: Capture failing pod logs
+        if: failure()  # Only run if validation failed
+        run: |
+          echo "=== Capturing logs from failing pods ==="
+          mkdir -p /tmp/debug-logs
+
+          # Capture logs from all namespaces with CrashLoopBackOff pods
+          echo "Finding CrashLoopBackOff pods..."
+          kubectl get pods -A -o json | jq -r '
+            .items[] |
+            select(.status.containerStatuses[]? | select(.state.waiting?.reason == "CrashLoopBackOff")) |
+            "\(.metadata.namespace) \(.metadata.name)"
+          ' | while read ns pod; do
+            echo "Capturing logs from $ns/$pod"
+            kubectl logs -n "$ns" "$pod" --all-containers --tail=200 > "/tmp/debug-logs/${ns}_${pod}.log" 2>&1 || echo "Failed to get logs from $ns/$pod"
+            kubectl logs -n "$ns" "$pod" --all-containers --previous --tail=200 > "/tmp/debug-logs/${ns}_${pod}_previous.log" 2>&1 || echo "No previous logs for $ns/$pod"
+          done
+
+          # Specifically capture operator logs (even if not crashing)
+          echo "Capturing kagenti-operator logs..."
+          kubectl logs -n kagenti-operator -l control-plane=controller-manager --tail=200 > /tmp/debug-logs/kagenti-operator-all.log 2>&1 || echo "No kagenti-operator logs"
+
+          echo "Capturing kagenti-platform-operator logs..."
+          kubectl logs -n kagenti-platform-operator -l control-plane=controller-manager --tail=200 > /tmp/debug-logs/platform-operator-all.log 2>&1 || echo "No platform-operator logs"
+
+          # Tekton logs
+          echo "Capturing tekton logs..."
+          kubectl logs -n tekton-pipelines -l app.kubernetes.io/part-of=tekton-pipelines --tail=200 > /tmp/debug-logs/tekton-all.log 2>&1 || echo "No tekton logs"
+
+          # Capture all events sorted by time
+          echo "Capturing cluster events..."
+          kubectl get events -A --sort-by='.lastTimestamp' > /tmp/debug-logs/all-events.txt 2>&1
+
+          # Capture pod descriptions for failing pods
+          echo "Capturing pod descriptions..."
+          kubectl describe pods -n kagenti-operator > /tmp/debug-logs/kagenti-operator-describe.txt 2>&1 || true
+          kubectl describe pods -n kagenti-platform-operator > /tmp/debug-logs/platform-operator-describe.txt 2>&1 || true
+          kubectl describe pods -n tekton-pipelines > /tmp/debug-logs/tekton-describe.txt 2>&1 || true
+
+          # Capture ArgoCD application statuses
+          echo "Capturing ArgoCD application details..."
+          kubectl get applications -n argocd -o yaml > /tmp/debug-logs/argocd-applications.yaml 2>&1 || true
+
+          echo "=== Debug logs captured ==="
+          ls -lah /tmp/debug-logs/
+
+      - name: Upload debug logs
+        if: failure()  # Only upload if validation failed
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-debug-logs
+          path: /tmp/debug-logs/
+          retention-days: 7
+
       - name: Run E2E platform tests
         id: e2e_tests
         continue-on-error: true

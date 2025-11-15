@@ -164,7 +164,7 @@ Pytest at 19:56:09 (seconds later):
 - Apps being "Healthy" is what matters for tests to run successfully
 - Checking sync status creates false failures during normal ArgoCD operations
 
-**Status**: FIXING NOW - commit pending
+**Status**: FIXED - commit 824a572
 
 #### 6. Test Report Shows APP_FAILED=0 But Tests Actually Failed
 **Problem**: Parse step shows `APP_FAILED=0` but tests failed
@@ -250,3 +250,332 @@ FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_critical_app
 3. Implement fix for wait logic
 4. Test locally with quick-redeploy.sh to verify timing
 5. Push fix and monitor new CI run
+
+---
+
+## 🔥 CURRENT CRITICAL ISSUE: Apps Healthy Locally but CrashLoopBackOff in CI
+
+### CI Run #19376259621 Analysis
+
+**Major Progress**: ✅ Workflow wait loop NOW PASSES! All validation fixes working.
+
+**Remaining Issue**: Pytest validation fails due to actual deployment failures (not validation logic)
+
+**Failing Applications** (3 unhealthy out of 17 total):
+
+1. **kagenti-operator** ❌
+   - Sync: Synced
+   - Health: Degraded
+   - Resources: 4/25 healthy (21 unhealthy)
+   - Pods: CrashLoopBackOff: 2, Running: 1
+
+2. **kagenti-platform-operator** ❌
+   - Sync: OutOfSync
+   - Health: Degraded  
+   - Resources: 4/24 healthy (20 unhealthy)
+   - Pods: CrashLoopBackOff: 2, Running: 1
+
+3. **tekton** ❌
+   - Sync: Synced
+   - Health: Degraded
+   - Resources: 5/76 healthy (71 unhealthy)
+   - Pods: CrashLoopBackOff: 3
+
+**Healthy Applications with Sync Issues** (4 apps - NOT critical failures):
+- istio-base, istiod, keycloak, platform: All OutOfSync but Healthy
+
+**Fully Healthy** (10 apps): ✅
+- cert-manager, container-registry, gateway-api, istio-config, kagenti-platform-kind, keycloak-operator, keycloak-platform-rbac, kiali, oauth2-proxy, reflector
+
+---
+
+### 🤔 The Mystery: Works Locally, Fails in CI
+
+**User Report**: These same apps are **Healthy** when deploying locally with `./scripts/quick-redeploy.sh`!
+
+This suggests **environmental differences** between CI and local Kind clusters.
+
+---
+
+### 🔍 Root Cause Hypotheses
+
+#### 🔥 HYPOTHESIS #1: ArgoCD Auto-Sync Race Conditions (Most Likely)
+
+**Problem**: All apps have `syncPolicy.automated` enabled, causing concurrent syncing that ignores sync wave ordering.
+
+**Evidence**:
+- PR description mentions: "All applications have automated sync enabled"
+- PR description mentions: "Concurrent syncing ignored sync wave ordering"
+- Operators (waves 4-5) try to sync before cert-manager (wave 0) is fully ready
+
+**CI vs Local**:
+- **CI**: ArgoCD syncs ALL apps immediately when cluster ready → race conditions
+- **Local**: Manual or delayed sync allows dependencies to stabilize first → no race
+
+**Fix Options**:
+- A. Disable auto-sync in CI, sync manually in correct wave order
+- B. Add sync wave delays/retries to enforce ordering
+- C. Add health checks to operators that retry on dependency failures
+
+---
+
+#### HYPOTHESIS #2: Resource Constraints
+
+**CI Runners**: GitHub-hosted (2 CPU, 7GB RAM)
+**Local**: Varies (potentially more resources)
+
+**Impact**:
+- Operators may timeout or crash under resource pressure
+- Webhook registration may fail due to CPU limits
+- Leader election may fail under resource contention
+
+**Investigation**:
+```bash
+# Check if pods are being OOMKilled
+kubectl describe pod -n kagenti-operator | grep -i oom
+kubectl describe pod -n tekton-pipelines | grep -i oom
+
+# Check resource requests/limits
+kubectl get pod -n kagenti-operator -o yaml | grep -A 5 resources
+kubectl get pod -n tekton-pipelines -o yaml | grep -A 5 resources
+```
+
+**Fix**: Add appropriate resource requests/limits to operator deployments
+
+---
+
+#### HYPOTHESIS #3: Image Pull Timing
+
+**CI**: First-time pulls from registry (slower, cold cache)
+**Local**: Images may be cached (faster)
+
+**Impact**:
+- Slow pulls could cause webhook registration timeouts
+- Operators may crash if dependencies aren't ready when they expect
+
+**Investigation**:
+```bash
+# Check image pull times in CI logs
+# Look for "Pulling image..." timestamps vs "Started container" timestamps
+
+# Check for ImagePullBackOff events
+kubectl get events -n kagenti-operator --sort-by='.lastTimestamp' | grep -i pull
+```
+
+**Fix**: Pre-pull critical images or increase timeouts
+
+---
+
+#### HYPOTHESIS #4: Cert-Manager Webhook Readiness
+
+**Problem**: Operators depend on cert-manager webhooks for TLS cert injection
+
+**CI**: cert-manager may not be 100% ready when operators try to register webhooks
+**Local**: More time for cert-manager to fully stabilize
+
+**Investigation**:
+```bash
+# Check cert-manager webhook readiness timing
+kubectl get deployment -n cert-manager cert-manager-webhook -o jsonpath='{.status.conditions[?(@.type=="Available")].lastTransitionTime}'
+
+# Check operator startup timing
+kubectl get pod -n kagenti-operator -o jsonpath='{.status.startTime}'
+
+# Compare timestamps - if operator starts before webhook is ready → crash
+```
+
+**Fix**: Add readiness checks or retry logic to operators
+
+---
+
+### 📋 Investigation Plan
+
+#### Step 1: Check Sync Wave Configuration and Timing
+
+```bash
+# Get all app sync waves
+kubectl get applications -n argocd -o json | jq -r '.items[] | {
+  name: .metadata.name, 
+  wave: .metadata.annotations."argocd.argoproj.io/sync-wave" // "0"
+}' | sort -k2 -n
+
+# Check if auto-sync is enabled on all apps
+kubectl get applications -n argocd -o json | jq -r '.items[] | {
+  name: .metadata.name, 
+  autoSync: (.spec.syncPolicy.automated != null)
+}'
+```
+
+**Expected**:
+- cert-manager: wave 0
+- operators: wave 4-5
+- platform: wave 6+
+
+**If waves are correct but still racing**: Auto-sync is ignoring waves!
+
+---
+
+#### Step 2: Get Operator Pod Crash Logs from Latest CI Run
+
+**CRITICAL**: We need to see WHY the operators are crashing!
+
+```bash
+# This would need to run IN the CI environment before cluster teardown
+# Add this to CI workflow BEFORE cleanup
+
+# Save operator logs to artifacts
+kubectl logs -n kagenti-operator -l app=kagenti-operator --tail=200 > /tmp/kagenti-operator-logs.txt || true
+kubectl logs -n kagenti-platform-operator -l app=kagenti-platform-operator --tail=200 > /tmp/platform-operator-logs.txt || true
+kubectl logs -n tekton-pipelines -l app=tekton-pipelines-controller --tail=200 > /tmp/tekton-logs.txt || true
+
+# Save events
+kubectl get events -n kagenti-operator --sort-by='.lastTimestamp' > /tmp/kagenti-operator-events.txt || true
+kubectl get events -n kagenti-platform-operator --sort-by='.lastTimestamp' > /tmp/platform-operator-events.txt || true
+kubectl get events -n tekton-pipelines --sort-by='.lastTimestamp' > /tmp/tekton-events.txt || true
+
+# Upload as artifacts
+```
+
+---
+
+#### Step 3: Compare ArgoCD Configuration (CI vs Local)
+
+```bash
+# Check ArgoCD server timeout settings
+kubectl get cm argocd-cm -n argocd -o yaml | grep -i timeout
+
+# Check ArgoCD application controller settings
+kubectl get cm argocd-cmd-params-cm -n argocd -o yaml
+
+# Check sync options on all apps
+kubectl get applications -n argocd -o json | jq -r '.items[] | {
+  name: .metadata.name,
+  syncOptions: .spec.syncPolicy.syncOptions
+}'
+```
+
+---
+
+#### Step 4: Test Local Deployment Behavior
+
+```bash
+# On local machine, time the sync waves
+./scripts/quick-redeploy.sh
+
+# Watch sync wave progression
+watch -n 1 'kubectl get applications -n argocd -o json | jq -r ".items[] | {name: .metadata.name, health: .status.health.status, sync: .status.sync.status}"'
+
+# Capture timing of when each app becomes Healthy
+# Compare with CI timing logs
+```
+
+---
+
+###  💡 Proposed Fixes
+
+#### FIX A: Add Debug Logging to CI Workflow (IMMEDIATE)
+
+**Priority**: CRITICAL - We need crash logs!
+
+Add this step to `.github/workflows/app-state-validation.yml` AFTER validation fails:
+
+```yaml
+- name: Capture failing pod logs
+  if: failure()  # Only run if tests failed
+  run: |
+    echo "=== Capturing logs from CrashLoopBackOff pods ==="
+    
+    # Kagenti operator logs
+    kubectl logs -n kagenti-operator -l control-plane=controller-manager --tail=200 > /tmp/kagenti-operator-logs.txt 2>&1 || echo "No kagenti-operator logs"
+    
+    # Platform operator logs
+    kubectl logs -n kagenti-platform-operator -l control-plane=controller-manager --tail=200 > /tmp/platform-operator-logs.txt 2>&1 || echo "No platform-operator logs"
+    
+    # Tekton logs
+    kubectl logs -n tekton-pipelines -l app.kubernetes.io/part-of=tekton-pipelines --tail=200 > /tmp/tekton-logs.txt 2>&1 || echo "No tekton logs"
+    
+    # Events
+    kubectl get events -A --sort-by='.lastTimestamp' > /tmp/all-events.txt 2>&1
+    
+    echo "=== Logs captured ==="
+    
+- name: Upload debug logs
+  if: failure()
+  uses: actions/upload-artifact@v3
+  with:
+    name: crash-logs
+    path: /tmp/*-logs.txt
+    retention-days: 7
+```
+
+---
+
+#### FIX B: Disable Auto-Sync in CI (QUICK WIN)
+
+**When**: After we confirm auto-sync is the issue from crash logs
+
+Modify CI workflow to sync apps manually in wave order:
+
+```yaml
+- name: Sync applications in wave order
+  run: |
+    echo "Syncing wave 0: Infrastructure (cert-manager, gateway, istio)"
+    argocd app sync -l wave=0 --port-forward --port-forward-namespace argocd --grpc-web --timeout 300
+    
+    # Wait for wave 0 to be fully healthy
+    sleep 30
+    
+    echo "Syncing wave 4-5: Operators"
+    argocd app sync kagenti-operator kagenti-platform-operator --port-forward --port-forward-namespace argocd --grpc-web --timeout 300
+    
+    # Wait for operators to stabilize
+    sleep 60
+    
+    echo "Syncing remaining apps"
+    argocd app sync -l wave=10 --port-forward --port-forward-namespace argocd --grpc-web --timeout 300
+```
+
+**Downside**: Slower CI (more waiting)
+**Upside**: More reliable
+
+---
+
+#### FIX C: Add Sync Wave Delays (PREFERRED)
+
+**When**: If we want to keep auto-sync but enforce ordering
+
+Add sync wave delays to operator Applications:
+
+```yaml
+# argocd/applications/base/kagenti-operator.yaml
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: "SkipDryRunOnMissingResource=true"
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5          # Retry up to 5 times
+      backoff:
+        duration: 30s   # Initial retry after 30s
+        factor: 2       # Exponential backoff (30s, 60s, 120s...)
+        maxDuration: 5m # Max 5 minutes between retries
+```
+
+**Benefit**: Operators will retry automatically if dependencies aren't ready
+
+---
+
+### 🎯 Next Actions
+
+1. **ADD DEBUG LOGGING** (Fix A) - CRITICAL for root cause analysis
+2. **Trigger new CI run** to capture crash logs
+3. **Analyze crash logs** to confirm hypothesis
+4. **Implement appropriate fix** (B or C) based on findings
+
+---
+
+**Status**: INVESTIGATING - need crash logs from CI to confirm root cause
