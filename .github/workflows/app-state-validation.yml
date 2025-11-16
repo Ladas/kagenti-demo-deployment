@@ -165,9 +165,11 @@ jobs:
             DEGRADED_APPS=""
 
             for app in $ALL_APPS; do
-              # Skip agent applications and observability (excluded in test params)
+              # Skip agent applications, observability, and resource-intensive optional apps
               # NOTE: Don't skip operators - only skip apps ending with "-agent"
-              if [[ "$app" == *"-agent" ]] || [[ "$app" == "observability" ]] || [[ "$app" == "agents" ]]; then
+              # Kiali: resource-intensive (CPU), optional observability dashboard
+              # Ollama: resource-intensive (model downloads), optional AI server
+              if [[ "$app" == *"-agent" ]] || [[ "$app" == "observability" ]] || [[ "$app" == "agents" ]] || [[ "$app" == "kiali" ]] || [[ "$app" == "ollama" ]]; then
                 continue
               fi
 
@@ -272,8 +274,11 @@ jobs:
           ONLY_CRITICAL="${{ inputs.only_critical }}"
 
           if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
-            # For automated runs, be more lenient
-            EXCLUDE_APPS="agents,observability"
+            # For automated runs, exclude resource-intensive optional apps
+            # - agents, observability: not critical for platform
+            # - kiali: CPU-intensive, optional observability dashboard
+            # - ollama: model downloads, optional AI server
+            EXCLUDE_APPS="agents,observability,kiali,ollama"
             ONLY_CRITICAL="false"
           fi
 
