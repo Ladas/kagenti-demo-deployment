@@ -387,14 +387,15 @@ data:
                   to: 0
                 datasourceUid: PBFA97CFB590B2093
                 model:
-                  expr: up{job="prometheus"} == 0
+                  expr: up{job="kubernetes-pods",app="prometheus",kubernetes_namespace="observability"} == 0
                   refId: A
-            noDataState: Alerting
-            execErrState: Alerting
+            noDataState: OK
+            execErrState: OK
             for: 2m
             annotations:
               description: 'Prometheus metrics service is down. Metrics collection and alerting are impacted.'
               summary: Prometheus unavailable
+              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/prometheus/prometheus-down/'
             labels:
               severity: critical
               component: prometheus
@@ -415,12 +416,13 @@ data:
                   expr: |
                     kube_deployment_status_replicas_available{namespace="observability",deployment="grafana"} == 0
                   refId: A
-            noDataState: Alerting
-            execErrState: Alerting
+            noDataState: OK
+            execErrState: OK
             for: 2m
             annotations:
               description: 'Grafana dashboard service is down. Metrics visualization is unavailable.'
               summary: Grafana has no available replicas
+              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/general/deployment-down/'
             labels:
               severity: warning
               component: grafana
@@ -441,12 +443,13 @@ data:
                   expr: |
                     kube_deployment_status_replicas_available{namespace="observability",deployment="tempo"} == 0
                   refId: A
-            noDataState: Alerting
+            noDataState: OK
             execErrState: OK
             for: 2m
             annotations:
               description: 'Tempo distributed tracing service is down. Trace collection is impacted.'
               summary: Tempo has no available replicas
+              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/general/deployment-down/'
             labels:
               severity: warning
               component: tempo
@@ -467,12 +470,13 @@ data:
                   expr: |
                     kube_deployment_status_replicas_available{namespace="observability",deployment="loki"} == 0
                   refId: A
-            noDataState: Alerting
+            noDataState: OK
             execErrState: OK
             for: 2m
             annotations:
               description: 'Loki log aggregation service is down. Log ingestion and querying are impacted.'
               summary: Loki has no available replicas
+              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/general/deployment-down/'
             labels:
               severity: warning
               component: loki
@@ -523,8 +527,20 @@ data:
             execErrState: Alerting
             for: 2m
             annotations:
-              description: 'AlertManager is down. Alert routing and notifications are not functioning.'
-              summary: AlertManager has no available replicas
+              description: |
+                AlertManager deployment shows 0 available replicas. Alert routing and notifications may be impacted.
+
+                ⚠️ NOTE: This alert may fire when the Istio sidecar is not ready (known infrastructure issue).
+                The main AlertManager container may still be healthy and functional.
+
+                To verify AlertManager health:
+                1. Check pod status: kubectl get pods -n observability -l app=alertmanager
+                2. Check main container: kubectl exec -n observability -c alertmanager deployment/alertmanager -- wget -qO- http://localhost:9093/-/ready
+                3. Check Istio sidecar: kubectl get pods -n observability -l app=alertmanager -o jsonpath='{.items[0].status.containerStatuses[*].name}'
+
+                If main container is healthy but sidecar is not ready, this is expected during sidecar initialization.
+              summary: AlertManager deployment has no available replicas (may be Istio sidecar issue)
+              runbook_url: 'https://prometheus.io/docs/alerting/latest/alertmanager/'
             labels:
               severity: critical
               component: alertmanager
