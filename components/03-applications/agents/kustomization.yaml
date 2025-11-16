@@ -14,6 +14,7 @@ resources:
   - code-agent.yaml
   - orchestrator-agent.yaml
   - weather-service.yaml
+  - httproutes.yaml
 
 # Override image tags to use locally loaded images
 images:

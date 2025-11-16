@@ -1,0 +1,95 @@
+# HTTPRoutes for AI Agents
+# Provides external access to agents via Gateway API
+
+---
+# Weather Service - HTTPS
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weather-service
+  namespace: team1
+  labels:
+    app: weather-service
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: https
+  hostnames:
+  - "weather-service.localtest.me"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: weather-service
+      port: 8000
+---
+# Weather Service - HTTP to HTTPS redirect
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weather-service-http-redirect
+  namespace: team1
+  labels:
+    app: weather-service
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: http
+  hostnames:
+  - "weather-service.localtest.me"
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        port: 9443
+---
+# Research Agent - HTTPS
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: research-agent
+  namespace: team1
+  labels:
+    app: research-agent
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: https
+  hostnames:
+  - "research-agent.localtest.me"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: research-agent
+      port: 8080
+---
+# Research Agent - HTTP to HTTPS redirect
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: research-agent-http-redirect
+  namespace: team1
+  labels:
+    app: research-agent
+spec:
+  parentRefs:
+  - name: external-gateway
+    namespace: default
+    sectionName: http
+  hostnames:
+  - "research-agent.localtest.me"
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        port: 9443
