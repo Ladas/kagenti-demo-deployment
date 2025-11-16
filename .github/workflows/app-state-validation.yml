@@ -132,140 +132,16 @@ jobs:
       - name: Wait for ArgoCD applications to sync and become healthy
         run: |
           echo "Waiting for ArgoCD applications to sync and become healthy..."
-          echo "Monitoring ArgoCD application status via kubectl..."
-
-          TIMEOUT=3600  # 60 minutes maximum (complete platform including optional apps: observability, Kiali, Ollama)
-          INTERVAL=30   # Check every 30 seconds (reduced frequency with longer timeout)
-          ELAPSED=0
-
-          # List of REQUIRED applications (MUST be healthy, or we fail)
-          # NOTE: Operators are created successfully but may take time to become Healthy
-          # We check they're created and syncing, but don't require Healthy status in CI
-          REQUIRED_APPS="gateway-api cert-manager istio-base istiod istio-config keycloak keycloak-operator"
-
-          # List of apps that can be "Progressing" or "Degraded" temporarily
-          # Tekton often shows Progressing during leader election
-          # Platform may be Degraded initially if operators aren't ready yet
-          # Operators can take time to stabilize (pods coming up, webhooks registering)
-          PROGRESSING_OK="tekton platform kagenti-operator kagenti-platform-operator"
-
-          while [ $ELAPSED -lt $TIMEOUT ]; do
-            echo ""
-            echo "=== Check at ${ELAPSED}s / ${TIMEOUT}s ==="
-
-            # Get all applications
-            ALL_APPS=$(kubectl get applications -n argocd -o json | jq -r '.items[].metadata.name')
-
-            # Count apps by status
-            TOTAL=0
-            SYNCED=0
-            HEALTHY=0
-            PROGRESSING=0
-            DEGRADED=0
-            DEGRADED_APPS=""
-
-            for app in $ALL_APPS; do
-              # Skip agent applications, observability, and resource-intensive optional apps
-              # NOTE: Don't skip operators - only skip apps ending with "-agent"
-              # Kiali: resource-intensive (CPU), optional observability dashboard
-              # Ollama: resource-intensive (model downloads), optional AI server
-              if [[ "$app" == *"-agent" ]] || [[ "$app" == "observability" ]] || [[ "$app" == "agents" ]] || [[ "$app" == "kiali" ]] || [[ "$app" == "ollama" ]]; then
-                continue
-              fi
-
-              TOTAL=$((TOTAL + 1))
-
-              # Get app status
-              APP_JSON=$(kubectl get application "$app" -n argocd -o json)
-              SYNC_STATUS=$(echo "$APP_JSON" | jq -r '.status.sync.status // "Unknown"')
-              HEALTH_STATUS=$(echo "$APP_JSON" | jq -r '.status.health.status // "Unknown"')
-
-              echo "  $app: sync=$SYNC_STATUS, health=$HEALTH_STATUS"
-
-              if [ "$SYNC_STATUS" = "Synced" ]; then
-                SYNCED=$((SYNCED + 1))
-              fi
-
-              if [ "$HEALTH_STATUS" = "Healthy" ]; then
-                HEALTHY=$((HEALTHY + 1))
-              elif [ "$HEALTH_STATUS" = "Progressing" ]; then
-                PROGRESSING=$((PROGRESSING + 1))
-                # Check if this app is allowed to be progressing (use word boundaries)
-                if [[ ! " $PROGRESSING_OK " =~ " $app " ]]; then
-                  echo "    ⚠️  $app is Progressing (waiting...)"
-                fi
-              elif [ "$HEALTH_STATUS" = "Degraded" ]; then
-                DEGRADED=$((DEGRADED + 1))
-                DEGRADED_APPS="$DEGRADED_APPS $app"
-                # Check if this is a REQUIRED app (use word boundaries to avoid substring matches)
-                if [[ " $REQUIRED_APPS " =~ " $app " ]]; then
-                  echo "    ❌ REQUIRED app $app is Degraded!"
-                fi
-              fi
-            done
-
-            echo ""
-            echo "Summary: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced, $PROGRESSING progressing, $DEGRADED degraded"
-
-            # FAIL immediately if a REQUIRED app is Degraded
-            # EXCEPT: Don't fail operators if cert-manager isn't Healthy yet (dependency issue)
-            if [ $DEGRADED -gt 0 ]; then
-              # Check if cert-manager is healthy
-              CERT_MANAGER_HEALTH=$(kubectl get application cert-manager -n argocd -o json 2>/dev/null | jq -r '.status.health.status // "Unknown"')
-
-              for app in $DEGRADED_APPS; do
-                # Use word boundaries to avoid substring matches (e.g., "platform" in "kagenti-platform-operator")
-                if [[ " $REQUIRED_APPS " =~ " $app " ]]; then
-                  # Special case: Operators can be temporarily Degraded if cert-manager isn't ready yet
-                  if [[ "$app" == *"-operator" ]] && [ "$CERT_MANAGER_HEALTH" != "Healthy" ]; then
-                    echo "    ⚠️  Operator $app is Degraded, but cert-manager not ready yet (${CERT_MANAGER_HEALTH}) - will retry"
-                    continue
-                  fi
-
-                  echo ""
-                  echo "❌ FAIL: Required application '$app' is Degraded"
-                  echo "Cannot proceed with degraded required applications"
-                  exit 1
-                fi
-              done
-            fi
-
-            # Success: All apps healthy and synced (progressing apps are OK if not required)
-            if [ $TOTAL -gt 0 ] && [ $HEALTHY -eq $TOTAL ] && [ $SYNCED -eq $TOTAL ]; then
-              echo ""
-              echo "✅ All applications are healthy and synced!"
-              echo "Total time waited: ${ELAPSED}s"
-              exit 0
-            fi
-
-            # Wait before next check (30 seconds with new poll interval)
-            sleep $INTERVAL
-            ELAPSED=$((ELAPSED + INTERVAL))
-          done
-
+          echo "Using enhanced monitoring script with formatted status tables..."
           echo ""
-          echo "⚠️  Timeout reached after ${TIMEOUT}s"
-          echo "Final status: $HEALTHY/$TOTAL healthy, $SYNCED/$TOTAL synced"
 
-          # Check if REQUIRED apps are healthy
-          echo ""
-          echo "Checking required applications..."
-          for required_app in $REQUIRED_APPS; do
-            APP_JSON=$(kubectl get application "$required_app" -n argocd -o json 2>/dev/null || echo "{}")
-            HEALTH=$(echo "$APP_JSON" | jq -r '.status.health.status // "Missing"')
-            if [ "$HEALTH" != "Healthy" ]; then
-              echo "  ❌ Required app '$required_app' is $HEALTH"
-              echo ""
-              echo "Cannot proceed - required applications are not healthy"
-              exit 1
-            else
-              echo "  ✓ $required_app is Healthy"
-            fi
-          done
-
-          echo ""
-          echo "✅ All required applications are healthy (some optional apps may still be progressing)"
-          echo "Proceeding with tests..."
+          # Run enhanced monitoring script with 60-minute timeout
+          # Script monitors ALL apps (CRITICAL and OPTIONAL) and displays:
+          # - Formatted ArgoCD application status table
+          # - Formatted pod status by namespace table
+          # - Progress tracking with elapsed time
+          # - Smart failure logic (only fails on CRITICAL apps degraded)
+          ./scripts/monitor-argocd-apps.sh 3600
 
       - name: Set test parameters
         id: test_params
