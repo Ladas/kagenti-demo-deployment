@@ -160,7 +160,7 @@
       "type": "stat",
       "datasource": "Loki",
       "targets": [{
-        "expr": "sum(rate({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"$search\" |~ \"$level\" [$__rate_interval]))",
+        "expr": "sum(rate({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"$search\" |~ \"$level\" [5m]))",
         "refId": "A"
       }],
       "fieldConfig": {
@@ -183,22 +183,22 @@
       "datasource": "Loki",
       "targets": [
         {
-          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(error|ERROR)\" [$__rate_interval]))",
+          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(error|ERROR)\" [5m]))",
           "refId": "A",
           "legendFormat": "ERROR"
         },
         {
-          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(warn|WARNING)\" [$__rate_interval]))",
+          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(warn|WARNING)\" [5m]))",
           "refId": "B",
           "legendFormat": "WARN"
         },
         {
-          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(info|INFO)\" [$__rate_interval]))",
+          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(info|INFO)\" [5m]))",
           "refId": "C",
           "legendFormat": "INFO"
         },
         {
-          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(debug|DEBUG)\" [$__rate_interval]))",
+          "expr": "sum by (level) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)(debug|DEBUG)\" [5m]))",
           "refId": "D",
           "legendFormat": "DEBUG"
         }
@@ -250,7 +250,7 @@
       "type": "timeseries",
       "datasource": "Loki",
       "targets": [{
-        "expr": "sum by (namespace) (rate({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"$search\" |~ \"$level\" [$__rate_interval]))",
+        "expr": "sum by (namespace) (rate({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"$search\" |~ \"$level\" [5m]))",
         "refId": "A",
         "legendFormat": "{{namespace}}"
       }],

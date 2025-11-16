@@ -120,7 +120,7 @@ data:
             annotations:
               description: 'Istio control plane (istiod) is down. Service mesh functionality is degraded.'
               summary: Istio control plane unavailable
-              runbook_url: 'https://istio.io/latest/docs/ops/diagnostic-tools/controlz/'
+              runbook_url: 'docs/runbooks/alerts/istiod-down.md'
             labels:
               severity: critical
               component: istio
@@ -147,7 +147,7 @@ data:
             annotations:
               description: 'Istio Gateway {{ $labels.deployment }} has no available replicas. External access is blocked.'
               summary: Gateway deployment has no healthy pods
-              runbook_url: 'https://istio.io/latest/docs/ops/diagnostic-tools/proxy-cmd/'
+              runbook_url: 'docs/runbooks/alerts/gateway-unhealthy.md'
             labels:
               severity: critical
               component: gateway
@@ -396,7 +396,7 @@ data:
             annotations:
               description: 'Prometheus metrics service is down. Metrics collection and alerting are impacted.'
               summary: Prometheus unavailable
-              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/prometheus/prometheus-down/'
+              runbook_url: 'docs/runbooks/alerts/prometheus-down.md'
             labels:
               severity: critical
               component: prometheus
@@ -423,7 +423,7 @@ data:
             annotations:
               description: 'Grafana dashboard service is down. Metrics visualization is unavailable.'
               summary: Grafana has no available replicas
-              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/general/deployment-down/'
+              runbook_url: 'docs/runbooks/alerts/grafana-down.md'
             labels:
               severity: warning
               component: grafana
@@ -450,7 +450,7 @@ data:
             annotations:
               description: 'Tempo distributed tracing service is down. Trace collection is impacted.'
               summary: Tempo has no available replicas
-              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/general/deployment-down/'
+              runbook_url: 'docs/runbooks/alerts/tempo-down.md'
             labels:
               severity: warning
               component: tempo
@@ -477,7 +477,7 @@ data:
             annotations:
               description: 'Loki log aggregation service is down. Log ingestion and querying are impacted.'
               summary: Loki has no available replicas
-              runbook_url: 'https://runbooks.prometheus-operator.dev/runbooks/general/deployment-down/'
+              runbook_url: 'docs/runbooks/alerts/loki-down.md'
             labels:
               severity: warning
               component: loki
@@ -541,7 +541,7 @@ data:
 
                 If main container is healthy but sidecar is not ready, this is expected during sidecar initialization.
               summary: AlertManager deployment has no available replicas (may be Istio sidecar issue)
-              runbook_url: 'https://prometheus.io/docs/alerting/latest/alertmanager/'
+              runbook_url: 'docs/runbooks/alerts/alertmanager-down.md'
             labels:
               severity: critical
               component: alertmanager
@@ -569,6 +569,7 @@ data:
             annotations:
               description: 'Less than 80% of Promtail pods are running. Log collection is degraded.'
               summary: Promtail DaemonSet has insufficient replicas
+              runbook_url: 'docs/runbooks/alerts/promtail-pods-down.md'
             labels:
               severity: warning
               component: promtail
@@ -605,6 +606,7 @@ data:
             annotations:
               description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} is using {{ printf "%.0f" $values.A.Value }}% CPU'
               summary: Pod CPU usage exceeds 90%
+              runbook_url: 'docs/runbooks/alerts/pod-high-cpu-usage.md'
             labels:
               severity: warning
               component: application
@@ -632,6 +634,7 @@ data:
             annotations:
               description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} is using {{ printf "%.0f" $values.A.Value }}% memory'
               summary: Pod memory usage exceeds 90%
+              runbook_url: 'docs/runbooks/alerts/pod-high-memory-usage.md'
             labels:
               severity: warning
               component: application
@@ -658,6 +661,7 @@ data:
             annotations:
               description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} has restarted {{ printf "%.0f" $values.A.Value }} times in the last 15 minutes'
               summary: Pod is restarting frequently
+              runbook_url: 'docs/runbooks/alerts/pod-frequent-restarts.md'
             labels:
               severity: warning
               component: application
@@ -684,6 +688,7 @@ data:
             annotations:
               description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} is in CrashLoopBackOff'
               summary: Pod is crash looping
+              runbook_url: 'docs/runbooks/alerts/pod-crashloop-backoff.md'
             labels:
               severity: critical
               component: application
@@ -710,6 +715,7 @@ data:
             annotations:
               description: 'PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} is {{ printf "%.0f" $values.A.Value }}% full'
               summary: PersistentVolumeClaim usage exceeds 85%
+              runbook_url: 'docs/runbooks/alerts/pvc-high-usage.md'
             labels:
               severity: warning
               component: storage
@@ -744,6 +750,7 @@ data:
             annotations:
               description: 'Prometheus target {{ $labels.job }} (instance: {{ $labels.instance }}) is down'
               summary: Prometheus cannot scrape target
+              runbook_url: 'docs/runbooks/alerts/prometheus-target-down.md'
             labels:
               severity: warning
               component: prometheus
@@ -770,6 +777,7 @@ data:
             annotations:
               description: 'Prometheus job {{ $labels.job }} has high scrape failure rate: {{ printf "%.2f" $values.A.Value }} failures/sec'
               summary: Prometheus scrape errors are elevated
+              runbook_url: 'docs/runbooks/alerts/prometheus-high-scrape-failure.md'
             labels:
               severity: warning
               component: prometheus
