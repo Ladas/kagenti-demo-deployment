@@ -261,7 +261,13 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
 
     # Only update display if status changed
     if [ "$CURRENT_STATUS" != "$LAST_STATUS" ]; then
-        clear
+        # Only clear screen if in interactive terminal (not CI)
+        if [ -t 1 ] && [ -n "${TERM:-}" ]; then
+            clear
+        else
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        fi
         echo ""
         echo -e "${BLUE}Monitoring ArgoCD Applications with Enhanced Status Tables...${NC}"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
