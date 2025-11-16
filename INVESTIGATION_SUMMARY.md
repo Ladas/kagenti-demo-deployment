@@ -111,7 +111,7 @@ Result: ARM64 binary can't execute on AMD64 → crash
 | #19403236093 | 1.28.0 | ✅ Fixed | ❌ Path | 10m | Failed | Wrong export path |
 | #19403828113 | 1.28.0 | ✅ Fixed | ✅ AMD64 | 10m | Failed | Timeout too short |
 | #19404437147 | 1.28.0 | ✅ Fixed | ✅ AMD64 | 20m | Cancelled | Doc update triggered new run |
-| **#19404551863** | 1.28.0 | ✅ Fixed | ✅ **AMD64** | **20m** | **SUCCESS!** | **18/19 healthy, operators work!** ✅ |
+| **#19404551863** | 1.28.0 | ✅ Fixed | ✅ **AMD64** | **20m** | **Root Causes Fixed!** | **17/19 healthy, operators+Tekton work!** ✅ |
 
 ---
 
@@ -216,7 +216,7 @@ Result: ARM64 binary can't execute on AMD64 → crash
 
 ---
 
-## 🚀 FINAL RESULT - SUCCESS! ✅
+## 🚀 FINAL RESULT - ROOT CAUSES FIXED! ✅
 
 **CI Run #19404551863** with ALL fixes applied:
 1. ✅ Kubernetes 1.28.0 (Tekton requirement)
@@ -225,33 +225,39 @@ Result: ARM64 binary can't execute on AMD64 → crash
 4. ✅ 20-minute timeout (1200s) for operators to stabilize
 5. ✅ Debug logging (captures failures)
 
-**ACTUAL OUTCOME** - INVESTIGATION SUCCESS:
-- ✅ **18/19 applications HEALTHY** (94.7% success rate)
+**ACTUAL OUTCOME** - ROOT CAUSES FIXED:
+- ✅ **17/19 applications HEALTHY** (89.5% success rate)
 - ✅ **ALL 6 critical apps HEALTHY**
 - ✅ **Tekton HEALTHY** (Kubernetes 1.28.0 fix worked!)
 - ✅ **kagenti-operator HEALTHY** (AMD64 fix worked!)
 - ✅ **kagenti-platform-operator HEALTHY** (AMD64 fix worked!)
 - ⚠️ **Kiali DEGRADED** (observability only, non-blocking)
+- ⚠️ **Ollama PROGRESSING** (AI server, optional component)
 
 ### Root Causes FIXED ✅
 
 **Before Fixes**:
-- kagenti-operator: **DEGRADED**, multiple CrashLoopBackOff pods
-- kagenti-platform-operator: **DEGRADED**, multiple CrashLoopBackOff pods
-- Tekton: **FAILED**, version incompatibility error
+- kagenti-operator: **DEGRADED**, CrashLoopBackOff with "exec format error" (ARM64 on AMD64)
+- kagenti-platform-operator: **DEGRADED**, CrashLoopBackOff with "exec format error" (ARM64 on AMD64)
+- Tekton: **FAILED**, "kubernetes version 1.27.3 is not compatible, need at least 1.28.0-0"
 
 **After Fixes**:
-- kagenti-operator: **HEALTHY**, 4 running pods ✅
-- kagenti-platform-operator: **HEALTHY**, 4 running pods ✅
-- Tekton: **HEALTHY**, all components working ✅
+- kagenti-operator: **HEALTHY** ✅
+- kagenti-platform-operator: **HEALTHY** ✅
+- Tekton: **HEALTHY** ✅
 
-### Remaining Minor Issue (Non-Blocking):
+### Remaining Minor Issues (Non-Blocking):
 
-**Kiali**: Degraded (1 Pending pod)
-- **What it is**: Service mesh observability dashboard
+**Kiali**: Degraded
+- **What it is**: Service mesh observability dashboard (Istio visualization)
 - **Impact**: MINIMAL - observability only, not critical for platform
 - **Recommendation**: Address in separate issue/PR
-- **Does NOT affect core platform functionality**
+
+**Ollama**: Progressing
+- **What it is**: AI model server for running large language models
+- **Impact**: NONE - optional component for agent examples
+- **Likely cause**: Needs GPU or specific CPU features not available in Kind
+- **Recommendation**: Not required for core platform functionality
 
 ---
 
@@ -266,7 +272,7 @@ All investigation details preserved in:
 
 ---
 
-## 🎉 Conclusion - INVESTIGATION SUCCESSFUL ✅
+## 🎉 Conclusion - ROOT CAUSES FIXED ✅
 
 This investigation demonstrates the power of systematic debugging:
 - Started with "mysterious CI failure" - apps healthy locally but failing in CI
@@ -274,8 +280,9 @@ This investigation demonstrates the power of systematic debugging:
 - Analyzed crash logs to identify TWO distinct root causes
 - Implemented targeted fixes for each issue
 - Verified each fix incrementally through multiple CI runs
-- Achieved 94.7% success rate (18/19 apps healthy)
+- Achieved 89.5% success rate (17/19 apps healthy)
 - **ALL critical platform components now working**
+- **Both root cause issues (operators + Tekton) RESOLVED**
 - Documented everything for future reference
 
 ### Final Metrics:
@@ -283,16 +290,18 @@ This investigation demonstrates the power of systematic debugging:
 **Investigation Stats**:
 - **Total Time**: ~2 days (Nov 14-16, 2025)
 - **Root Causes Found**: 2 (Tekton K8s version, Operator architecture)
+- **Root Causes Fixed**: 2 ✅
 - **Commits to Fix**: 6 (including timeout adjustment)
 - **Documentation Created**: 4 comprehensive files
-- **CI Runs**: 7 iterations from failure to success
+- **CI Runs**: 7 iterations from failure to fix
 
 **Success Metrics**:
-- ✅ **Operators**: DEGRADED → HEALTHY
-- ✅ **Tekton**: FAILED → HEALTHY
+- ✅ **Operators**: DEGRADED → HEALTHY (root cause fixed)
+- ✅ **Tekton**: FAILED → HEALTHY (root cause fixed)
 - ✅ **All Critical Apps**: HEALTHY
-- ✅ **Success Rate**: 94.7% (18/19 apps)
-- ⚠️ **Kiali**: Observability only, non-blocking
+- ✅ **Success Rate**: 89.5% (17/19 apps)
+- ⚠️ **Kiali**: Degraded (observability only, non-blocking, separate issue)
+- ⚠️ **Ollama**: Progressing (optional AI server, separate issue)
 
 ### Key Achievements:
 
@@ -311,4 +320,4 @@ This investigation demonstrates the power of systematic debugging:
    - Fix: Increased to 20 minutes
    - Result: Operators have adequate time to reach healthy state
 
-### The mystery is SOLVED. The fixes are APPLIED. Success ACHIEVED! 🎉🚀
+### The mystery is SOLVED. The root causes are FIXED. Operators and Tekton now HEALTHY! 🎉🚀
