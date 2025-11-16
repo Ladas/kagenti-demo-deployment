@@ -1,0 +1,29 @@
+# AlertManager Component
+# Alert aggregation, routing, and notification management
+#
+# Receives alerts from Grafana, routes to notification channels,
+# and sends to Korrel8r for signal correlation
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+resources:
+  - configmap.yaml      # AlertManager routing configuration
+  - deployment.yaml     # AlertManager deployment
+  - service.yaml        # AlertManager service (ClusterIP)
+  - networkpolicy.yaml  # Network access controls
+  - mtls-policy.yaml    # Istio mTLS policy (PERMISSIVE)
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: alertmanager
+      app.kubernetes.io/part-of: kagenti-observability
+      app.kubernetes.io/component: alerting
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/observability/alertmanager/kustomization.yaml

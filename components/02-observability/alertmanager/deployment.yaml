@@ -1,0 +1,136 @@
+# AlertManager Deployment
+# Manages alert aggregation, routing, and notification
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: observability
+  labels:
+    app: alertmanager
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alerting
+    app.kubernetes.io/part-of: kagenti-observability
+spec:
+  replicas: 1  # Single replica for dev/Kind (use 3+ for production HA)
+  strategy:
+    type: Recreate  # Ensure only one instance at a time (for single replica)
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+        app.kubernetes.io/name: alertmanager
+        app.kubernetes.io/component: alerting
+      annotations:
+        # Force pod restart when config changes
+        checksum/config: "{{ include (print $.Template.BasePath \"/configmap.yaml\") . | sha256sum }}"
+    spec:
+      serviceAccountName: default
+
+      # Security context for pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534  # nobody user
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: alertmanager
+          image: quay.io/prometheus/alertmanager:v0.27.0
+          imagePullPolicy: IfNotPresent
+
+          # AlertManager arguments
+          args:
+            - '--config.file=/etc/alertmanager/config.yml'
+            - '--storage.path=/alertmanager'
+            - '--web.listen-address=:9093'
+            - '--cluster.listen-address='  # Disable clustering for single replica
+            - '--log.level=info'
+
+          ports:
+            - name: http
+              containerPort: 9093
+              protocol: TCP
+
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Resource limits
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+
+          # Security context for container
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            capabilities:
+              drop:
+                - ALL
+
+          # Volume mounts
+          volumeMounts:
+            # AlertManager configuration
+            - name: config
+              mountPath: /etc/alertmanager
+              readOnly: true
+
+            # AlertManager data (silences, notification log)
+            - name: data
+              mountPath: /alertmanager
+
+      # Volumes
+      volumes:
+        # ConfigMap with AlertManager configuration
+        - name: config
+          configMap:
+            name: alertmanager-config
+            items:
+              - key: alertmanager.yml
+                path: config.yml
+
+        # Ephemeral storage for silences and notification log
+        # For production: use PersistentVolumeClaim
+        - name: data
+          emptyDir:
+            sizeLimit: 1Gi
+
+      # Pod anti-affinity for HA (when using multiple replicas)
+      # affinity:
+      #   podAntiAffinity:
+      #     preferredDuringSchedulingIgnoredDuringExecution:
+      #       - weight: 100
+      #         podAffinityTerm:
+      #           labelSelector:
+      #             matchLabels:
+      #               app: alertmanager
+      #           topologyKey: kubernetes.io/hostname

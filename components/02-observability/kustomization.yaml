@@ -23,6 +23,9 @@ resources:
   # Grafana (dashboards and visualization)
   - grafana/
 
+  # AlertManager (alert aggregation and routing)
+  - alertmanager/
+
   # Korrel8r (signal correlation engine for trace↔log↔metric)
   # DISABLED 2025-11-14: CrashLoopBackOff due to Go runtime error in latest image
   # See TODO_TRACING.md Known Issues section for details
