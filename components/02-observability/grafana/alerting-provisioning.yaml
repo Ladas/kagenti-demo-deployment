@@ -1,0 +1,87 @@
+# Grafana Alerting Provisioning
+# Configures AlertManager as a contact point for Grafana alerts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-alerting
+  namespace: observability
+data:
+  # AlertManager contact point configuration
+  alertmanager.yaml: |
+    apiVersion: 1
+
+    # Contact points define where alerts are sent
+    contactPoints:
+      - name: alertmanager
+        orgId: 1
+        receivers:
+          - uid: alertmanager-default
+            type: prometheus-alertmanager
+            settings:
+              # AlertManager URL
+              url: http://alertmanager.observability.svc:9093
+              # Send both firing and resolved alerts
+              sendResolved: true
+            # Don't disable resolve message
+            disableResolveMessage: false
+
+      # Additional contact points can be added here
+      # - name: slack
+      #   orgId: 1
+      #   receivers:
+      #     - uid: slack-default
+      #       type: slack
+      #       settings:
+      #         url: <slack-webhook-url>
+      #         recipient: '#alerts'
+
+  # Notification policies define routing rules
+  policies.yaml: |
+    apiVersion: 1
+
+    policies:
+      # Root policy - catches all alerts
+      - orgId: 1
+        receiver: alertmanager
+        # Group alerts by these labels
+        group_by:
+          - alertname
+          - namespace
+          - severity
+        # Wait 30s before sending first notification
+        group_wait: 30s
+        # Wait 5m before sending notification about new alerts in group
+        group_interval: 5m
+        # Re-send notification if alert still firing after 12h
+        repeat_interval: 12h
+
+        # Child policies for specific routing
+        routes:
+          # Critical alerts - faster notification
+          - receiver: alertmanager
+            matchers:
+              - severity = critical
+            group_wait: 10s
+            repeat_interval: 4h
+            continue: false
+
+          # Warning alerts
+          - receiver: alertmanager
+            matchers:
+              - severity = warning
+            continue: false
+
+  # Mute timings (optional - for scheduled maintenance windows)
+  mute-timings.yaml: |
+    apiVersion: 1
+
+    muteTimes:
+      # Example: Mute non-critical alerts during business hours
+      # - orgId: 1
+      #   name: business-hours
+      #   time_intervals:
+      #     - times:
+      #         - start_time: '09:00'
+      #           end_time: '17:00'
+      #       weekdays:
+      #         - 'monday:friday'
