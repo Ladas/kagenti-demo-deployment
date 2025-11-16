@@ -93,6 +93,27 @@ jobs:
           sudo mv argocd /usr/local/bin/argocd
           argocd version --client
 
+      - name: Build operator images for CI
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "🔨 Building operator images for CI (AMD64)..."
+
+          # Clone operator repository
+          git clone --depth 1 --branch fix/add-kagenti-operator-image-build \
+            https://github.com/Ladas/kagenti-operator /tmp/kagenti-operator
+
+          # Build kagenti-operator
+          echo "Building kagenti-operator..."
+          cd /tmp/kagenti-operator/kagenti-operator
+          docker build -t localhost:5001/kagenti-operator:dev .
+
+          # Build platform-operator
+          echo "Building platform-operator..."
+          cd /tmp/kagenti-operator/platform-operator
+          docker build -t localhost:5001/kagenti-platform-operator:dev .
+
+          echo "✅ Operator images built successfully for AMD64"
+
       - name: Deploy Platform with quick-redeploy.sh
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |

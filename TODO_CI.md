@@ -790,3 +790,179 @@ spec:
 ---
 
 **Status**: ROOT CAUSES IDENTIFIED - ready to implement fixes
+
+---
+
+## ✅ OPERATOR ARCHITECTURE ISSUE ROOT CAUSE CONFIRMED
+
+### Architecture Mismatch Verified
+
+Checked the committed operator tar files in `.images/` directory:
+```bash
+$ docker load -i .images/kagenti-operator-dev.tar
+$ docker image inspect localhost:5001/kagenti-operator:dev | jq '.[0].Architecture'
+"arm64"
+
+$ docker load -i .images/kagenti-platform-operator-dev.tar  
+$ docker image inspect localhost:5001/kagenti-platform-operator:dev | jq '.[0].Architecture'
+"arm64"
+```
+
+**Problem**: Both operator images are ARM64, but GitHub Actions CI runs on AMD64!
+
+**Why it works locally**:
+- User's machine is likely Apple Silicon (ARM64)
+- Local Kind cluster runs ARM64 containers
+- Operator images match local architecture
+
+**Why it fails in CI**:
+- GitHub Actions runners are AMD64
+- Kind cluster in CI runs on AMD64
+- ARM64 operator binaries can't execute on AMD64 → "exec format error"
+
+---
+
+### Solution: Rebuild Operator Images for AMD64
+
+**Option 1: Rebuild Locally for AMD64 (Quick Fix)**
+
+```bash
+# In ladas-kagenti-operator repository
+cd /Users/ladas/Projects/OCTO/research/ladas-kagenti-operator
+
+# Build kagenti-operator for AMD64
+cd kagenti-operator
+make docker-build IMG=localhost:5001/kagenti-operator:dev GOARCH=amd64 GOOS=linux
+
+# Build platform-operator for AMD64
+cd ../platform-operator
+make docker-build IMG=localhost:5001/kagenti-platform-operator:dev GOARCH=amd64 GOOS=linux
+
+# Export new AMD64 images
+cd ../../kagenti-demo-deployment
+./scripts/export-operator-images.sh
+
+# Commit new tar files
+git add .images/
+git commit -m "chore: rebuild operator images for AMD64 (CI compatibility)"
+git push
+```
+
+**Option 2: Multi-Arch Builds (Proper Solution)**
+
+Build images for both ARM64 (local) and AMD64 (CI):
+
+```bash
+# Use docker buildx for multi-platform builds
+cd ladas-kagenti-operator/kagenti-operator
+
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t localhost:5001/kagenti-operator:dev \
+  --load \
+  .
+
+# For CI, we only need AMD64, so build specifically:
+docker buildx build \
+  --platform linux/amd64 \
+  -t localhost:5001/kagenti-operator:dev \
+  --load \
+  .
+```
+
+**Option 3: Build in CI (Best Long-Term)**
+
+Add operator build step to CI workflow:
+
+```yaml
+- name: Build operator images for CI
+  run: |
+    # Clone operator repository
+    git clone https://github.com/Ladas/kagenti-operator /tmp/kagenti-operator
+    cd /tmp/kagenti-operator
+    
+    # Build for AMD64
+    cd kagenti-operator
+    make docker-build IMG=localhost:5001/kagenti-operator:dev
+    
+    cd ../platform-operator  
+    make docker-build IMG=localhost:5001/kagenti-platform-operator:dev
+    
+    # Load into Kind
+    kind load docker-image localhost:5001/kagenti-operator:dev --name kagenti-demo
+    kind load docker-image localhost:5001/kagenti-platform-operator:dev --name kagenti-demo
+```
+
+---
+
+### Immediate Action: Option 1 (Rebuild for AMD64)
+
+This is the quickest fix to unblock CI:
+
+1. ✅ Identified architecture mismatch
+2. **TODO**: Rebuild images for AMD64
+3. **TODO**: Export as tar files
+4. **TODO**: Commit and push new tar files
+5. **TODO**: Verify CI passes
+
+---
+
+**Status**: ROOT CAUSE CONFIRMED - ready to rebuild images for AMD64
+
+---
+
+## 🔧 SOLUTION: Build Operators in CI Instead of Using Tar Files
+
+### Problem with Local Rebuilding
+
+Attempting to rebuild operators for AMD64 on ARM64 host fails due to:
+- Cross-compilation network issues during `go mod download`
+- Docker buildx emulation problems
+- Slow QEMU emulation for AMD64 on ARM64
+
+### Better Solution: Build Fresh in CI
+
+Since operators need to be built anyway, build them during CI run with correct native architecture.
+
+**Advantages**:
+- No cross-compilation needed
+- Native AMD64 build on AMD64 CI runner
+- Always fresh builds
+- No large tar files in git
+
+**Implementation**: Add build step to CI workflow BEFORE quick-redeploy.sh
+
+---
+
+### CI Workflow Modification
+
+Add this step to `.github/workflows/app-state-validation.yml` after "Install ArgoCD CLI" and before "Deploy Platform":
+
+```yaml
+      - name: Build operator images for CI
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "🔨 Building operator images for CI (AMD64)..."
+          
+          # Clone operator repository
+          git clone --depth 1 --branch fix/add-kagenti-operator-image-build \
+            https://github.com/Ladas/kagenti-operator /tmp/kagenti-operator
+          
+          # Build kagenti-operator
+          echo "Building kagenti-operator..."
+          cd /tmp/kagenti-operator/kagenti-operator
+          docker build -t localhost:5001/kagenti-operator:dev .
+          
+          # Build platform-operator  
+          echo "Building platform-operator..."
+          cd /tmp/kagenti-operator/platform-operator
+          docker build -t localhost:5001/kagenti-platform-operator:dev .
+          
+          echo "✅ Operator images built successfully"
+```
+
+This builds operators natively on AMD64 CI runner, avoiding all cross-compilation issues.
+
+---
+
+**Status**: READY TO IMPLEMENT - add build step to CI workflow
