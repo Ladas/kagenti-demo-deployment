@@ -13,5 +13,5 @@ spec:
   mtls:
     mode: PERMISSIVE
   portLevelMtls:
-    20001:
+    "20001":
       mode: PERMISSIVE
