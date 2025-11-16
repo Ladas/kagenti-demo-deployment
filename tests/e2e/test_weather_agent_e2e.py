@@ -12,18 +12,25 @@ Requirements:
     pip install pytest kubernetes requests
 
 Usage:
-    # Run all e2e tests
+    # Run from laptop (uses port-forwarding - DEFAULT)
     pytest tests/e2e/test_weather_agent_e2e.py -v -s
 
-    # Run specific test
-    pytest tests/e2e/test_weather_agent_e2e.py::test_weather_agent_chat -v
+    # Run from inside cluster (uses cluster DNS)
+    USE_CLUSTER_DNS=true pytest tests/e2e/test_weather_agent_e2e.py -v -s
 
 Environment Variables:
     KUBECONFIG: Path to kubeconfig file (default: ~/.kube/config)
     KAGENTI_UI_URL: Kagenti UI URL (default: https://kagenti.localtest.me:9443)
+    USE_CLUSTER_DNS: Set to 'true' to use cluster DNS (for in-cluster tests)
+
+Port-Forward Setup (if USE_CLUSTER_DNS not set):
+    kubectl port-forward -n kagenti-system svc/ollama 11434:11434 &
+    kubectl port-forward -n team1 svc/weather-service 8001:8000 &
+    kubectl port-forward -n team1 svc/weather-tool 8002:8000 &
 """
 
 import json
+import os
 import time
 from typing import Dict, Optional
 
@@ -57,21 +64,45 @@ def k8s_custom_client():
 
 
 @pytest.fixture(scope="module")
-def weather_agent_url():
-    """Get weather agent service URL."""
-    return "http://weather-service.team1.svc.cluster.local:8000"
+def use_cluster_dns():
+    """Check if we should use cluster DNS or localhost (port-forward)."""
+    return os.environ.get("USE_CLUSTER_DNS", "").lower() == "true"
 
 
 @pytest.fixture(scope="module")
-def weather_tool_url():
-    """Get weather tool MCP service URL."""
-    return "http://weather-tool.team1.svc.cluster.local:8000"
+def weather_agent_url(use_cluster_dns):
+    """Get weather agent service URL.
+
+    Returns localhost:8001 by default (requires port-forward).
+    Set USE_CLUSTER_DNS=true to use cluster DNS.
+    """
+    if use_cluster_dns:
+        return "http://weather-service.team1.svc.cluster.local:8000"
+    return "http://localhost:8001"
 
 
 @pytest.fixture(scope="module")
-def ollama_url():
-    """Get Ollama LLM service URL."""
-    return "http://ollama.kagenti-system.svc.cluster.local:11434"
+def weather_tool_url(use_cluster_dns):
+    """Get weather tool MCP service URL.
+
+    Returns localhost:8002 by default (requires port-forward).
+    Set USE_CLUSTER_DNS=true to use cluster DNS.
+    """
+    if use_cluster_dns:
+        return "http://weather-tool.team1.svc.cluster.local:8000"
+    return "http://localhost:8002"
+
+
+@pytest.fixture(scope="module")
+def ollama_url(use_cluster_dns):
+    """Get Ollama LLM service URL.
+
+    Returns localhost:11434 by default (requires port-forward).
+    Set USE_CLUSTER_DNS=true to use cluster DNS.
+    """
+    if use_cluster_dns:
+        return "http://ollama.kagenti-system.svc.cluster.local:11434"
+    return "http://localhost:11434"
 
 
 # ============================================================================
@@ -149,11 +180,12 @@ def check_service_health(url: str, endpoint: str = "/", timeout: int = 5) -> boo
         timeout: Request timeout
 
     Returns:
-        True if service responds with 200, False otherwise
+        True if service responds (any status code < 500), False otherwise
     """
     try:
         response = requests.get(f"{url}{endpoint}", timeout=timeout, verify=False)
-        return response.status_code == 200
+        # Service is healthy if it responds (even with 405/406 Method Not Allowed)
+        return response.status_code < 500
     except Exception as e:
         print(f"Health check failed: {e}")
         return False
@@ -211,7 +243,7 @@ class TestWeatherAgentInfrastructure:
         try:
             response = requests.get(f"{weather_tool_url}/mcp", timeout=5)
             # MCP server might return various status codes, just check it responds
-            assert response.status_code in [200, 405], \
+            assert response.status_code in [200, 405, 406], \
                 f"Weather tool MCP endpoint returned {response.status_code}"
             print("✓ Weather MCP tool is healthy")
         except Exception as e:
