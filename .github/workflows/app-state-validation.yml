@@ -359,14 +359,13 @@ jobs:
         continue-on-error: true
         run: |
           echo "Running E2E platform tests..."
-          pytest tests/e2e/test_platform_e2e.py \
-            -v \
-            --tb=short \
-            --html=e2e-report.html \
-            --self-contained-html \
-            --json-report \
-            --json-report-file=e2e-report.json \
-            --continue-on-collection-errors
+          PYTEST_ARGS="-v --tb=short --html=e2e-report.html --self-contained-html --json-report --json-report-file=e2e-report.json --continue-on-collection-errors"
+
+          if [[ -n "${{ steps.test_params.outputs.exclude_apps }}" ]]; then
+            PYTEST_ARGS="$PYTEST_ARGS --exclude-app=${{ steps.test_params.outputs.exclude_apps }}"
+          fi
+
+          pytest tests/e2e/test_platform_e2e.py $PYTEST_ARGS
 
       - name: Upload test results
         if: always()

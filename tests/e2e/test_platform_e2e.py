@@ -207,8 +207,11 @@ class TestServiceMesh:
         assert statefulset.status.ready_replicas >= 1, \
             "Keycloak has no ready replicas"
 
-    def test_container_registry_healthy(self, k8s_apps_client):
+    def test_container_registry_healthy(self, k8s_apps_client, excluded_apps):
         """Verify container registry is healthy."""
+        if 'infrastructure' in excluded_apps or 'container-registry' in excluded_apps:
+            pytest.skip("Container registry excluded from testing")
+
         deployment = k8s_apps_client.read_namespaced_deployment(
             name="container-registry",
             namespace="cr-system"
@@ -217,8 +220,11 @@ class TestServiceMesh:
         assert deployment.status.ready_replicas >= 1, \
             "Container registry has no ready replicas"
 
-    def test_kiali_healthy(self, k8s_apps_client):
+    def test_kiali_healthy(self, k8s_apps_client, excluded_apps):
         """Verify Kiali service mesh dashboard is healthy."""
+        if 'kiali' in excluded_apps:
+            pytest.skip("Kiali excluded from testing")
+
         deployment = k8s_apps_client.read_namespaced_deployment(
             name="kiali",
             namespace="kiali-system"
@@ -235,8 +241,11 @@ class TestServiceMesh:
 class TestOperators:
     """Test Kagenti platform operators."""
 
-    def test_platform_operator_healthy(self, k8s_apps_client):
+    def test_platform_operator_healthy(self, k8s_apps_client, excluded_apps):
         """Verify platform-operator is running."""
+        if 'platform-operator' in excluded_apps or 'operators' in excluded_apps:
+            pytest.skip("Platform operator excluded from testing")
+
         deployment = k8s_apps_client.read_namespaced_deployment(
             name="agentic-platform-controller-manager",
             namespace="kagenti-system"
@@ -245,8 +254,11 @@ class TestOperators:
         assert deployment.status.ready_replicas >= 1, \
             "platform-operator has no ready replicas"
 
-    def test_platform_crds_installed(self, k8s_custom_client):
+    def test_platform_crds_installed(self, k8s_custom_client, excluded_apps):
         """Verify Platform CRDs are installed."""
+        if 'platform-operator' in excluded_apps or 'operators' in excluded_apps:
+            pytest.skip("Platform operators excluded from testing")
+
         crds = [
             ("platforms.kagenti.ai", "kagenti.ai", "v1alpha1"),
             ("components.kagenti.ai", "kagenti.ai", "v1alpha1"),
@@ -297,8 +309,11 @@ class TestPlatformServices:
         assert deployment.status.ready_replicas >= 1, \
             "Kagenti UI has no ready replicas"
 
-    def test_kagenti_ui_oauth_config_completed(self, k8s_client):
+    def test_kagenti_ui_oauth_config_completed(self, k8s_client, excluded_apps):
         """Verify Kagenti UI OAuth configuration job completed."""
+        if 'platform' in excluded_apps or 'kagenti-ui' in excluded_apps:
+            pytest.skip("Kagenti UI/platform excluded from testing")
+
         jobs = k8s_client.list_namespaced_pod(
             namespace="kagenti-system",
             label_selector="job-name=kagenti-ui-oauth-config"
@@ -362,8 +377,11 @@ class TestPlatformServices:
 class TestObservability:
     """Test observability stack components."""
 
-    def test_jaeger_healthy(self, k8s_apps_client):
+    def test_jaeger_healthy(self, k8s_apps_client, excluded_apps):
         """Verify Jaeger is running."""
+        if 'observability' in excluded_apps:
+            pytest.skip("Observability stack excluded from testing")
+
         deployment = k8s_apps_client.read_namespaced_deployment(
             name="jaeger",
             namespace="observability"
@@ -372,8 +390,11 @@ class TestObservability:
         assert deployment.status.ready_replicas >= 1, \
             "Jaeger has no ready replicas"
 
-    def test_tempo_healthy(self, k8s_apps_client):
+    def test_tempo_healthy(self, k8s_apps_client, excluded_apps):
         """Verify Tempo is running."""
+        if 'observability' in excluded_apps:
+            pytest.skip("Observability stack excluded from testing")
+
         deployment = k8s_apps_client.read_namespaced_deployment(
             name="tempo",
             namespace="observability"
@@ -382,8 +403,11 @@ class TestObservability:
         assert deployment.status.ready_replicas >= 1, \
             "Tempo has no ready replicas"
 
-    def test_otel_collector_healthy(self, k8s_apps_client):
+    def test_otel_collector_healthy(self, k8s_apps_client, excluded_apps):
         """Verify OpenTelemetry Collector is running."""
+        if 'observability' in excluded_apps:
+            pytest.skip("Observability stack excluded from testing")
+
         deployment = k8s_apps_client.read_namespaced_deployment(
             name="otel-collector",
             namespace="observability"
@@ -392,8 +416,11 @@ class TestObservability:
         assert deployment.status.ready_replicas >= 1, \
             "OTEL Collector has no ready replicas"
 
-    def test_phoenix_healthy(self, k8s_apps_client):
+    def test_phoenix_healthy(self, k8s_apps_client, excluded_apps):
         """Verify Phoenix observability UI is running."""
+        if 'observability' in excluded_apps:
+            pytest.skip("Observability stack excluded from testing")
+
         deployment = k8s_apps_client.read_namespaced_deployment(
             name="phoenix",
             namespace="observability"
@@ -524,7 +551,7 @@ class TestArgoCD:
             "agents",
         ]
 
-    def test_all_applications_exist(self, argocd_applications):
+    def test_all_applications_exist(self, argocd_applications, excluded_apps):
         """Verify all expected ArgoCD applications exist."""
         exit_code, stdout, stderr = run_command([
             "argocd", "app", "list",
@@ -537,10 +564,14 @@ class TestArgoCD:
         app_names = [line.strip() for line in stdout.split('\n') if line.strip()]
 
         for expected_app in argocd_applications:
+            # Skip checking for excluded apps
+            if expected_app in excluded_apps:
+                continue
+
             assert any(expected_app in app for app in app_names), \
                 f"ArgoCD application '{expected_app}' not found"
 
-    def test_critical_applications_synced(self):
+    def test_critical_applications_synced(self, excluded_apps):
         """Verify critical applications are synced."""
         critical_apps = [
             "infrastructure",
@@ -553,6 +584,10 @@ class TestArgoCD:
         ]
 
         for app_name in critical_apps:
+            # Skip excluded apps
+            if app_name in excluded_apps:
+                continue
+
             exit_code, stdout, stderr = run_command([
                 "argocd", "app", "get", app_name,
                 "--port-forward",
@@ -572,13 +607,35 @@ class TestArgoCD:
 class TestPlatformHealth:
     """Overall platform health checks."""
 
-    def test_no_crashloop_pods(self, k8s_client):
+    def test_no_crashloop_pods(self, k8s_client, excluded_apps):
         """Verify no pods are in CrashLoopBackOff state."""
+        # Map app names to their namespaces for filtering
+        app_namespace_map = {
+            'observability': ['observability'],
+            'kiali': ['kiali-system'],
+            'ollama': ['kagenti-system'],  # ollama pods are in kagenti-system
+            'agents': ['team1'],
+        }
+
+        # Build set of namespaces to exclude
+        excluded_namespaces = set()
+        for app in excluded_apps:
+            if app in app_namespace_map:
+                excluded_namespaces.update(app_namespace_map[app])
+
         # Get all pods across all namespaces
         pods = k8s_client.list_pod_for_all_namespaces()
 
         crashloop_pods = []
         for pod in pods.items:
+            # Skip pods from excluded namespaces
+            if pod.metadata.namespace in excluded_namespaces:
+                continue
+
+            # Skip ollama pods specifically if ollama is excluded
+            if 'ollama' in excluded_apps and pod.metadata.name.startswith('ollama'):
+                continue
+
             if pod.status.container_statuses:
                 for container in pod.status.container_statuses:
                     if container.state.waiting:
@@ -605,8 +662,16 @@ class TestPlatformHealth:
         assert health_percentage >= 80, \
             f"Only {health_percentage:.1f}% of pods are healthy (threshold: 80%)"
 
-    def test_all_deployments_have_replicas(self, k8s_apps_client):
+    def test_all_deployments_have_replicas(self, k8s_apps_client, excluded_apps):
         """Verify all deployments have at least one ready replica."""
+        # Map app names to their namespaces for filtering
+        app_namespace_map = {
+            'observability': 'observability',
+            'kiali': 'kiali-system',
+            'infrastructure': 'cr-system',  # container-registry
+            'container-registry': 'cr-system',
+        }
+
         # Get deployments from critical namespaces
         critical_namespaces = [
             "argocd",
@@ -621,6 +686,16 @@ class TestPlatformHealth:
         failed_deployments = []
 
         for namespace in critical_namespaces:
+            # Skip entire namespace if corresponding app is excluded
+            namespace_excluded = False
+            for app, ns in app_namespace_map.items():
+                if app in excluded_apps and ns == namespace:
+                    namespace_excluded = True
+                    break
+
+            if namespace_excluded:
+                continue
+
             try:
                 deployments = k8s_apps_client.list_namespaced_deployment(
                     namespace=namespace
@@ -632,6 +707,10 @@ class TestPlatformHealth:
                         "kagenti-controller-manager",  # Image not published
                         "grafana",  # OIDC secret missing
                     ]:
+                        continue
+
+                    # Skip ollama deployments if ollama is excluded
+                    if 'ollama' in excluded_apps and deployment.metadata.name.startswith('ollama'):
                         continue
 
                     if not deployment.status.ready_replicas:
