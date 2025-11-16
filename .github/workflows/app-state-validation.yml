@@ -114,11 +114,13 @@ jobs:
 
           # Export as tar files for quick-redeploy.sh
           echo "Exporting operator images as tar files..."
+          cd $GITHUB_WORKSPACE
           mkdir -p .images
           docker save localhost:5001/kagenti-operator:dev -o .images/kagenti-operator-dev.tar
           docker save localhost:5001/kagenti-platform-operator:dev -o .images/kagenti-platform-operator-dev.tar
 
           echo "✅ Operator images built and exported successfully (AMD64)"
+          ls -lah .images/
 
       - name: Deploy Platform with quick-redeploy.sh
         if: steps.cluster_mode.outputs.mode == 'kind'
