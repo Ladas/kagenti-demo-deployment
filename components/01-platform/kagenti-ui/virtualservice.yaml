@@ -1,0 +1,38 @@
+# VirtualService for Kagenti UI - Streamlit Multipage App Fix
+# Handles URL rewriting for _stcore internal endpoints that include page paths
+#
+# Issue: Streamlit multipage apps make requests like:
+#   /Import_New_Agent/_stcore/health (404)
+# But the endpoint is actually at:
+#   /_stcore/health (200)
+#
+# This VirtualService rewrites URLs to strip the page path prefix from _stcore requests
+
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kagenti-ui-rewrite
+  namespace: kagenti-system
+  labels:
+    app: kagenti-ui
+spec:
+  hosts:
+  - kagenti-ui.kagenti-system.svc.cluster.local
+  http:
+  # Match _stcore requests with page path prefix and rewrite
+  - match:
+    - uri:
+        regex: "^/[^/]+/_stcore/(.*)$"
+    rewrite:
+      uri: "/_stcore/"
+    route:
+    - destination:
+        host: kagenti-ui.kagenti-system.svc.cluster.local
+        port:
+          number: 8501
+  # Pass through all other requests unchanged
+  - route:
+    - destination:
+        host: kagenti-ui.kagenti-system.svc.cluster.local
+        port:
+          number: 8501
