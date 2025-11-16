@@ -93,7 +93,7 @@ jobs:
           sudo mv argocd /usr/local/bin/argocd
           argocd version --client
 
-      - name: Build operator images for CI
+      - name: Build and export operator images for CI
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |
           echo "🔨 Building operator images for CI (AMD64)..."
@@ -112,7 +112,13 @@ jobs:
           cd /tmp/kagenti-operator/platform-operator
           docker build -t localhost:5001/kagenti-platform-operator:dev .
 
-          echo "✅ Operator images built successfully for AMD64"
+          # Export as tar files for quick-redeploy.sh
+          echo "Exporting operator images as tar files..."
+          mkdir -p .images
+          docker save localhost:5001/kagenti-operator:dev -o .images/kagenti-operator-dev.tar
+          docker save localhost:5001/kagenti-platform-operator:dev -o .images/kagenti-platform-operator-dev.tar
+
+          echo "✅ Operator images built and exported successfully (AMD64)"
 
       - name: Deploy Platform with quick-redeploy.sh
         if: steps.cluster_mode.outputs.mode == 'kind'

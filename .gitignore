@@ -35,3 +35,4 @@ report.json
 *-report.html
 *-report.json
 .pytest_cache/
+.images/*.tar
