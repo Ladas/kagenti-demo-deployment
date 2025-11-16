@@ -52,6 +52,8 @@ spec:
           value: "0.0.0.0"
         - name: PORT
           value: "8000"
+        - name: UV_CACHE_DIR
+          value: "/app/.cache/uv"
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://otel-collector.observability.svc.cluster.local:4317"
         - name: OTEL_SERVICE_NAME
