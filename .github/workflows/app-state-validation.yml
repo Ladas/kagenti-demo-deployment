@@ -134,7 +134,7 @@ jobs:
           echo "Waiting for ArgoCD applications to sync and become healthy..."
           echo "Monitoring ArgoCD application status via kubectl..."
 
-          TIMEOUT=600   # 10 minutes maximum
+          TIMEOUT=900   # 15 minutes maximum (operators need time to stabilize)
           INTERVAL=10   # Check every 10 seconds
           ELAPSED=0
 
