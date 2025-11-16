@@ -14,3 +14,11 @@ data:
   CONTAINER_REGISTRY: "localhost:5000"
   # Build environment
   ENVIRONMENT: "kind-local"
+
+  # Ollama LLM Configuration (shared by all agents)
+  LLM_API_BASE: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+  LLM_MODEL: "qwen2.5:3b"
+  LLM_API_KEY: "dummy"
+  OPENAI_API_BASE: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+  OPENAI_API_KEY: "dummy"
+  OPENAI_MODEL_NAME: "qwen2.5:3b"
