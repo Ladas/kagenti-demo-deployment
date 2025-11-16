@@ -149,12 +149,10 @@ jobs:
           EXCLUDE_APPS="${{ inputs.exclude_apps }}"
           ONLY_CRITICAL="${{ inputs.only_critical }}"
 
+          # No automatic exclusions - test all apps in CI
+          # For manual runs, use workflow_dispatch inputs to exclude apps if needed
           if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
-            # For automated runs, exclude resource-intensive optional apps
-            # - agents, observability: not critical for platform
-            # - kiali: CPU-intensive, optional observability dashboard
-            # - ollama: model downloads, optional AI server
-            EXCLUDE_APPS="agents,observability,kiali,ollama"
+            EXCLUDE_APPS=""
             ONLY_CRITICAL="false"
           fi
 
