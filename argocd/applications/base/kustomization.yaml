@@ -17,6 +17,7 @@ resources:
 
   # Wave 15 - Platform
   - platform.yaml
+  - ollama.yaml
 
   # Wave 20 - Observability
   - observability.yaml

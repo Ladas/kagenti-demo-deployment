@@ -1,0 +1,29 @@
+# Ollama LLM Service
+# Provides local LLM inference for AI agents
+# Default model: Qwen2.5:3b
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kagenti-system
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - model-pull-job.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: ollama
+      app.kubernetes.io/part-of: kagenti
+      app.kubernetes.io/component: platform
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+
+commonAnnotations:
+  config.kubernetes.io/origin: |
+    path: components/01-platform/ollama/kustomization.yaml
+  description: |
+    Ollama - Local LLM inference service.
+    Provides OpenAI-compatible API for agents.
+    Default model: Qwen2.5:3b

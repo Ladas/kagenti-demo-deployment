@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ollama
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"  # Deploy with other platform services
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ladas/kagenti-demo-deployment.git
+    targetRevision: argocd-gitops-dev-phase-1
+    path: components/01-platform/ollama
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagenti-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=false
+      - PrunePropagationPolicy=foreground
+      - PruneLast=false
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
