@@ -1,0 +1,678 @@
+# Grafana Alert Rules - Platform Health
+# Comprehensive alert rules covering all Kagenti platform components
+#
+# This file defines alert rules that can be provisioned via Grafana's provisioning system.
+# These rules monitor the health of infrastructure, platform, observability, and application layers.
+#
+# To provision these rules, add this file to the grafana-alerting ConfigMap
+# and mount it at /etc/grafana/provisioning/alerting/
+
+apiVersion: 1
+
+groups:
+  # ========================================
+  # Infrastructure Layer Alerts
+  # ========================================
+
+  - name: infrastructure_health
+    interval: 1m
+    orgId: 1
+    folder: Kagenti
+    rules:
+      # Istio control plane health
+      - uid: istiod-down
+        title: Istio Control Plane Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093  # Prometheus
+            model:
+              expr: up{job="istiod"} == 0
+              refId: A
+        noDataState: OK
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: 'Istio control plane (istiod) is down. Service mesh functionality is degraded.'
+          summary: Istio control plane unavailable
+          runbook_url: 'https://istio.io/latest/docs/ops/diagnostic-tools/controlz/'
+        labels:
+          severity: critical
+          component: istio
+          layer: infrastructure
+
+      # Gateway availability
+      - uid: gateway-unhealthy
+        title: Istio Gateway Unhealthy
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{deployment=~"istio-.*gateway"} == 0
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: 'Istio Gateway {{ $labels.deployment }} has no available replicas. External access is blocked.'
+          summary: Gateway deployment has no healthy pods
+        labels:
+          severity: critical
+          component: gateway
+          layer: infrastructure
+
+      # Certificate expiration
+      - uid: certificate-expiring-soon
+        title: TLS Certificate Expiring Soon
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400 < 14
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 1h
+        annotations:
+          description: 'Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} expires in {{ printf "%.0f" $values.A.Value }} days'
+          summary: TLS certificate expiring within 14 days
+        labels:
+          severity: warning
+          component: cert-manager
+          layer: infrastructure
+
+      # Node health
+      - uid: kubernetes-node-not-ready
+        title: Kubernetes Node Not Ready
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+              refId: A
+        noDataState: OK
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: 'Kubernetes node {{ $labels.node }} is not ready'
+          summary: Node is not in Ready state
+        labels:
+          severity: critical
+          component: kubernetes
+          layer: infrastructure
+
+      # Node CPU pressure
+      - uid: node-cpu-pressure
+        title: Node CPU Pressure
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: kube_node_status_condition{condition="CPUPressure",status="true"} == 1
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: 'Node {{ $labels.node }} is experiencing CPU pressure'
+          summary: Node has insufficient CPU resources
+        labels:
+          severity: warning
+          component: kubernetes
+          layer: infrastructure
+
+      # Node memory pressure
+      - uid: node-memory-pressure
+        title: Node Memory Pressure
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: kube_node_status_condition{condition="MemoryPressure",status="true"} == 1
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: 'Node {{ $labels.node }} is experiencing memory pressure'
+          summary: Node has insufficient memory resources
+        labels:
+          severity: warning
+          component: kubernetes
+          layer: infrastructure
+
+  # ========================================
+  # Platform Layer Alerts
+  # ========================================
+
+  - name: platform_health
+    interval: 1m
+    orgId: 1
+    folder: Kagenti
+    rules:
+      # Keycloak availability
+      - uid: keycloak-down
+        title: Keycloak Authentication Service Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="keycloak",deployment="keycloak"} == 0
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: 'Keycloak authentication service is down. User authentication will fail.'
+          summary: Keycloak has no available replicas
+        labels:
+          severity: critical
+          component: keycloak
+          layer: platform
+
+      # OAuth2-Proxy health
+      - uid: oauth2-proxy-down
+        title: OAuth2-Proxy Service Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="oauth2-proxy"} == 0
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 2m
+        annotations:
+          description: 'OAuth2-Proxy {{ $labels.deployment }} is down. Access to protected services may be blocked.'
+          summary: OAuth2-Proxy has no available replicas
+        labels:
+          severity: warning
+          component: oauth2-proxy
+          layer: platform
+
+      # Tekton Pipelines controller
+      - uid: tekton-controller-down
+        title: Tekton Pipelines Controller Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="tekton-pipelines",deployment="tekton-pipelines-controller"} == 0
+              refId: A
+        noDataState: OK
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: 'Tekton Pipelines controller is down. Pipeline execution will fail.'
+          summary: Tekton controller unavailable
+        labels:
+          severity: critical
+          component: tekton
+          layer: platform
+
+      # Kagenti operator health
+      - uid: kagenti-operator-down
+        title: Kagenti Operator Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="kagenti-system",deployment=~"kagenti-.*"} == 0
+              refId: A
+        noDataState: OK
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: 'Kagenti operator {{ $labels.deployment }} is down. Agent lifecycle management is impacted.'
+          summary: Kagenti operator unavailable
+        labels:
+          severity: critical
+          component: kagenti-operator
+          layer: platform
+
+  # ========================================
+  # Observability Layer Alerts
+  # ========================================
+
+  - name: observability_health
+    interval: 1m
+    orgId: 1
+    folder: Kagenti
+    rules:
+      # Prometheus availability
+      - uid: prometheus-down
+        title: Prometheus Metrics Service Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: up{job="prometheus"} == 0
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: 'Prometheus metrics service is down. Metrics collection and alerting are impacted.'
+          summary: Prometheus unavailable
+        labels:
+          severity: critical
+          component: prometheus
+          layer: observability
+
+      # Grafana availability
+      - uid: grafana-down
+        title: Grafana Dashboard Service Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="observability",deployment="grafana"} == 0
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: 'Grafana dashboard service is down. Metrics visualization is unavailable.'
+          summary: Grafana has no available replicas
+        labels:
+          severity: warning
+          component: grafana
+          layer: observability
+
+      # Tempo availability
+      - uid: tempo-down
+        title: Tempo Tracing Service Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="observability",deployment="tempo"} == 0
+              refId: A
+        noDataState: Alerting
+        execErrState: OK
+        for: 2m
+        annotations:
+          description: 'Tempo distributed tracing service is down. Trace collection is impacted.'
+          summary: Tempo has no available replicas
+        labels:
+          severity: warning
+          component: tempo
+          layer: observability
+
+      # Loki availability
+      - uid: loki-down
+        title: Loki Log Aggregation Service Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="observability",deployment="loki"} == 0
+              refId: A
+        noDataState: Alerting
+        execErrState: OK
+        for: 2m
+        annotations:
+          description: 'Loki log aggregation service is down. Log ingestion and querying are impacted.'
+          summary: Loki has no available replicas
+        labels:
+          severity: warning
+          component: loki
+          layer: observability
+
+      # Phoenix availability
+      - uid: phoenix-down
+        title: Phoenix LLM Observability Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="observability",deployment="phoenix"} == 0
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 2m
+        annotations:
+          description: 'Phoenix LLM observability service is down. Agent trace visibility is impacted.'
+          summary: Phoenix has no available replicas
+        labels:
+          severity: warning
+          component: phoenix
+          layer: observability
+
+      # AlertManager availability
+      - uid: alertmanager-down
+        title: AlertManager Service Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_deployment_status_replicas_available{namespace="observability",deployment="alertmanager"} == 0
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: 'AlertManager is down. Alert routing and notifications are not functioning.'
+          summary: AlertManager has no available replicas
+        labels:
+          severity: critical
+          component: alertmanager
+          layer: observability
+
+      # Promtail DaemonSet health
+      - uid: promtail-pods-down
+        title: Promtail Log Collection Degraded
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                (kube_daemonset_status_number_available{namespace="observability",daemonset="promtail"}
+                / kube_daemonset_status_desired_number_scheduled{namespace="observability",daemonset="promtail"}) < 0.8
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: 'Less than 80% of Promtail pods are running. Log collection is degraded.'
+          summary: Promtail DaemonSet has insufficient replicas
+        labels:
+          severity: warning
+          component: promtail
+          layer: observability
+
+  # ========================================
+  # Application Layer Alerts
+  # ========================================
+
+  - name: application_health
+    interval: 1m
+    orgId: 1
+    folder: Kagenti
+    rules:
+      # Pod CPU usage
+      - uid: pod-high-cpu-usage
+        title: Pod High CPU Usage
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                sum(rate(container_cpu_usage_seconds_total{container!="",container!="POD"}[5m])) by (namespace, pod, container)
+                / sum(container_spec_cpu_quota{container!="",container!="POD"} / container_spec_cpu_period{container!="",container!="POD"}) by (namespace, pod, container) * 100 > 90
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} is using {{ printf "%.0f" $values.A.Value }}% CPU'
+          summary: Pod CPU usage exceeds 90%
+        labels:
+          severity: warning
+          component: application
+          layer: application
+
+      # Pod memory usage
+      - uid: pod-high-memory-usage
+        title: Pod High Memory Usage
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                sum(container_memory_working_set_bytes{container!="",container!="POD"}) by (namespace, pod, container)
+                / sum(container_spec_memory_limit_bytes{container!="",container!="POD"}) by (namespace, pod, container) * 100 > 90
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} is using {{ printf "%.0f" $values.A.Value }}% memory'
+          summary: Pod memory usage exceeds 90%
+        labels:
+          severity: warning
+          component: application
+          layer: application
+
+      # Pod restart count
+      - uid: pod-frequent-restarts
+        title: Pod Restarting Frequently
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                increase(kube_pod_container_status_restarts_total[15m]) > 3
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 1m
+        annotations:
+          description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} has restarted {{ printf "%.0f" $values.A.Value }} times in the last 15 minutes'
+          summary: Pod is restarting frequently
+        labels:
+          severity: warning
+          component: application
+          layer: application
+
+      # Pod CrashLoopBackOff
+      - uid: pod-crashloop-backoff
+        title: Pod in CrashLoopBackOff
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 2m
+        annotations:
+          description: 'Pod {{ $labels.pod }} container {{ $labels.container }} in namespace {{ $labels.namespace }} is in CrashLoopBackOff'
+          summary: Pod is crash looping
+        labels:
+          severity: critical
+          component: application
+          layer: application
+
+      # PVC space usage
+      - uid: pvc-high-usage
+        title: PersistentVolumeClaim High Usage
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100 > 85
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 10m
+        annotations:
+          description: 'PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} is {{ printf "%.0f" $values.A.Value }}% full'
+          summary: PersistentVolumeClaim usage exceeds 85%
+        labels:
+          severity: warning
+          component: storage
+          layer: infrastructure
+
+  # ========================================
+  # Prometheus Scrape Targets
+  # ========================================
+
+  - name: prometheus_targets
+    interval: 1m
+    orgId: 1
+    folder: Kagenti
+    rules:
+      # Prometheus target down
+      - uid: prometheus-target-down
+        title: Prometheus Scrape Target Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: up{job!=""} == 0
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 2m
+        annotations:
+          description: 'Prometheus target {{ $labels.job }} (instance: {{ $labels.instance }}) is down'
+          summary: Prometheus cannot scrape target
+        labels:
+          severity: warning
+          component: prometheus
+          layer: observability
+
+      # High scrape failure rate
+      - uid: prometheus-high-scrape-failure
+        title: Prometheus High Scrape Failure Rate
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                rate(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m]) > 0.1
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: 'Prometheus job {{ $labels.job }} has high scrape failure rate: {{ printf "%.2f" $values.A.Value }} failures/sec'
+          summary: Prometheus scrape errors are elevated
+        labels:
+          severity: warning
+          component: prometheus
+          layer: observability
