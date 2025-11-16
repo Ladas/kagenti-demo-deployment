@@ -39,7 +39,7 @@ jobs:
   validate-app-state:
     name: Validate ArgoCD Application State
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60  # Extended to 60 minutes for complete platform testing (all apps including optional observability, Kiali, Ollama)
 
     steps:
       - name: Checkout repository
@@ -134,8 +134,8 @@ jobs:
           echo "Waiting for ArgoCD applications to sync and become healthy..."
           echo "Monitoring ArgoCD application status via kubectl..."
 
-          TIMEOUT=1200  # 20 minutes maximum (operators need time to stabilize)
-          INTERVAL=10   # Check every 10 seconds
+          TIMEOUT=3600  # 60 minutes maximum (complete platform including optional apps: observability, Kiali, Ollama)
+          INTERVAL=30   # Check every 30 seconds (reduced frequency with longer timeout)
           ELAPSED=0
 
           # List of REQUIRED applications (MUST be healthy, or we fail)
@@ -238,7 +238,7 @@ jobs:
               exit 0
             fi
 
-            # Wait before next check
+            # Wait before next check (30 seconds with new poll interval)
             sleep $INTERVAL
             ELAPSED=$((ELAPSED + INTERVAL))
           done
