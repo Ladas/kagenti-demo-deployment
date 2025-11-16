@@ -498,6 +498,148 @@ kubectl get pods -A -w
 kubectl get pods -n observability -w
 ```
 
+### Alert Monitoring
+
+**Check Currently Firing Alerts**:
+
+```bash
+# List all firing alerts via Grafana API
+kubectl exec -n observability deployment/grafana -- \
+  curl -s 'http://localhost:3000/api/alertmanager/grafana/api/v2/alerts' \
+  -u admin:admin123 | python3 -c "
+import sys, json
+alerts = json.load(sys.stdin)
+firing = [a for a in alerts if a.get('status', {}).get('state') == 'active']
+print(f'Firing alerts: {len(firing)}')
+for alert in firing:
+    labels = alert.get('labels', {})
+    print(f\"  • {labels.get('alertname')} ({labels.get('severity')})\")
+"
+
+# List all alert rules
+kubectl exec -n observability deployment/grafana -- \
+  curl -s 'http://localhost:3000/api/v1/provisioning/alert-rules' \
+  -u admin:admin123 | python3 -c "
+import sys, json
+rules = json.load(sys.stdin)
+print(f'Total alert rules: {len(rules)}')
+for rule in rules:
+    print(f\"  • {rule.get('title')} ({rule.get('labels', {}).get('severity')})\")
+"
+```
+
+**Test Alert Queries**:
+
+```bash
+# Test a PromQL query directly in Prometheus
+kubectl exec -n observability deployment/grafana -- \
+  curl -s -G 'http://prometheus.observability.svc:9090/api/v1/query' \
+  --data-urlencode 'query=up{job="kubernetes-pods"}' | python3 -m json.tool
+
+# Test specific alert query
+kubectl exec -n observability deployment/grafana -- \
+  curl -s -G 'http://prometheus.observability.svc:9090/api/v1/query' \
+  --data-urlencode 'query=kube_deployment_status_replicas_available{namespace="observability"} == 0' \
+  | python3 -m json.tool
+```
+
+**Modify Alert Rules** (GitOps workflow):
+
+```bash
+# 1. Edit alert configuration
+vim components/02-observability/grafana/alerting-provisioning.yaml
+
+# 2. Validate YAML syntax
+python3 -c "import yaml; yaml.safe_load(open('components/02-observability/grafana/alerting-provisioning.yaml'))"
+
+# 3. Commit changes
+git add components/02-observability/
+git commit -m "Update alert thresholds for CPU usage"
+git push
+
+# 4. Apply and reload (if ArgoCD sync is slow)
+kubectl apply -f components/02-observability/grafana/alerting-provisioning.yaml
+kubectl rollout restart deployment/grafana -n observability
+
+# 5. Verify alert updated
+kubectl exec -n observability deployment/grafana -- \
+  curl -s 'http://localhost:3000/api/v1/provisioning/alert-rules' \
+  -u admin:admin123 | grep -A 10 "your-alert-uid"
+```
+
+**Silence/Mute Alerts**:
+
+```bash
+# Create a silence via Grafana API (temporary - not GitOps)
+# For GitOps approach, use mute-timings.yaml in alerting-provisioning.yaml
+
+# Example: Silence an alert for 2 hours
+kubectl exec -n observability deployment/grafana -- \
+  curl -s -X POST 'http://localhost:3000/api/alertmanager/grafana/api/v2/silences' \
+  -H 'Content-Type: application/json' \
+  -u admin:admin123 \
+  -d '{
+    "matchers": [{"name": "alertname", "value": "YourAlertName", "isRegex": false}],
+    "startsAt": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
+    "endsAt": "'$(date -u -v+2H +%Y-%m-%dT%H:%M:%SZ)'",
+    "comment": "Silenced during maintenance",
+    "createdBy": "admin"
+  }'
+```
+
+**View Alert History in Grafana**:
+
+1. Open Grafana: `https://grafana.localtest.me:9443`
+2. Navigate to: **Alerting** → **Alert rules**
+3. Click on an alert to see:
+   - Current state
+   - Query results
+   - Evaluation history
+   - Annotations
+
+**Debug Alert Issues**:
+
+```bash
+# Check alert rule configuration
+kubectl exec -n observability deployment/grafana -- \
+  curl -s 'http://localhost:3000/api/v1/provisioning/alert-rules' \
+  -u admin:admin123 | python3 -c "
+import sys, json
+rules = json.load(sys.stdin)
+rule = next((r for r in rules if r.get('uid') == 'your-alert-uid'), None)
+if rule:
+    print('Alert Query:', rule['data'][0]['model']['expr'])
+    print('noDataState:', rule['noDataState'])
+    print('execErrState:', rule['execErrState'])
+    print('Evaluation interval:', rule.get('for', 'instant'))
+"
+
+# Check Grafana logs for alert evaluation errors
+kubectl logs -n observability deployment/grafana --tail=100 | grep -i alert
+
+# Check Prometheus metrics for the alert query
+kubectl port-forward -n observability svc/prometheus 9090:9090 &
+# Then open http://localhost:9090 and test your query
+
+# Verify AlertManager is receiving alerts
+kubectl exec -n observability deployment/grafana -- \
+  curl -s 'http://alertmanager.observability.svc:9093/api/v2/alerts' | python3 -m json.tool
+```
+
+**Common Alert Issues & Solutions**:
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Alert fires constantly | `noDataState: Alerting` + query returns empty | Change to `noDataState: OK` |
+| Alert never fires | Query syntax error or wrong labels | Test query in Prometheus UI |
+| False positive | Incorrect threshold or metric | Verify actual metric values |
+| Alert delayed | `for` duration too long | Reduce evaluation window |
+
+**See also**:
+- [docs/04-observability/ADDING_NEW_ALERTS.md](./docs/04-observability/ADDING_NEW_ALERTS.md) - How to add new alerts
+- [docs/04-observability/ALERT_FIX_SUMMARY.md](./docs/04-observability/ALERT_FIX_SUMMARY.md) - Alert troubleshooting examples
+- [TODO_ALERTS.md](./TODO_ALERTS.md) - Alert development roadmap
+
 ---
 
 ## 📁 Repository Structure
