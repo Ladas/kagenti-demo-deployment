@@ -97,6 +97,69 @@ argocd app sync kagenti-platform-kind \
 
 **Runs pytest tests automatically** - shows real-time test results as they execute.
 
+### Capture Platform Snapshot
+
+```bash
+# Create timestamped snapshot with full diagnostics
+./scripts/capture-platform-snapshot.sh [description]
+
+# Example: Capture before making changes
+./scripts/capture-platform-snapshot.sh before-operator-update
+
+# Example: Capture after test failure
+./scripts/capture-platform-snapshot.sh test-failure-debug
+
+# Run with E2E tests included (slower)
+RUN_E2E_TESTS=true ./scripts/capture-platform-snapshot.sh full-validation
+```
+
+**Captures:**
+- **Platform Status**: Full `platform-status.sh` output
+- **ArgoCD Apps**: Health, sync status, full JSON details
+- **Pods**: All pods, events, failing pods
+- **Test Results**: App state validation + E2E tests (optional)
+- **Loki Logs**: Error/warning logs from last 6 hours
+- **Resource Usage**: Node/pod metrics
+- **Networking**: Services, gateways, routes, certificates
+
+**Output Structure**:
+```
+platform_status_history/
+└── 20251117-090000-before-operator-update/
+    ├── 00-README.md                  # Summary with quick analysis
+    ├── 00-platform-status.log        # Full platform status
+    ├── 01-argocd-*.txt/json          # ArgoCD app details
+    ├── 02-pods-*.txt                 # Pod status & events
+    ├── 03-test-*.html/json/log       # Test results
+    ├── 04-loki-errors.txt            # Error logs (formatted)
+    ├── 04-loki-warnings.txt          # Warning logs (formatted)
+    ├── 04-loki-<namespace>.txt       # Recent logs by namespace
+    ├── 05-resources-*.txt            # Resource usage
+    └── 06-*.txt                      # Networking config
+```
+
+**Use Cases:**
+- **Before/After Comparisons**: Capture before changes, after changes, compare diffs
+- **Debugging**: Capture when tests fail to preserve diagnostic state
+- **Historical Analysis**: Track platform health over time
+- **Log Analysis**: Review Loki error/warning logs offline
+
+**Compare Snapshots**:
+```bash
+# Compare ArgoCD status
+diff platform_status_history/20251117-090000-before/01-argocd-health.txt \
+     platform_status_history/20251117-100000-after/01-argocd-health.txt
+
+# Compare error logs
+diff platform_status_history/20251117-090000-before/04-loki-errors.txt \
+     platform_status_history/20251117-100000-after/04-loki-errors.txt
+
+# View test results
+open platform_status_history/20251117-090000-after/03-test-app-state.html
+```
+
+**Note**: Snapshots are git-ignored (in `platform_status_history/`) - use for local debugging only.
+
 ---
 
 ## 🧪 Test-Driven Development (TDD)
@@ -391,6 +454,274 @@ kubectl delete pod <pod-name> -n <namespace>
 
 # Full cluster redeploy
 ./scripts/quick-redeploy.sh
+```
+
+---
+
+## 🔍 CI/CD Debugging & Test Evaluation
+
+**GitHub Actions CI** runs comprehensive platform validation and E2E tests. Use these commands to monitor, debug, and evaluate test results.
+
+### Quick Status Check
+
+```bash
+# View latest CI run status for a PR
+gh run list --repo redhat-et/kagenti-demo-deployment --branch argocd-gitops-dev-phase-1 --limit 5
+
+# Watch a specific run in real-time
+gh run watch <run-id> --repo redhat-et/kagenti-demo-deployment --interval 30
+
+# View run summary
+gh run view <run-id> --repo redhat-et/kagenti-demo-deployment
+```
+
+### Understanding CI Test Results
+
+CI runs **two test suites** (both must pass):
+
+1. **App State Validation** (`tests/validation/test_app_state.py`)
+   - Validates ALL ArgoCD applications are `Healthy` and `Synced`
+   - Checks critical apps: gateway-api, cert-manager, istio, tekton, keycloak, operators, platform, UI
+   - Allows optional apps (observability, kiali, ollama) to be "Progressing"
+   - **FAILS** if any CRITICAL app is Degraded/Missing
+
+2. **E2E Platform Tests** (`tests/e2e/test_platform_e2e.py`)
+   - Tests infrastructure: registry, Tekton pipelines, ArgoCD
+   - Tests observability: Grafana, Prometheus, Tempo, Loki, Kiali
+   - Tests platform: Keycloak SSO, OAuth2-Proxy, Gateway API
+   - Tests integrations: End-to-end workflows, agent creation
+
+### CI Timeout Behavior
+
+**ArgoCD App Monitoring** (`./scripts/monitor-argocd-apps.sh`):
+- **Timeout**: 3600s (60 minutes)
+- **Poll interval**: 30s
+- **Smart failure logic**:
+  - ❌ **Immediate fail** if CRITICAL app becomes Degraded/Missing
+  - ⚠️ **Tolerates "Progressing"** for OPTIONAL apps (observability, kiali, ollama)
+  - ✅ **Success** when all apps Healthy + Synced
+  - ✅ **Fallback success** at timeout if CRITICAL apps healthy (optional apps can still be Progressing)
+
+**Why apps might start unhealthy**:
+- Image pulls (especially large images like Grafana, Keycloak)
+- Database initialization (Keycloak, Kiali)
+- Operator CRD creation (tekton, istio)
+- Service mesh injection (istio sidecars)
+- Inter-app dependencies (operators → CRDs → apps)
+
+### Downloading CI Artifacts
+
+When CI fails, debug logs are captured in the `crash-debug-logs` artifact:
+
+```bash
+# List available artifacts for a run
+gh run view <run-id> --repo redhat-et/kagenti-demo-deployment --json artifacts | jq '.artifacts'
+
+# Download crash logs artifact
+gh run download <run-id> --name crash-debug-logs --dir /tmp/ci-debug-logs --repo redhat-et/kagenti-demo-deployment
+
+# Examine captured logs
+ls -lah /tmp/ci-debug-logs/
+```
+
+**Artifact contents** (captured by workflow lines 177-221):
+- `*_previous.log` - Previous container logs (before crash)
+- `*-operator-all.log` - Operator logs (kagenti-operator, platform-operator)
+- `tekton-all.log` - Tekton pipeline logs
+- `all-events.txt` - All Kubernetes events sorted by time
+- `*-describe.txt` - Pod descriptions for failing namespaces
+- `argocd-applications.yaml` - ArgoCD application statuses
+
+### Extracting Failure Information
+
+#### From GitHub API (No Download Needed)
+
+```bash
+# Get job steps and identify which step failed
+gh api "/repos/redhat-et/kagenti-demo-deployment/actions/runs/<run-id>/jobs" \
+  | jq '.jobs[] | {name: .name, steps: [.steps[] | {name: .name, status: .status, conclusion: .conclusion}]}'
+
+# Get specific step logs (replace STEP_NUMBER)
+gh run view <run-id> --repo redhat-et/kagenti-demo-deployment --log | grep -A50 "Run app state validation"
+
+# Python script to parse job steps
+python3 <<'EOF'
+import subprocess, json, sys
+run_id = sys.argv[1] if len(sys.argv) > 1 else "19410714332"
+result = subprocess.run(
+    ["gh", "api", f"/repos/redhat-et/kagenti-demo-deployment/actions/runs/{run_id}/jobs"],
+    capture_output=True, text=True
+)
+jobs = json.loads(result.stdout)
+for job in jobs.get("jobs", []):
+    print(f"\nJob: {job['name']} - {job['conclusion']}")
+    for step in job["steps"]:
+        status = "✓" if step["conclusion"] == "success" else "✗" if step["conclusion"] == "failure" else "-"
+        print(f"  {status} {step['name']}")
+EOF
+```
+
+#### From Downloaded Artifacts
+
+```bash
+# Find which pods were CrashLoopBackOff
+grep -r "CrashLoopBackOff" /tmp/ci-debug-logs/all-events.txt
+
+# Check operator logs for errors
+grep -i "error\|failed\|panic" /tmp/ci-debug-logs/*-operator-all.log
+
+# Find image pull issues
+grep -i "ImagePullBackOff\|ErrImagePull" /tmp/ci-debug-logs/all-events.txt
+
+# Check which ArgoCD apps were degraded
+cat /tmp/ci-debug-logs/argocd-applications.yaml | yq eval '.items[] | select(.status.health.status != "Healthy") | .metadata.name + ": " + .status.health.status'
+```
+
+### Identifying Degraded ArgoCD Apps
+
+```bash
+# During CI run (if you have kubeconfig)
+kubectl get applications -n argocd -o json | jq -r '.items[] | select(.status.health.status != "Healthy") | "\(.metadata.name): \(.status.health.status)"'
+
+# From downloaded artifact
+cat /tmp/ci-debug-logs/argocd-applications.yaml | yq eval '.items[] | .metadata.name + ": " + .status.health.status'
+
+# Check sync status
+cat /tmp/ci-debug-logs/argocd-applications.yaml | yq eval '.items[] | select(.status.sync.status != "Synced") | .metadata.name + ": " + .status.sync.status'
+```
+
+### Common Failure Patterns & Solutions
+
+#### Pattern 1: "Wait for ArgoCD applications" step fails immediately (< 5 min)
+
+**Symptoms**: CI fails in < 5 minutes at "Wait for ArgoCD applications" step
+
+**Likely cause**: Operator CrashLoopBackOff or Tekton failure
+
+**Debug**:
+```bash
+# Check operator logs in artifact
+grep -A10 "panic\|Error" /tmp/ci-debug-logs/*-operator-all.log
+
+# Check if operators created their CRDs
+kubectl get crd | grep kagenti
+
+# Check operator pod status
+kubectl get pods -n kagenti-operator
+kubectl get pods -n kagenti-platform-operator
+```
+
+#### Pattern 2: Timeout after 60 minutes with apps still "Progressing"
+
+**Symptoms**: CI reaches 60-minute timeout, some apps still Progressing
+
+**Likely cause**: Slow image pulls, resource constraints, or dependency deadlock
+
+**Debug**:
+```bash
+# Check image pull times from events
+grep "Pulling image" /tmp/ci-debug-logs/all-events.txt
+
+# Check for resource constraints
+grep -i "Insufficient\|OOM\|evicted" /tmp/ci-debug-logs/all-events.txt
+
+# Check which apps are waiting
+cat /tmp/ci-debug-logs/argocd-applications.yaml | yq eval '.items[] | select(.status.health.status == "Progressing") | .metadata.name'
+```
+
+#### Pattern 3: Tests pass but E2E tests fail
+
+**Symptoms**: App state validation passes (9/9 ✓), but E2E tests fail (10/29 ✓)
+
+**Likely cause**: Apps are excluded from validation but E2E tests expect them
+
+**Debug**:
+```bash
+# Check which apps are excluded in CI (should be none!)
+grep "exclude-app" .github/workflows/app-state-validation.yml
+
+# Check which E2E tests failed
+gh run view <run-id> --log --repo redhat-et/kagenti-demo-deployment | grep "FAILED tests/e2e"
+```
+
+**Fix**: Remove app exclusions from CI workflow (line 157 should be `EXCLUDE_APPS=""`)
+
+### Comparing Local vs CI Behavior
+
+If tests pass locally but fail in CI:
+
+```bash
+# 1. Run local platform status (same checks as CI)
+./scripts/platform-status.sh
+
+# 2. Run local pytest with same flags as CI
+pytest tests/validation/test_app_state.py -v --html=app-state-report.html --self-contained-html
+
+pytest tests/e2e/test_platform_e2e.py -v --tb=short --html=e2e-report.html --self-contained-html --continue-on-collection-errors
+
+# 3. Compare ArgoCD app status
+kubectl get applications -n argocd -o json | jq -r '.items[] | "\(.metadata.name): \(.status.health.status), \(.status.sync.status)"'
+
+# 4. Compare pod counts
+kubectl get pods -A --no-headers | wc -l  # Total pods
+kubectl get pods -A --field-selector=status.phase=Running --no-headers | wc -l  # Running
+
+# 5. Check for CI-specific issues
+# - CI uses AMD64 architecture
+# - CI uses fresh Kind cluster (no cached images)
+# - CI has GitHub Actions runner resource limits
+```
+
+### Progressive App Status Tracking (Missing in Current CI)
+
+**What we're missing**: Detailed timeline of app state transitions
+
+**How to add it** (enhancement opportunity):
+1. Modify `monitor-argocd-apps.sh` to log status changes to file
+2. Capture transition timestamps: `Progressing → Healthy`
+3. Track image pull duration per app
+4. Record first-healthy time for each app
+
+**Example enhancement**:
+```bash
+# In monitor-argocd-apps.sh, add before line 313:
+# Log state transitions
+echo "[$TIMESTAMP] $app_name: $prev_health -> $health (sync: $sync)" >> /tmp/app-transitions.log
+```
+
+### Test Result Interpretation
+
+**App State Validation Results**:
+- `9/9 PASSED` = ✅ All 9 critical platform apps healthy
+- `17/17 PASSED` = ✅ All tested apps healthy (with some excluded)
+- `0 tests collected` = ❌ Pytest configuration error (duplicate markers, missing conftest.py)
+
+**E2E Test Results**:
+- `29/29 PASSED` = ✅ Full platform operational
+- `10/29 passed` = ⚠️ Some apps excluded but tests expect them
+- `0/29 passed` = ❌ Platform not deployed or all apps unhealthy
+
+**Job Conclusion Codes**:
+- `success` = All steps passed
+- `failure` = At least one step failed
+- `cancelled` = Manually stopped
+- `timed_out` = 60-minute job timeout reached
+- `skipped` = Step conditions not met (e.g., validation failed so tests skipped)
+
+### Emergency Debugging (CI Stuck > 30 min)
+
+If CI is stuck for > 30 minutes at "Wait for ArgoCD applications":
+
+```bash
+# 1. Check which apps are blocking (every 2 minutes)
+watch -n 120 'gh run view <run-id> --log --repo redhat-et/kagenti-demo-deployment | tail -50'
+
+# 2. Cancel and restart with debug logging
+gh run cancel <run-id> --repo redhat-et/kagenti-demo-deployment
+# Then trigger new run with workflow_dispatch
+
+# 3. After cancellation, download partial logs
+gh run download <run-id> --name crash-debug-logs --dir /tmp/stuck-ci --repo redhat-et/kagenti-demo-deployment
 ```
 
 ---

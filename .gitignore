@@ -36,3 +36,6 @@ report.json
 *-report.json
 .pytest_cache/
 .images/*.tar
+
+# Platform status history (local snapshots with timestamps)
+platform_status_history/
