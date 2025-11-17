@@ -201,13 +201,16 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /health/ready
-              port: 9000
+              # Check token endpoint instead of generic health endpoint
+              # This ensures realm is initialized before PostSync hooks run
+              path: /realms/master/protocol/openid-connect/token
+              port: 8080
               scheme: HTTP
+            initialDelaySeconds: 60
             periodSeconds: 10
             successThreshold: 1
-            failureThreshold: 3
-            timeoutSeconds: 1
+            failureThreshold: 60
+            timeoutSeconds: 5
 
           # Resource limits
           resources:
