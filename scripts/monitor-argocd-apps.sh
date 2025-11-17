@@ -16,6 +16,10 @@ NC='\033[0m' # No Color
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 MONITOR_TIMEOUT="${1:-900}"  # Default: 15 minutes (900 seconds)
 POLL_INTERVAL=30  # Check every 30 seconds (reduced from 10s for less noise)
+DEGRADED_GRACE_PERIOD=300  # 5 minutes grace period for Degraded apps to recover
+
+# Track when apps first became Degraded (associative array: app_name -> timestamp)
+declare -A DEGRADED_SINCE
 
 echo ""
 echo -e "${BLUE}Monitoring ArgoCD Applications with Enhanced Status Tables...${NC}"
@@ -23,6 +27,12 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "Timeout: ${MONITOR_TIMEOUT}s ($(($MONITOR_TIMEOUT / 60)) minutes)"
 echo "Poll Interval: ${POLL_INTERVAL}s"
+echo "Degraded Grace Period: ${DEGRADED_GRACE_PERIOD}s ($(($DEGRADED_GRACE_PERIOD / 60)) minutes)"
+echo ""
+echo -e "${CYAN}Smart Failure Logic:${NC}"
+echo "  - CRITICAL apps: Immediate warning when Degraded, fail after ${DEGRADED_GRACE_PERIOD}s"
+echo "  - OPTIONAL apps: Can remain Progressing indefinitely"
+echo "  - Allows self-healing: Degraded → Progressing → Healthy"
 echo ""
 
 # App classification (CRITICAL vs OPTIONAL)
@@ -390,21 +400,46 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
         LAST_STATUS="$CURRENT_STATUS"
     fi
 
-    # Check for immediate failure conditions
-    # FAIL if any CRITICAL app is Degraded
+    # Check for failure conditions with grace period
+    # Track when CRITICAL apps first became Degraded, only fail after grace period
     CRITICAL_DEGRADED_APPS=$(echo "$ALL_APPS" | jq -r '[.items[] | select(.status.health.status == "Degraded" or .status.health.status == "Missing") | .metadata.name] | .[]')
+
+    CURRENT_TIME=$(date +%s)
 
     if [ -n "$CRITICAL_DEGRADED_APPS" ]; then
         for degraded_app in $CRITICAL_DEGRADED_APPS; do
             if is_critical_app "$degraded_app"; then
-                echo ""
-                echo -e "${RED}❌ CRITICAL app '$degraded_app' is Degraded or Missing${NC}"
-                echo -e "${RED}Cannot proceed with degraded critical applications${NC}"
-                echo ""
-                exit 1
+                # Track when this app first became degraded
+                if [ -z "${DEGRADED_SINCE[$degraded_app]:-}" ]; then
+                    DEGRADED_SINCE[$degraded_app]=$CURRENT_TIME
+                    echo ""
+                    echo -e "${YELLOW}⚠️  CRITICAL app '$degraded_app' is Degraded (grace period: ${DEGRADED_GRACE_PERIOD}s)${NC}"
+                fi
+
+                # Calculate how long it's been degraded
+                DEGRADED_DURATION=$((CURRENT_TIME - ${DEGRADED_SINCE[$degraded_app]}))
+
+                # Only fail if degraded beyond grace period
+                if [ $DEGRADED_DURATION -ge $DEGRADED_GRACE_PERIOD ]; then
+                    echo ""
+                    echo -e "${RED}❌ CRITICAL app '$degraded_app' has been Degraded for ${DEGRADED_DURATION}s (grace period: ${DEGRADED_GRACE_PERIOD}s)${NC}"
+                    echo -e "${RED}This indicates a persistent failure, not just initialization${NC}"
+                    echo ""
+                    exit 1
+                fi
             fi
         done
     fi
+
+    # Clear tracking for apps that recovered
+    for app_name in "${!DEGRADED_SINCE[@]}"; do
+        APP_HEALTH=$(echo "$ALL_APPS" | jq -r --arg app "$app_name" '[.items[] | select(.metadata.name == $app) | .status.health.status] | .[0] // "Missing"')
+        if [ "$APP_HEALTH" != "Degraded" ] && [ "$APP_HEALTH" != "Missing" ]; then
+            RECOVERY_TIME=$((CURRENT_TIME - ${DEGRADED_SINCE[$app_name]}))
+            echo -e "${GREEN}✓ App '$app_name' recovered after ${RECOVERY_TIME}s${NC}"
+            unset DEGRADED_SINCE[$app_name]
+        fi
+    done
 
     # Success: All apps healthy and synced
     if [ "$TOTAL_APPS" -gt 0 ] && [ "$HEALTHY_APPS" -eq "$TOTAL_APPS" ] && [ "$SYNCED_APPS" -eq "$TOTAL_APPS" ]; then
