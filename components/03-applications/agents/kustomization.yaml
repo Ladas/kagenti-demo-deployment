@@ -18,13 +18,13 @@ resources:
 
 # Override image tags to use locally loaded images
 images:
-  - name: localhost:5000/research-agent
+  - name: localhost:5001/research-agent
     newTag: v0.0.15
-  - name: localhost:5000/code-agent
+  - name: localhost:5001/code-agent
     newTag: v0.0.15
-  - name: localhost:5000/orchestrator-agent
+  - name: localhost:5001/orchestrator-agent
     newTag: v0.0.15
-  - name: localhost:5000/weather-service
+  - name: localhost:5001/weather-service
     newTag: v0.0.1
 
 labels:

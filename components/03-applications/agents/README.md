@@ -23,7 +23,7 @@ cd /path/to/kagenti-demo-deployment
 
 **What it does**:
 1. Builds Docker images from `agent-examples-local/a2a/*-agent/`
-2. Tags images as `localhost:5000/*-agent:v0.0.15`
+2. Tags images as `localhost:5001/*-agent:v0.0.15`
 3. Loads images into Kind cluster nodes
 
 **Sync agents via ArgoCD**:
@@ -84,11 +84,11 @@ Agent images are overridden via `kustomization.yaml`:
 
 ```yaml
 images:
-  - name: localhost:5000/research-agent
+  - name: localhost:5001/research-agent
     newTag: v0.0.15
-  - name: localhost:5000/code-agent
+  - name: localhost:5001/code-agent
     newTag: v0.0.15
-  - name: localhost:5000/orchestrator-agent
+  - name: localhost:5001/orchestrator-agent
     newTag: v0.0.15
 ```
 

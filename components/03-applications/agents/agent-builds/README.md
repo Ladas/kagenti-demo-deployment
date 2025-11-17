@@ -152,8 +152,8 @@ kubectl exec -n container-registry deployment/registry -- \
 
 # Or use registry API
 kubectl port-forward -n container-registry svc/registry 5000:5000
-curl http://localhost:5000/v2/_catalog
-curl http://localhost:5000/v2/research-agent/tags/list
+curl http://localhost:5001/v2/_catalog
+curl http://localhost:5001/v2/research-agent/tags/list
 ```
 
 ## AgentBuild CR Structure

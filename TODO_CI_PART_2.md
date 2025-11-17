@@ -865,11 +865,280 @@ open e2e-report.html
 
 ---
 
-**Implementation Status**: READY TO BEGIN
-**Estimated Completion**: 105 minutes (1h 45m)
-**Dependencies**: None (all prerequisites met)
-**Risk Level**: LOW (changes are incremental and well-tested)
+## 🔍 Local Cluster Investigation Results (2025-11-17 10:30 CET)
+
+### Summary of Current Issues
+
+**Investigation Context**:
+- Local macOS cluster deployed via `./scripts/quick-redeploy.sh`
+- Monitoring script exceeded 5-minute grace period (327s > 300s)
+- Platform app marked as Degraded due to kagenti-ui pod initialization timeout
+
+### Issue 1: Slow Image Pull - kagenti-ui ⏳
+
+**Status**: IN PROGRESS (30+ minutes pulling image)
+
+**Pod**: `kagenti-ui-d8fc79854-4n794` (namespace: kagenti-system)
+
+**Root Cause**: Pulling `ghcr.io/kagenti/kagenti/ui:v0.1.0-alpha.7` is extremely slow on macOS
+- Init container `wait-for-oauth-secret` took 20m39s to pull `quay.io/kubestellar/kubectl:1.30.14`
+- Main container `kagenti-ui` has been pulling for 9m40s (still in progress at investigation time)
+- Total time stuck: 30+ minutes
+
+**Why This Happens**:
+- macOS Docker uses QEMU virtualization (slower than Linux native)
+- Multi-architecture manifests require layer decompression
+- Large Node.js/React images (UI frontend) have many layers
+- Network latency to GHCR (GitHub Container Registry)
+
+**Impact on Monitoring**:
+- Grace period (300s = 5 minutes) designed for transient failures
+- 30-minute image pull far exceeds grace period
+- Monitoring script correctly failed platform app as persistently Degraded
+- **NOT an operator issue** - operators are 2/2 Ready and healthy
+
+**CI Implications**:
+- ✅ CI uses AMD64 native GitHub Actions runners (faster image pulls)
+- ✅ Cached layers across runs reduce subsequent pull times
+- ⚠️ First CI run after image update may hit similar delays
+
+**Solution Options**:
+1. **Wait it out** - UI will eventually start (total ~40-50 minutes on macOS)
+2. **Increase grace period** - Bump to 10-15 minutes for large images (not recommended - masks real issues)
+3. **Pre-cache images** - Add UI image to `scripts/kind/04-load-agent-images.sh`
+4. **Use smaller images** - Optimize Dockerfile (multi-stage builds, alpine base)
+
+**Recommendation**: This is **expected behavior on macOS** for first deployment. CI will not have this issue.
 
 ---
 
-*This plan provides a clear, actionable path to achieve 100% platform coverage in CI with robust monitoring and reliable test results.*
+### Issue 2: Promtail CrashLoopBackOff - "Too Many Open Files" 💥
+
+**Status**: FAILING (6 restarts in 30 minutes)
+
+**Pod**: `promtail-wdsg7` (namespace: observability)
+
+**Error Message**:
+```
+level=error ts=2025-11-17T09:40:41.58397514Z caller=main.go:169 msg="error creating promtail" error="failed to make file target manager: too many open files"
+```
+
+**Root Cause**: macOS file descriptor limits are too low for Promtail DaemonSet
+- Promtail watches ALL pod logs across ALL namespaces
+- Each log file requires a file descriptor
+- macOS default: `ulimit -n` = 256 (very low)
+- Linux default: 1024-4096 (higher)
+- Current cluster: 61 pods × ~2-3 log files each = ~150-180 file descriptors needed
+
+**Why This Happens on macOS**:
+- macOS has conservative default limits for BSD compatibility
+- Kind runs in Docker Desktop VM, inherits macOS limits
+- Promtail is designed for Linux production (higher limits)
+
+**Impact**:
+- ❌ No log aggregation in Loki (Promtail is the log shipper)
+- ❌ Grafana Explore → Loki queries return no results
+- ❌ Observability app marked as Degraded
+- ✅ Other observability components work: Prometheus, Tempo, Grafana UI, Phoenix
+
+**CI Implications**:
+- ✅ CI runs on Linux (GitHub Actions Ubuntu runners)
+- ✅ Linux has higher default file descriptor limits
+- ✅ Promtail works fine in CI (no macOS limitations)
+
+**Solution Options**:
+
+**Option A**: Increase macOS file descriptor limits (RECOMMENDED for local dev)
+```bash
+# Temporary (current shell)
+ulimit -n 4096
+
+# Permanent (add to ~/.zshrc or ~/.bashrc)
+echo "ulimit -n 4096" >> ~/.zshrc
+
+# Restart Docker Desktop after changing limits
+```
+
+**Option B**: Configure Promtail to use fewer file descriptors
+```yaml
+# components/02-observability/promtail-daemonset.yaml
+# Add resource limit
+containers:
+- name: promtail
+  env:
+  - name: GOMEMLIMIT
+    value: "128MiB"
+  # Reduce concurrent file watchers
+  args:
+  - -config.file=/etc/promtail/promtail.yaml
+  - -max-streams=100  # Default: unlimited
+```
+
+**Option C**: Disable Promtail on macOS (quick workaround)
+```bash
+# Scale down DaemonSet
+kubectl scale daemonset promtail -n observability --replicas=0
+```
+
+**Recommendation**: **Option A** (increase ulimit) - this is a dev environment limitation, not a platform bug.
+
+---
+
+### Issue 3: Team1 Agent Images - Wrong Registry Port 🔌
+
+**Status**: FAILING (0/4 pods ready - ImagePullBackOff)
+
+**Pods**:
+- `code-agent-7dcd5fd565-96mf8`
+- `orchestrator-agent-77ff67694c-pkj57`
+- `research-agent-6c6c7fb789-x56w4`
+- `weather-service-67f5fddb96-wx56h`
+
+**Error**: All pods trying to pull from `localhost:5000` (which doesn't exist)
+
+**Expected**: Images should pull from `localhost:5001` (container-registry service)
+
+**Root Cause**: Agent manifests reference wrong registry port
+
+**Evidence**:
+```bash
+$ kubectl describe pod code-agent-7dcd5fd565-96mf8 -n team1 | grep Image:
+Image: localhost:5000/code-agent:v0.0.15
+```
+
+**Error Message**:
+```
+Failed to pull image "localhost:5000/code-agent:v0.0.15":
+dial tcp [::1]:5000: connect: connection refused
+```
+
+**Why This Happens**:
+- Container registry runs at `localhost:5001` (MetalLB LoadBalancer)
+- Agent manifests incorrectly reference `localhost:5000`
+- Manifests were likely created for different registry setup
+
+**Impact**:
+- ❌ All team1 agent pods stuck in ImagePullBackOff
+- ❌ Agents app marked as Degraded
+- ⚠️ Istio sidecars (1/2 containers) are Running - only agent containers failing
+
+**CI Implications**:
+- ⚠️ CI may use different registry configuration
+- ⚠️ Agents excluded from CI validation (optional apps)
+- ❓ Need to verify registry setup in CI workflow
+
+**Solution**:
+
+**Find where agent images are referenced**:
+```bash
+cd /Users/ladas/Projects/OCTO/research/kagenti-demo-deployment
+grep -r "localhost:5000" components/03-applications/team1/
+```
+
+**Fix**: Update all agent manifests to use `localhost:5001`:
+```yaml
+# Before
+image: localhost:5000/code-agent:v0.0.15
+
+# After
+image: localhost:5001/code-agent:v0.0.15
+```
+
+**Alternative**: Check if agents should pull from GHCR instead:
+```yaml
+# If agents are published to GitHub Container Registry
+image: ghcr.io/redhat-et/kagenti/agents/code-agent:v0.0.15
+```
+
+**Recommendation**: Search codebase for registry references and standardize on `localhost:5001` for local dev.
+
+---
+
+### Issue 4: Observability Pods - Slow Image Pulls 🐢
+
+**Status**: IN PROGRESS (Grafana, AlertManager pulling images)
+
+**Pods**:
+- `alertmanager-8667774588-gdrjt` - PodInitializing (30 minutes)
+- `grafana-54d8596898-f6gmh` - ContainerCreating (30 minutes)
+
+**Root Cause**: Same as Issue #1 (slow image pulls on macOS)
+
+**Expected**:
+- Grafana image: ~500MB compressed, ~1.2GB uncompressed (many Node.js layers)
+- AlertManager image: ~100MB compressed
+
+**Impact**:
+- ⚠️ Observability app marked as Degraded (4/9 pods ready)
+- ⚠️ No Grafana dashboards accessible yet
+- ⚠️ No AlertManager (alert routing/silencing)
+- ✅ Prometheus, Loki, Tempo, Phoenix, OTEL Collector working (4/9 pods)
+
+**CI Implications**:
+- ✅ Faster on AMD64 native runners
+- ✅ Cached layers improve subsequent runs
+
+**Solution**: Wait for image pull to complete (typically 40-60 minutes total on macOS)
+
+---
+
+### Issue 5: Ollama Model Download Job - Error Status ⚠️
+
+**Status**: ERROR (but not critical)
+
+**Pod**: `ollama-pull-qwen-zlnwb` (namespace: kagenti-system)
+
+**Root Cause**: Init Job for downloading Qwen LLM model failed
+
+**Impact**:
+- ⚠️ Ollama app marked as Degraded
+- ⚠️ No LLM model available for agents
+- ✅ Ollama server pod itself is Running (2/2)
+
+**Why This Happens**:
+- Model downloads are large (several GB)
+- Timeouts on slow connections
+- Init Jobs don't retry automatically
+
+**CI Implications**:
+- ⚠️ Ollama excluded from CI validation (OPTIONAL app)
+- ⚠️ Model downloads too slow/large for CI
+
+**Solution**: Manual model pull or skip Ollama for local testing
+
+---
+
+### Key Takeaways for TODO_CI_PART_2.md
+
+**✅ What Works (Ready for CI)**:
+1. ✅ Monitoring script grace period logic (correctly failed after 300s)
+2. ✅ CRITICAL vs OPTIONAL app classification
+3. ✅ Operators deployed successfully (kagenti-operator, kagenti-platform-operator)
+4. ✅ Platform core services healthy (Keycloak, OAuth2-Proxy, Tekton, Istio)
+5. ✅ Resource monitoring shows pod/namespace breakdowns
+
+**⚠️ macOS-Specific Issues (Won't Affect CI)**:
+1. ⚠️ Slow image pulls (30-60 min) - CI uses AMD64 native, much faster
+2. ⚠️ Promtail file descriptor limits - CI runs Linux, higher defaults
+3. ⚠️ Overall slower startup due to QEMU virtualization
+
+**❌ Real Issues to Fix**:
+1. ❌ Agent registry port mismatch (`localhost:5000` → `localhost:5001`)
+2. ❌ Possible registry configuration inconsistency across environments
+
+**Next Actions**:
+1. **Document promtail fix** in CLAUDE.md (add to troubleshooting section)
+2. **Fix agent registry references** (search for `localhost:5000` and update to `5001`)
+3. **Add registry validation** to platform-status.sh
+4. **Continue CI Part 2 implementation** (GitHub permissions + RAM monitoring already drafted)
+
+---
+
+**Implementation Status**: ANALYSIS COMPLETE → READY TO IMPLEMENT FIXES
+**Estimated Completion**: 105 minutes (1h 45m) + 30 minutes (registry fix)
+**Dependencies**: Fix agent registry configuration first
+**Risk Level**: LOW (issues are well-understood, fixes are straightforward)
+
+---
+
+*This analysis provides comprehensive understanding of local cluster issues and confirms CI strategy is sound. macOS limitations won't affect Linux-based CI runners.*

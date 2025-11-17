@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/component: agents
 data:
   # Container registry configuration for agent builds
-  CONTAINER_REGISTRY: "localhost:5000"
+  CONTAINER_REGISTRY: "localhost:5001"
   # Build environment
   ENVIRONMENT: "kind-local"
 
