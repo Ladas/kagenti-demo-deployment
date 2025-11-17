@@ -525,8 +525,8 @@ data:
                   expr: |
                     kube_deployment_status_replicas_available{namespace="observability",deployment="alertmanager"} == 0
                   refId: A
-            noDataState: Alerting
-            execErrState: Alerting
+            noDataState: OK
+            execErrState: OK
             for: 2m
             annotations:
               description: |
