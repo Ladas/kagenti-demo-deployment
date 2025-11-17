@@ -276,14 +276,15 @@ data:
                 datasourceUid: PBFA97CFB590B2093
                 model:
                   expr: |
-                    kube_deployment_status_replicas_available{namespace="keycloak",deployment="keycloak"} == 0
+                    kube_statefulset_status_replicas_ready{namespace="keycloak",statefulset="keycloak"} == 0
                   refId: A
-            noDataState: Alerting
-            execErrState: Alerting
+            noDataState: OK
+            execErrState: OK
             for: 2m
             annotations:
               description: 'Keycloak authentication service is down. User authentication will fail.'
-              summary: Keycloak has no available replicas
+              summary: Keycloak StatefulSet has no available replicas
+              runbook_url: 'docs/runbooks/alerts/keycloak-down.md'
             labels:
               severity: critical
               component: keycloak
