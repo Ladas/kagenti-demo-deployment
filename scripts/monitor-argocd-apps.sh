@@ -209,6 +209,69 @@ print_pod_status_table() {
     echo ""
 }
 
+# Function to print resource usage
+print_resource_usage() {
+    echo ""
+    echo -e "${CYAN}=== Resource Usage ===${NC}"
+
+    # Total memory (GitHub Actions runner: 15.62 GB)
+    TOTAL_MEM_GB=15.62
+
+    # Get memory usage (in GB)
+    if [ -f /proc/meminfo ]; then
+        MEM_TOTAL=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+        MEM_AVAILABLE=$(grep MemAvailable /proc/meminfo | awk '{print $2}')
+        MEM_USED=$((MEM_TOTAL - MEM_AVAILABLE))
+
+        MEM_USED_GB=$(echo "scale=2; $MEM_USED / 1024 / 1024" | bc)
+        MEM_AVAILABLE_GB=$(echo "scale=2; $MEM_AVAILABLE / 1024 / 1024" | bc)
+        MEM_PCT=$(echo "scale=1; ($MEM_USED * 100) / $MEM_TOTAL" | bc)
+
+        local color=$GREEN
+        if (( $(echo "$MEM_PCT > 85" | bc -l) )); then
+            color=$RED
+        elif (( $(echo "$MEM_PCT > 70" | bc -l) )); then
+            color=$YELLOW
+        fi
+
+        printf "${color}Memory: %.2f GB / %.2f GB used (%.1f%%)${NC}\n" \
+            "$MEM_USED_GB" "$TOTAL_MEM_GB" "$MEM_PCT"
+        printf "Available: %.2f GB\n" "$MEM_AVAILABLE_GB"
+    fi
+
+    # Disk usage
+    if command -v df &> /dev/null; then
+        DISK_USAGE=$(df -BG /var/lib/docker 2>/dev/null | tail -1 | awk '{print $3,$2,$5}' || echo "N/A N/A N/A")
+        DISK_USED=$(echo $DISK_USAGE | awk '{print $1}')
+        DISK_TOTAL=$(echo $DISK_USAGE | awk '{print $2}')
+        DISK_PCT=$(echo $DISK_USAGE | awk '{print $3}')
+
+        printf "Disk (docker): %s / %s (%s)\n" "$DISK_USED" "$DISK_TOTAL" "$DISK_PCT"
+    fi
+
+    # CPU load
+    if [ -f /proc/loadavg ]; then
+        LOAD_AVG=$(cat /proc/loadavg | awk '{print $1,$2,$3}')
+        printf "Load Average: %s (1/5/15 min)\n" "$LOAD_AVG"
+    fi
+
+    # Docker stats
+    if command -v docker &> /dev/null; then
+        CONTAINER_COUNT=$(docker ps -q 2>/dev/null | wc -l)
+        printf "Docker Containers: %d running\n" "$CONTAINER_COUNT"
+    fi
+
+    # Kind cluster
+    if command -v kind &> /dev/null; then
+        CLUSTER_NAME=$(kind get clusters 2>/dev/null | head -1)
+        if [ -n "$CLUSTER_NAME" ]; then
+            printf "Kind Cluster: %s\n" "$CLUSTER_NAME"
+        fi
+    fi
+
+    echo ""
+}
+
 # Monitor application sync status
 MONITOR_START=$(date +%s)
 LAST_STATUS=""
@@ -286,6 +349,7 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
         # Print status tables
         print_argocd_status_table
         print_pod_status_table
+        print_resource_usage
 
         # Print progress summary
         echo -e "${CYAN}Progress Summary:${NC}"
@@ -308,6 +372,20 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
         fi
 
         echo ""
+
+        # Memory pressure check
+        if [ -f /proc/meminfo ]; then
+            MEM_TOTAL=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+            MEM_AVAILABLE=$(grep MemAvailable /proc/meminfo | awk '{print $2}')
+            MEM_AVAILABLE_GB=$(echo "scale=2; $MEM_AVAILABLE / 1024 / 1024" | bc)
+
+            if (( $(echo "$MEM_AVAILABLE_GB < 2.0" | bc -l) )); then
+                echo ""
+                echo -e "${RED}⚠️  WARNING: Low memory! Only ${MEM_AVAILABLE_GB} GB available${NC}"
+                echo -e "${RED}Platform may experience slowdowns or OOM errors${NC}"
+                echo ""
+            fi
+        fi
 
         LAST_STATUS="$CURRENT_STATUS"
     fi
