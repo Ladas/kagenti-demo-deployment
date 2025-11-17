@@ -18,8 +18,13 @@ MONITOR_TIMEOUT="${1:-900}"  # Default: 15 minutes (900 seconds)
 POLL_INTERVAL=30  # Check every 30 seconds (reduced from 10s for less noise)
 DEGRADED_GRACE_PERIOD=300  # 5 minutes grace period for Degraded apps to recover
 
-# Track when apps first became Degraded (associative array: app_name -> timestamp)
-declare -A DEGRADED_SINCE
+# Track when apps first became Degraded (file-based, bash 3.2 compatible)
+# Creates timestamped files in /tmp/argocd-monitor-degraded-<app-name>
+DEGRADED_TRACKING_DIR="/tmp/argocd-monitor-degraded-$$"
+mkdir -p "$DEGRADED_TRACKING_DIR"
+
+# Cleanup on exit
+trap "rm -rf $DEGRADED_TRACKING_DIR" EXIT
 
 echo ""
 echo -e "${BLUE}Monitoring ArgoCD Applications with Enhanced Status Tables...${NC}"
@@ -409,15 +414,18 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
     if [ -n "$CRITICAL_DEGRADED_APPS" ]; then
         for degraded_app in $CRITICAL_DEGRADED_APPS; do
             if is_critical_app "$degraded_app"; then
-                # Track when this app first became degraded
-                if [ -z "${DEGRADED_SINCE[$degraded_app]:-}" ]; then
-                    DEGRADED_SINCE[$degraded_app]=$CURRENT_TIME
+                TRACKING_FILE="$DEGRADED_TRACKING_DIR/$degraded_app"
+
+                # Track when this app first became degraded (file-based)
+                if [ ! -f "$TRACKING_FILE" ]; then
+                    echo "$CURRENT_TIME" > "$TRACKING_FILE"
                     echo ""
                     echo -e "${YELLOW}⚠️  CRITICAL app '$degraded_app' is Degraded (grace period: ${DEGRADED_GRACE_PERIOD}s)${NC}"
                 fi
 
                 # Calculate how long it's been degraded
-                DEGRADED_DURATION=$((CURRENT_TIME - ${DEGRADED_SINCE[$degraded_app]}))
+                DEGRADED_START=$(cat "$TRACKING_FILE")
+                DEGRADED_DURATION=$((CURRENT_TIME - DEGRADED_START))
 
                 # Only fail if degraded beyond grace period
                 if [ $DEGRADED_DURATION -ge $DEGRADED_GRACE_PERIOD ]; then
@@ -432,12 +440,16 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
     fi
 
     # Clear tracking for apps that recovered
-    for app_name in "${!DEGRADED_SINCE[@]}"; do
+    for tracking_file in "$DEGRADED_TRACKING_DIR"/*; do
+        [ -f "$tracking_file" ] || continue
+        app_name=$(basename "$tracking_file")
+
         APP_HEALTH=$(echo "$ALL_APPS" | jq -r --arg app "$app_name" '[.items[] | select(.metadata.name == $app) | .status.health.status] | .[0] // "Missing"')
         if [ "$APP_HEALTH" != "Degraded" ] && [ "$APP_HEALTH" != "Missing" ]; then
-            RECOVERY_TIME=$((CURRENT_TIME - ${DEGRADED_SINCE[$app_name]}))
+            DEGRADED_START=$(cat "$tracking_file")
+            RECOVERY_TIME=$((CURRENT_TIME - DEGRADED_START))
             echo -e "${GREEN}✓ App '$app_name' recovered after ${RECOVERY_TIME}s${NC}"
-            unset DEGRADED_SINCE[$app_name]
+            rm -f "$tracking_file"
         fi
     done
 
