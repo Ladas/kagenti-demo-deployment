@@ -23,9 +23,7 @@ spec:
     namespace: default
 
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    # NO automated sync - let root app control sync order via sync waves
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true

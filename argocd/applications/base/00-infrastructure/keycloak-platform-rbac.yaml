@@ -23,9 +23,7 @@ spec:
     server: https://kubernetes.default.svc
     # NO namespace field - component has explicit namespace declarations
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    # NO automated sync - let root app control sync order via sync waves
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false  # Namespaces (keycloak, kagenti-system) already exist

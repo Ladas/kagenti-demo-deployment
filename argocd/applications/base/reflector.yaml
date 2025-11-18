@@ -15,8 +15,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: reflector
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    # NO automated sync - let root app control sync order via sync waves
     syncOptions:
     - CreateNamespace=true
