@@ -476,6 +476,33 @@ groups:
           component: promtail
           layer: observability
 
+      # Promtail file descriptor usage
+      - uid: promtail-high-file-descriptors
+        title: Promtail High File Descriptor Usage
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: |
+                promtail_files_active_total > 5000
+              refId: A
+        noDataState: OK
+        execErrState: OK
+        for: 10m
+        annotations:
+          description: 'Promtail on {{ $labels.instance }} is monitoring {{ printf "%.0f" $values.A.Value }} active files (threshold: 5000). This may lead to "too many open files" errors.'
+          summary: Promtail file descriptor usage is high
+          runbook_url: 'https://grafana.com/docs/loki/latest/clients/promtail/troubleshooting/'
+        labels:
+          severity: warning
+          component: promtail
+          layer: observability
+
   # ========================================
   # Application Layer Alerts
   # ========================================

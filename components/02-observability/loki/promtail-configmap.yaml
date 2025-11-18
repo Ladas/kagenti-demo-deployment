@@ -31,6 +31,12 @@ data:
           max_retries: 10
         timeout: 10s
 
+    # Target configuration (file watching optimization)
+    target_config:
+      # Reduce frequency of directory rescans to minimize file descriptor churn
+      # Default is 10s - increasing to 30s reduces file watcher pressure
+      sync_period: 30s
+
     # Scrape configuration
     scrape_configs:
       # Scrape all Kubernetes pod logs
