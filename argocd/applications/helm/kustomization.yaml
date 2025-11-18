@@ -13,6 +13,7 @@ resources:
   - container-registry.yaml
   - kiali.yaml
   - opentelemetry-operator.yaml
+  - korrel8r-operator.yaml
 
   # Wave 10 - Kagenti Operators
   # NOTE: Both operators deploy identical Tekton pipeline ConfigMaps
