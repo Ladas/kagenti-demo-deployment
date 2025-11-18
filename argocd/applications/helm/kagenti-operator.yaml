@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/Ladas/kagenti-operator  # TODO: Change to https://github.com/kagenti/kagenti-operator when CI/CD publishes images
     path: charts/kagenti-operator
-    targetRevision: fix/add-kagenti-operator-image-build  # TODO: Change to specific version tag (e.g., v0.2.0-alpha.16) when available
+    targetRevision: fix/webhook-certificate-validation  # Branch with webhook cert fixes
     helm:
       values: |
         controllerManager:
