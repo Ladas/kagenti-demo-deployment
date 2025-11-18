@@ -7316,3 +7316,459 @@ Wave 0+: Main Keycloak resources (CR, PostgreSQL, realms)
 
 ---
 
+| 2025-11-18 10:29:34 | 128 | 86 | 0 | 42 | ✓ PASS |
+
+### Test Run: 2025-11-18 10:29:34
+
+**Summary**: 128 tests (86 passed, 0 failed, 42 skipped)
+
+| Test | Status | Duration |
+|------|--------|----------|
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_pod_running FAILED [  0%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_crds_registered FAILED [  0%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_webhook_service FAILED [  1%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_logs_no_errors FAILED [  1%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_can_list_agents FAILED [  1%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_pod_running FAILED [  2%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_crds_registered FAILED [  2%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_logs_no_errors FAILED [  2%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_can_list_components FAILED [  3%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_both_operators_running_simultaneously FAILED [  3%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_shared_configmaps_exist FAILED [  3%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_images_correct FAILED [  4%] | ✗ FAILED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_command_path_correct FAILED [  4%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_argocd_healthy FAILED [  4%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_cert_manager_healthy FAILED [  5%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_tekton_pipelines_installed FAILED [  5%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_istiod_healthy FAILED [  5%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_keycloak_healthy FAILED [  6%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_container_registry_healthy FAILED [  6%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_kiali_healthy FAILED [  6%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_operator_healthy FAILED [  7%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_crds_installed FAILED [  7%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_healthy FAILED [  8%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_oauth_config_completed FAILED [  8%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_external_gateway_exists FAILED [  8%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_tls_certificates_ready FAILED [  9%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_jaeger_healthy FAILED [  9%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_tempo_healthy FAILED [  9%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_otel_collector_healthy FAILED [ 10%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_phoenix_healthy FAILED [ 10%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_agent_services_exist FAILED [ 12%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_research_agent_a2a_endpoint SKIPPED [ 12%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_all_applications_exist FAILED [ 12%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_critical_applications_synced FAILED [ 13%] | ✗ FAILED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_no_crashloop_pods PASSED [ 13%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_cluster_pod_health_threshold PASSED [ 13%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_all_deployments_have_replicas PASSED [ 14%] | ✓ PASSED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_service_healthy FAILED [ 14%] | ✗ FAILED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_has_qwen_model FAILED [ 15%] | ✗ FAILED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_tool_deployed FAILED [ 15%] | ✗ FAILED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_agent_deployed FAILED [ 15%] | ✗ FAILED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_has_agent_card FAILED [ 16%] | ✗ FAILED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_mcp_connectivity FAILED [ 16%] | ✗ FAILED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_chat_with_mcp_tool_calling FAILED [ 16%] | ✗ FAILED | - |
+| e2e/test_weather_agent_e2e.py::TestComponentIntegration::test_weather_tool_component_exists SKIPPED [ 17%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestComponentIntegration::test_weather_agent_component_exists SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_research_agent_simple_question SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_health_check FAILED [ 18%] | ✗ FAILED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_card_accessible FAILED [ 18%] | ✗ FAILED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_simple_factual_question SKIPPED [ 18%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_multi_turn_conversation SKIPPED [ 19%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_research_agent_healthy FAILED [ 19%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentDeployment::test_code_agent_healthy FAILED [ 19%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentDeployment::test_orchestrator_agent_healthy FAILED [ 20%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_services_exist FAILED [ 20%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_deployments_exist FAILED [ 20%] | ✗ FAILED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_research_agent_chat_endpoint SKIPPED [ 21%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_agent_health_endpoint SKIPPED [ 21%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentTelemetry::test_agent_trace_in_phoenix SKIPPED [ 21%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_prometheus_mcp_server_deployment_ready SKIPPED [ 22%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_phoenix_ready_for_trace_mcp_server FAILED [ 22%] | ✗ FAILED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_deployment_namespace_exists PASSED [ 22%] | ✓ PASSED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_service_accessible SKIPPED [ 23%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_github_mcp_server_has_credentials SKIPPED [ 23%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_monitoring_agent_workflow SKIPPED [ 23%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentCRDLifecycle::test_create_agent_cr SKIPPED [ 24%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agent_crd_installed PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentbuild_crd_installed PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentcard_crd_installed PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agents PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentbuilds PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentcards PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_webhook_accessible PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_rbac_configured PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentHealth::test_team1_namespace_exists SKIPPED [ 27%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentHealth::test_no_crashloop_agent_pods PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_prometheus_down_query_logic PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_deployment_down_query_logic PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_gateway_regex_pattern PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_prometheus_down_alert_query FAILED [ 29%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_deployment_replicas_metrics_exist FAILED [ 29%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_gateway_deployment_exists FAILED [ 29%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_all_alert_queries_valid_syntax FAILED [ 30%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::TestAlertThresholds::test_cpu_threshold_not_triggered_during_normal_operation SKIPPEDner not found | ○ SKIPPED | - |
+| integration/test_alert_queries.py::TestAlertThresholds::test_memory_threshold_not_triggered_during_normal_operation SKIPPEDner not found | ○ SKIPPED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[prometheus-down-critical] FAILED [ 31%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[grafana-down-warning] FAILED [ 31%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[loki-down-warning] FAILED [ 31%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[tempo-down-warning] FAILED [ 32%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[alertmanager-down-critical] FAILED [ 32%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[istiod-down-critical] FAILED [ 32%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[gateway-unhealthy-critical] FAILED [ 33%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[keycloak-down-critical] FAILED [ 33%] | ✗ FAILED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[pod-crashloop-backoff-critical] FAILED [ 33%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_pod_is_running FAILED [ 34%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_service_exists PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_health_endpoint FAILED [ 34%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_ready_endpoint FAILED [ 35%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_api_status FAILED [ 35%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_config_loaded FAILED [ 35%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_can_receive_alerts FAILED [ 36%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_alerts_api FAILED [ 36%] | ✗ FAILED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_receivers_configured PASSED [ 36%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_routes_configured PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_network_policy_allows_grafana PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_mtls_is_permissive PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_variables_use_valid_regex FAILED [ 38%] | ✗ FAILED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_namespace_variable_can_query_loki FAILED [ 38%] | ✗ FAILED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_pod_variable_query_with_all_namespaces FAILED [ 38%] | ✗ FAILED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_panel_query_with_all_variables_selected FAILED [ 39%] | ✗ FAILED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_error_logs_panel_query FAILED [ 39%] | ✗ FAILED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_logs_per_second_stat_panel FAILED [ 39%] | ✗ FAILED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_no_empty_compatible_regex_in_queries FAILED [ 40%] | ✗ FAILED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_accessible_and_loads_without_errors FAILED [ 40%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_pod_is_running FAILED [ 40%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_unified_alerting_enabled FAILED [ 41%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alertmanager_contact_point_configured FAILED [ 41%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_notification_policies_configured FAILED [ 41%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_platform_health_alerts_provisioned FAILED [ 42%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_have_proper_labels FAILED [ 42%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_severity FAILED [ 43%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_layer FAILED [ 43%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rule_annotations FAILED [ 43%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_critical_alerts_have_fast_evaluation FAILED [ 44%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alerting_config_mounted PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_can_query_alertmanager PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_internal_alertmanager_running FAILED [ 45%] | ✗ FAILED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alerting_provisioning_configmap_exists PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_env_vars_for_unified_alerting PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_exists FAILED [ 46%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_has_correct_panels FAILED [ 46%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_uses_loki_datasource FAILED [ 46%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_variables_configured FAILED [ 47%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_loki_datasource_is_configured FAILED [ 47%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_loki_datasource_health FAILED [ 47%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_panel_queries_have_valid_syntax FAILED [ 48%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_stat_panels_configuration FAILED [ 48%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_timeseries_panels_configuration FAILED [ 48%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_logs_panels_configuration FAILED [ 49%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_table_panels_configuration FAILED [ 49%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_refresh_rate FAILED [ 49%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_time_range FAILED [ 50%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_namespace_variable_queries_loki FAILED [ 50%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_can_query_loki_for_logs FAILED [ 50%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_panel_query_execution FAILED [ 51%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_accessible_via_url FAILED [ 51%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_in_correct_folder FAILED [ 51%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_is_editable FAILED [ 52%] | ✗ FAILED | - |
+| integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_all_critical_panels_present FAILED [ 52%] | ✗ FAILED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_server_healthy PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_applicationset_controller_healthy PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_repo_server_healthy PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_all_argocd_applications_exist FAILED [ 53%] | ✗ FAILED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_critical_applications_synced PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istiod_healthy PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_ingress_gateway_healthy SKIPPED [ 54%] | ○ SKIPPED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_base_crds_installed PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_mtls_policy_exists PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_healthy PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_webhook_healthy PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_cainjector_healthy PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_certificates_ready PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_gateway_api_crds_installed PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_external_gateway_exists PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_httproutes_configured PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_controller_healthy PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_webhook_healthy PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_crds_installed PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_no_crashloop_pods_in_infrastructure PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_infrastructure_pod_health_threshold PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_panel_exists FAILED [ 60%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_panel_exists FAILED [ 60%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_has_valid_queries FAILED [ 60%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_has_valid_query FAILED [ 61%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_queries_execute FAILED [ 61%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_query_executes FAILED [ 61%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_returns_data_per_level FAILED [ 62%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_returns_data_per_namespace FAILED [ 62%] | ✗ FAILED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_queries_do_not_use_empty_compatible_regex FAILED [ 62%] | ✗ FAILED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_is_running PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_promtail_is_running PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_ready_endpoint FAILED [ 63%] | ✗ FAILED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_has_log_streams FAILED [ 64%] | ✗ FAILED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_query_observability_logs FAILED [ 64%] | ✗ FAILED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_query_with_pod_selector FAILED [ 64%] | ✗ FAILED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_loki_datasource_configured FAILED [ 65%] | ✗ FAILED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_can_query_loki FAILED [ 65%] | ✗ FAILED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_logs_have_metadata FAILED [ 65%] | ✗ FAILED | - |
+| integration/test_observability.py::TestKiali::test_kiali_healthy PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_exists PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_api_responds FAILED [ 66%] | ✗ FAILED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_graph_accessible FAILED [ 67%] | ✗ FAILED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_healthy PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_service_exists PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_web_ui_accessible PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_graphql_api_responds PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_postgres_backend_running FAILED [ 68%] | ✗ FAILED | - |
+| integration/test_observability.py::TestTempo::test_tempo_healthy PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_service_exists PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_ready_endpoint PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_healthy PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_service_exists PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_configmap_exists FAILED [ 70%] | ✗ FAILED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_health_endpoint PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_observability.py::TestJaeger::test_jaeger_healthy FAILED [ 71%] | ✗ FAILED | - |
+| integration/test_observability.py::TestJaeger::test_jaeger_service_exists FAILED [ 72%] | ✗ FAILED | - |
+| integration/test_observability.py::TestJaeger::test_jaeger_ui_accessible SKIPPEDort=16686): Max retries exceeded | ○ SKIPPED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_service_exists PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_datasources_configured SKIPPED [ 73%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_phoenix FAILED [ 73%] | ✗ FAILED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_tempo FAILED [ 74%] | ✗ FAILED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_no_crashloop_pods_in_observability PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_observability_pod_health_threshold PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_otel_collector_metrics_endpoint SKIPPED [ 75%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_prometheus_scraping_otel_collector SKIPPED [ 75%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_prometheus_api_responds SKIPPED [ 75%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_grafana_prometheus_datasource SKIPPED [ 76%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_metrics_signal_end_to_end SKIPPED [ 76%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_ready_endpoint SKIPPED [ 76%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_receiving_logs SKIPPED [ 77%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_logql_query SKIPPED [ 77%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_grafana_loki_datasource SKIPPED [ 77%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_logs_signal_end_to_end SKIPPED [ 78%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_tempo_ready_endpoint SKIPPED [ 78%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_otel_collector_exports_to_tempo PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_grafana_tempo_datasource SKIPPED [ 79%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_tempo_api_search_endpoint SKIPPED [ 79%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_phoenix_receiving_llm_traces SKIPPED [ 79%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_otel_collector_filters_llm_traces_to_phoenix PASSED [ 80%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_traces_signal_end_to_end SKIPPED [ 80%] | ○ SKIPPED | - |
+| integration/test_otel_signal_flows.py::TestOTELSignalsHealth::test_all_observability_components_healthy FAILED [ 80%] | ✗ FAILED | - |
+| integration/test_otel_signal_flows.py::TestOTELSignalsHealth::test_grafana_all_datasources_configured SKIPPED [ 81%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_healthy PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_service_exists PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_postgres_healthy PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_realm_imports_completed SKIPPED [ 82%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_admin_api_accessible SKIPPEDort=8080): Max retries exceeded | ○ SKIPPED | - |
+| CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed | ✗ FAILED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_https_gateway_access PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_kagenti_realm_accessible SKIPPEDort=8080): Max retries exceeded | ○ SKIPPED | - |
+| SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_healthy FAILED [ 83%] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_service_exists PASSED [ 84%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_config_completed SKIPPED [ 84%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_secret_exists FAILED [ 84%] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_responds SKIPPEDport=3000): Max retries exceeded | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_operator_healthy FAILED [ 85%] | ✗ FAILED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_installed FAILED [ 86%] | ✗ FAILED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_queryable FAILED [ 86%] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiOperator::test_kagenti_operator_deployment_exists PASSED [ 87%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_external_gateway_exists PASSED [ 87%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_gateway_listeners_configured PASSED [ 87%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_tls_certificates_ready PASSED [ 88%] | ✓ PASSED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_healthy FAILED [ 88%] | ✗ FAILED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_service_exists FAILED [ 88%] | ✗ FAILED | - |
+| integration/test_platform.py::TestPlatformHealth::test_no_crashloop_pods_in_platform PASSED [ 89%] | ✓ PASSED | - |
+| integration/test_platform.py::TestPlatformHealth::test_platform_pod_health_threshold FAILED [ 89%] | ✗ FAILED | - |
+| integration/test_platform.py::TestPlatformHealth::test_all_platform_services_have_endpoints FAILED [ 89%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_prometheus_is_running PASSED [ 90%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_cpu_usage_metric_exists FAILED [ 90%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_cpu_cores_metric_exists FAILED [ 90%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_memory_working_set_bytes_exists FAILED [ 91%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_memory_bytes_exists FAILED [ 91%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_cpu_usage_query FAILED [ 91%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_memory_usage_query FAILED [ 92%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cpu_usage_by_namespace_query FAILED [ 92%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_memory_usage_by_namespace_query FAILED [ 92%] | ✗ FAILED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_prometheus_scraping_kubelet FAILED [ 93%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_exist PASSED [ 93%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_healthy FAILED [ 93%] | ✗ FAILED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_apps_healthy PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istio-base] PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[cert-manager] PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[gateway-api] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istiod] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak-operator] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak] PASSED [ 96%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[kagenti-system] FAILED [ 96%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] FAILED [ 96%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[istio-system] FAILED [ 97%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[gateway-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] FAILED [ 97%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] FAILED [ 98%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[istio-system] PASSED [ 98%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[gateway-system] PASSED [ 98%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_phoenix_traces SKIPPEDations': [{'line': 2, 'column': 3}]}) [ 99%] | ○ SKIPPED | - |
+| validation/test_log_trace_errors.py::test_generate_error_warning_summary PASSED [100%] | ✓ PASSED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_pod_running - AssertionError: No kagenti-operator pods found | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_crds_registered - AssertionError: CRD agents.agent.kagenti.dev not found | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_webhook_service - Failed: Webhook service not found: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_logs_no_errors - AssertionError: No kagenti-operator pods found | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_can_list_agents - Failed: Cannot list agents: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_pod_running - AssertionError: No platform-operator pods found | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_crds_registered - Failed: CRD components.kagenti.operator.dev not found: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_logs_no_errors - AssertionError: No platform-operator pods found | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_can_list_components - Failed: Cannot list components: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestOperatorIntegration::test_both_operators_running_simultaneously - AssertionError: Kagenti operator not running | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestOperatorIntegration::test_shared_configmaps_exist - Failed: Shared ConfigMap 'github-clone-step' not found: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_images_correct - AssertionError: assert 0 > 0 | ✗ FAILED | - |
+| FAILED tests/e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_command_path_correct - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestInfrastructure::test_argocd_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestInfrastructure::test_cert_manager_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestInfrastructure::test_tekton_pipelines_installed - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestServiceMesh::test_istiod_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestServiceMesh::test_keycloak_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestServiceMesh::test_container_registry_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestServiceMesh::test_kiali_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestOperators::test_platform_operator_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestOperators::test_platform_crds_installed - Failed: CRD platforms.kagenti.ai not found | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_oauth_config_completed - AssertionError: OAuth config job not found | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestPlatformServices::test_external_gateway_exists - Failed: External gateway not found: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestPlatformServices::test_tls_certificates_ready - Failed: Certificate localtest-me-tls not found: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestObservability::test_jaeger_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestObservability::test_tempo_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestObservability::test_otel_collector_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestObservability::test_phoenix_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestAgents::test_agent_services_exist - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestArgoCD::test_all_applications_exist - subprocess.CalledProcessError: Command '['argocd', 'app', 'list', '--port-forward', '--port-forward-namespace', 'argocd', '--grpc-web', '-o', 'name']' returned non-zero exit status 1. | ✗ FAILED | - |
+| FAILED tests/e2e/test_platform_e2e.py::TestArgoCD::test_critical_applications_synced - AssertionError: Application 'infrastructure' is not synced | ✗ FAILED | - |
+| FAILED tests/e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_service_healthy - AssertionError: Ollama pod did not become ready | ✗ FAILED | - |
+| FAILED tests/e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_has_qwen_model - Failed: Failed to check Ollama models: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x107518a00>: Failed to establish a new connection: [Errno 61] Connection refused')) | ✗ FAILED | - |
+| FAILED tests/e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_tool_deployed - AssertionError: Weather-tool pod did not become ready | ✗ FAILED | - |
+| FAILED tests/e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_agent_deployed - AssertionError: Weather-service pod did not become ready | ✗ FAILED | - |
+| FAILED tests/e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_has_agent_card - Failed: Failed to get agent card: HTTPConnectionPool(host='localhost', port=8001): Max retries exceeded with url: /.well-known/agent.json (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10884bfa0>: Failed to establish a new connection: [Errno 61] Connection refused')) | ✗ FAILED | - |
+| FAILED tests/e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_mcp_connectivity - AssertionError: Weather agent not reachable | ✗ FAILED | - |
+| FAILED tests/e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_chat_with_mcp_tool_calling - Failed: Agent chat test failed: HTTPConnectionPool(host='localhost', port=8001): Max retries exceeded with url: /agent (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10887e890>: Failed to establish a new connection: [Errno 61] Connection refused')) | ✗ FAILED | - |
+| FAILED tests/integration/test_agent_conversation.py::TestAgentConversation::test_agent_health_check - AssertionError: No pods found for research-agent | ✗ FAILED | - |
+| FAILED tests/integration/test_agent_conversation.py::TestAgentConversation::test_agent_card_accessible - AssertionError: No pods found for research-agent | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_research_agent_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_code_agent_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_orchestrator_agent_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_agent_services_exist - Failed: Service research-agent not found | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestAgentDeployment::test_agent_deployments_exist - Failed: Deployment research-agent not found | ✗ FAILED | - |
+| FAILED tests/integration/test_agents.py::TestMonitoringAgents::test_phoenix_ready_for_trace_mcp_server - TypeError: '>=' not supported between instances of 'NoneType' and 'int' | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_prometheus_down_alert_query - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_deployment_replicas_metrics_exist - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_gateway_deployment_exists - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_all_alert_queries_valid_syntax - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[prometheus-down-critical] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[grafana-down-warning] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[loki-down-warning] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[tempo-down-warning] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[alertmanager-down-critical] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[istiod-down-critical] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[gateway-unhealthy-critical] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[keycloak-down-critical] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alert_queries.py::test_alert_severity_classification[pod-crashloop-backoff-critical] - AssertionError: Failed to get alert rules | ✗ FAILED | - |
+| FAILED tests/integration/test_alertmanager.py::TestAlertManager::test_alertmanager_pod_is_running - AssertionError: AlertManager pod is Pending | ✗ FAILED | - |
+| FAILED tests/integration/test_alertmanager.py::TestAlertManager::test_alertmanager_health_endpoint - Failed: Failed to exec curl: error: unable to upgrade connection: container not found ("alertmanager") | ✗ FAILED | - |
+| FAILED tests/integration/test_alertmanager.py::TestAlertManager::test_alertmanager_ready_endpoint - Failed: Failed to exec curl: error: unable to upgrade connection: container not found ("alertmanager") | ✗ FAILED | - |
+| FAILED tests/integration/test_alertmanager.py::TestAlertManager::test_alertmanager_api_status - Failed: Failed to exec curl: error: unable to upgrade connection: container not found ("alertmanager") | ✗ FAILED | - |
+| FAILED tests/integration/test_alertmanager.py::TestAlertManager::test_alertmanager_config_loaded - Failed: Failed to exec curl: error: unable to upgrade connection: container not found ("alertmanager") | ✗ FAILED | - |
+| FAILED tests/integration/test_alertmanager.py::TestAlertManager::test_alertmanager_can_receive_alerts - Failed: Failed to exec curl: error: unable to upgrade connection: container not found ("alertmanager") | ✗ FAILED | - |
+| FAILED tests/integration/test_alertmanager.py::TestAlertManager::test_alertmanager_alerts_api - Failed: Failed to exec curl: error: unable to upgrade connection: container not found ("alertmanager") | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_variables_use_valid_regex - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_namespace_variable_can_query_loki - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_pod_variable_query_with_all_namespaces - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_panel_query_with_all_variables_selected - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_error_logs_panel_query - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_logs_per_second_stat_panel - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_no_empty_compatible_regex_in_queries - assert 1 == 0 | ✗ FAILED | - |
+| FAILED tests/integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_accessible_and_loads_without_errors - assert 1 == 0 | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_pod_is_running - AssertionError: Grafana pod is Pending | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_unified_alerting_enabled - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alertmanager_contact_point_configured - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_notification_policies_configured - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_platform_health_alerts_provisioned - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_have_proper_labels - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_severity - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_layer - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rule_annotations - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_critical_alerts_have_fast_evaluation - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_internal_alertmanager_running - Failed: Failed to exec Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_exists - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_has_correct_panels - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_uses_loki_datasource - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_variables_configured - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_loki_datasource_is_configured - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_loki_datasource_health - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_panel_queries_have_valid_syntax - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_stat_panels_configuration - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_timeseries_panels_configuration - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_logs_panels_configuration - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_table_panels_configuration - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_refresh_rate - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_time_range - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_namespace_variable_queries_loki - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_can_query_loki_for_logs - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_panel_query_execution - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_accessible_via_url - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_in_correct_folder - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_dashboard_is_editable - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_grafana_loki_dashboard.py::TestLokiLogsDashboard::test_all_critical_panels_present - Failed: Failed to query Grafana API: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_infrastructure.py::TestArgoCD::test_all_argocd_applications_exist - AssertionError: ArgoCD application 'agents' not found. Available apps: ['argocd/cert-manager', 'argocd/container-registry', 'argocd/gateway-api', 'argocd/istio-base', 'argocd/istio-config', 'argocd/istiod', 'argocd/kagenti-operator', 'argocd/kagenti-platform-kind', 'argocd/kagenti-platform-operator', 'argocd/keycloak', 'argocd/keycloak-operator', 'argocd/keycloak-platform-rbac', 'argocd/kiali', 'argocd/oauth2-proxy', 'argocd/observability', 'argocd/ollama', 'argocd/opentelemetry-operator', 'argocd/platform', 'argocd/reflector', 'argocd/tekton'] | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_panel_exists - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_panel_exists - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_has_valid_queries - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_has_valid_query - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_queries_execute - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_query_executes - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_returns_data_per_level - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_returns_data_per_namespace - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_queries_do_not_use_empty_compatible_regex - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_loki_logs.py::TestLokiLogs::test_loki_ready_endpoint - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_loki_logs.py::TestLokiLogs::test_loki_has_log_streams - AssertionError: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_loki_logs.py::TestLokiLogs::test_loki_query_observability_logs - Failed: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_loki_logs.py::TestLokiLogs::test_loki_query_with_pod_selector - Failed: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_loki_logs.py::TestLokiLogs::test_grafana_loki_datasource_configured - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_loki_logs.py::TestLokiLogs::test_grafana_can_query_loki - AssertionError: Failed to query Grafana: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_loki_logs.py::TestLokiLogs::test_loki_logs_have_metadata - Failed: Failed to query Loki: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestKiali::test_kiali_api_responds - AssertionError: Kiali health check failed: 404 | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestKiali::test_kiali_service_graph_accessible - AssertionError: Kiali service graph failed: 503 | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestPhoenix::test_phoenix_postgres_backend_running - AttributeError: 'AppsV1Api' object has no attribute 'list_namespaced_pod'. Did you mean: 'list_namespaced_deployment'? | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestOTELCollector::test_otel_collector_configmap_exists - AssertionError: OTEL Collector config.yaml not found in ConfigMap | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestJaeger::test_jaeger_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestJaeger::test_jaeger_service_exists - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_phoenix - KeyError: 'config.yaml' | ✗ FAILED | - |
+| FAILED tests/integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_tempo - KeyError: 'config.yaml' | ✗ FAILED | - |
+| FAILED tests/integration/test_otel_signal_flows.py::TestOTELSignalsHealth::test_all_observability_components_healthy - AssertionError: Unhealthy observability components: observability/grafana | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestKagentiUI::test_kagenti_ui_healthy - TypeError: '>=' not supported between instances of 'NoneType' and 'int' | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_secret_exists - Failed: Kagenti UI OAuth secret not found | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformOperator::test_platform_operator_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformOperator::test_platform_crds_installed - AssertionError: Platform CRD 'platforms.kagenti.ai' not installed | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformOperator::test_platform_crds_queryable - Failed: CRD platforms.kagenti.ai not queryable via API | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestContainerRegistry::test_container_registry_healthy - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestContainerRegistry::test_container_registry_service_exists - kubernetes.client.exceptions.ApiException: (404) | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformHealth::test_platform_pod_health_threshold - AssertionError: Only 58.3% of platform pods healthy (threshold: 80%) | ✗ FAILED | - |
+| FAILED tests/integration/test_platform.py::TestPlatformHealth::test_all_platform_services_have_endpoints - AssertionError: Services without endpoints: kagenti-system/kagenti-ui, cr-system/container-registry | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_cpu_usage_metric_exists - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_cpu_cores_metric_exists - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_memory_working_set_bytes_exists - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_memory_bytes_exists - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_cpu_usage_query - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_memory_usage_query - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cpu_usage_by_namespace_query - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_memory_usage_by_namespace_query - Failed: Failed to query Prometheus: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_prometheus_scraping_kubelet - AssertionError: Failed to get targets: error: unable to upgrade connection: container not found ("grafana") | ✗ FAILED | - |
+| FAILED tests/validation/test_app_state.py::TestArgocdAppState::test_all_apps_healthy - Failed: 1/20 applications are unhealthy. See report above for details. | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[kagenti-system] - Failed: Found 63 unacceptable errors in 10 containers: | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] - Failed: Found 44 unacceptable errors in 7 containers: | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[istio-system] - Failed: Found 6 unacceptable errors in 1 containers: | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] - Failed: Found 8 unacceptable warnings in 2 containers: | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] - Failed: Found 67 unacceptable warnings in 5 containers: | ✗ FAILED | - |
+
+
+---
+
