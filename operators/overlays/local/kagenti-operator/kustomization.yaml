@@ -26,6 +26,9 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/command/0
         value: /manager
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: "--webhook-cert-path=/tmp/k8s-webhook-server/serving-certs"
   # Ensure istio-injection label is always present on namespace (strategic merge)
   - target:
       kind: Namespace
