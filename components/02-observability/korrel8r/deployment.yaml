@@ -26,8 +26,8 @@ spec:
       serviceAccountName: korrel8r
       containers:
       - name: korrel8r
-        image: quay.io/korrel8r/korrel8r:latest
-        imagePullPolicy: Always
+        image: quay.io/korrel8r/korrel8r:0.7.6
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           name: http
