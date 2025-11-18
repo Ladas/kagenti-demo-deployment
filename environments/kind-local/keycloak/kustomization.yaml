@@ -9,7 +9,7 @@ resources:
   - ../../../components/00-infrastructure/keycloak
   - ../../../components/00-infrastructure/keycloak-cross-ns-rbac
 
-patchesStrategicMerge:
-  - httproute-hostname-patch.yaml
+patches:
+  - path: httproute-hostname-patch.yaml
   # Disabled - vanilla StatefulSet doesn't need hostname patch (uses env var)
-  # - keycloak-hostname-patch.yaml
+  # - path: keycloak-hostname-patch.yaml
