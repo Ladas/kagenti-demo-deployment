@@ -53,12 +53,20 @@ IMAGES=(
     "localhost:5000/research-agent:${VERSION}"
     "localhost:5000/code-agent:${VERSION}"
     "localhost:5000/orchestrator-agent:${VERSION}"
+    "localhost:5000/weather-service:v0.0.1"
+    "localhost:5000/weather-mcp-tool:v0.0.1"
 )
 
 AGENTS=(
     "research-agent"
     "code-agent"
     "orchestrator-agent"
+)
+
+# Additional services (different source paths)
+ADDITIONAL_SERVICES=(
+    "weather-service:a2a/weather_service"
+    "weather-mcp-tool:mcp/weather_tool"
 )
 
 if [ "$MODE" = "build" ]; then
@@ -104,6 +112,42 @@ if [ "$MODE" = "build" ]; then
 
     echo ""
     echo "✅ All agent images built successfully!"
+    echo ""
+
+    # Build additional services (weather-service, weather-mcp-tool)
+    echo "Building additional services..."
+    AGENT_EXAMPLES_DIR="${AGENT_EXAMPLES_DIR:-/Users/ladas/Projects/OCTO/research/agent-examples}"
+
+    if [ -d "$AGENT_EXAMPLES_DIR" ]; then
+        for service_path in "${ADDITIONAL_SERVICES[@]}"; do
+            IFS=':' read -r service_name service_dir <<< "$service_path"
+            full_path="$AGENT_EXAMPLES_DIR/$service_dir"
+
+            if [ ! -d "$full_path" ]; then
+                echo "⚠️  WARNING: Directory $full_path not found, skipping $service_name"
+                continue
+            fi
+
+            echo "  Building $service_name from $service_dir..."
+            # Determine version based on service name
+            if [[ "$service_name" == weather-* ]]; then
+                service_version="v0.0.1"
+            else
+                service_version="${VERSION}"
+            fi
+
+            docker build -t "localhost:5000/$service_name:$service_version" "$full_path"
+            if [ $? -eq 0 ]; then
+                echo "  ✓ Built $service_name successfully"
+            else
+                echo "  ⚠️  Failed to build $service_name (non-fatal, continuing...)"
+            fi
+        done
+    else
+        echo "⚠️  WARNING: Agent examples directory not found: $AGENT_EXAMPLES_DIR"
+        echo "  Skipping weather service builds. Set AGENT_EXAMPLES_DIR to build them."
+    fi
+
     echo ""
 
     # Load images into Kind

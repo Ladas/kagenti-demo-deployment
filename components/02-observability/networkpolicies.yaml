@@ -50,6 +50,15 @@ spec:
     - protocol: TCP
       port: 3200  # UI
 
+  # Allow from Grafana (same namespace, datasource queries)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 3200  # Query API
+
   egress:
   # Allow DNS
   - to:
@@ -123,6 +132,15 @@ spec:
     - protocol: TCP
       port: 6006  # UI
 
+  # Allow from Grafana (same namespace, for testing/connectivity checks)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 6006  # HTTP API
+
   egress:
   # Allow DNS
   - to:
@@ -179,14 +197,20 @@ spec:
     - protocol: TCP
       port: 14268  # Jaeger HTTP
 
-  # Allow from Prometheus (metrics scraping)
+  # Allow from Prometheus (metrics scraping in same namespace)
   - from:
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: istio-system
-      podSelector:
+    - podSelector:
         matchLabels:
           app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8888  # Metrics
+
+  # Allow from Grafana (metrics scraping for datasource)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
     ports:
     - protocol: TCP
       port: 8888  # Metrics
@@ -263,12 +287,9 @@ spec:
       port: 3000
 
   egress:
-  # Allow to Prometheus (datasource)
+  # Allow to Prometheus (datasource in same namespace)
   - to:
-    - namespaceSelector:
-        matchLabels:
-          name: istio-system
-      podSelector:
+    - podSelector:
         matchLabels:
           app: prometheus
     ports:
@@ -309,6 +330,126 @@ spec:
       port: 15012  # xDS API
     - protocol: TCP
       port: 15010  # xDS and CA discovery
+
+  # Allow to Loki (datasource for logs)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: loki
+    ports:
+    - protocol: TCP
+      port: 3100
+
+  # Allow to Tempo (datasource for traces)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: tempo
+    ports:
+    - protocol: TCP
+      port: 3200
+
+  # Allow to OTEL Collector (datasource for Prometheus metrics)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 8888
+
+  # Allow to Phoenix (datasource for LLM traces)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: phoenix
+    ports:
+    - protocol: TCP
+      port: 6006
+
+---
+# Prometheus - Metrics Storage
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus
+  namespace: observability
+  labels:
+    app: prometheus
+spec:
+  podSelector:
+    matchLabels:
+      app: prometheus
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from Grafana (datasource queries)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 9090
+
+  egress:
+  # Allow to OTEL Collector (scrape metrics)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 8888
+
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+
+  # Allow to Kubernetes API (service discovery)
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          component: apiserver
+    ports:
+    - protocol: TCP
+      port: 443
+
+  # Allow to all pods for Kubernetes service discovery scraping
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 10250  # kubelet
+    - protocol: TCP
+      port: 10255  # kubelet read-only
+    - protocol: TCP
+      port: 9100   # node-exporter
+    - protocol: TCP
+      port: 8080   # common metrics port
+    - protocol: TCP
+      port: 3000   # grafana
+    - protocol: TCP
+      port: 3100   # loki
+    - protocol: TCP
+      port: 3200   # tempo
+    - protocol: TCP
+      port: 9090   # prometheus
+    - protocol: TCP
+      port: 15020  # istio envoy stats
+    - protocol: TCP
+      port: 15014  # istio pilot metrics
+    - protocol: TCP
+      port: 7472   # metallb metrics
+    - protocol: TCP
+      port: 9402   # kube-state-metrics
 
 ---
 # Keycloak - Authentication

@@ -1,0 +1,17 @@
+# PERMISSIVE mTLS for AlertManager
+# AlertManager receives webhooks from Grafana via HTTP
+# Grafana's Istio sidecar connects using plain HTTP
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: alertmanager-permissive
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: alertmanager
+  mtls:
+    mode: PERMISSIVE
+  portLevelMtls:
+    "9093":
+      mode: PERMISSIVE

@@ -2,10 +2,11 @@
 # Provides OIDC authentication for services without native support
 #
 # Protects:
-#   - Tempo (kubernetes realm)
 #   - Phoenix (kagenti realm)
 #   - Kiali (kubernetes realm)
 #   - Prometheus (kubernetes realm)
+#
+# Note: Tempo is accessed via Grafana Explore (no dedicated proxy needed)
 #
 # Ref: https://oauth2-proxy.github.io/oauth2-proxy/
 
@@ -17,10 +18,10 @@ namespace: oauth2-proxy
 resources:
   - namespace.yaml
   - oauth2-proxy-secrets.yaml
-  - tempo-proxy.yaml
   - phoenix-proxy.yaml
   - kiali-proxy.yaml
   - prometheus-proxy.yaml
+  - destinationrules.yaml
 
 labels:
   - pairs:

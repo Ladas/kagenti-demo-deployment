@@ -13,7 +13,6 @@ Thumbs.db
 .idea/
 
 # Kubernetes secrets (if any get created)
-*-secret.yaml
 credentials.json
 
 # Backup files
@@ -36,3 +35,7 @@ report.json
 *-report.html
 *-report.json
 .pytest_cache/
+.images/*.tar
+
+# Platform status history (local snapshots with timestamps)
+platform_status_history/

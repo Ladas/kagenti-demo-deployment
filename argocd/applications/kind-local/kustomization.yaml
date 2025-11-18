@@ -7,9 +7,8 @@ kind: Kustomization
 namespace: argocd
 
 resources:
-  - ../base  # Base Applications (infrastructure, platform, observability, agents)
+  - ../base  # Base Applications (infrastructure, platform, observability, operators)
   - ../helm  # Helm Applications (istio-base, istiod, kiali, SPIRE)
-  - ../kustomize  # Kustomize Applications (kagenti-operator, platform-operator)
 
 commonLabels:
   kagenti.dev/environment: kind-local

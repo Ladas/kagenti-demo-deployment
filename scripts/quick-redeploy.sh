@@ -16,16 +16,109 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Function to detect current branch (works in both local and GitHub Actions)
+detect_branch() {
+    local branch=""
+
+    # Method 1: Check GitHub Actions environment variables (for PRs and pushes)
+    if [ -n "${GITHUB_HEAD_REF:-}" ]; then
+        # For pull_request events
+        branch="${GITHUB_HEAD_REF}"
+    elif [ -n "${GITHUB_REF_NAME:-}" ]; then
+        # For push events
+        branch="${GITHUB_REF_NAME}"
+    elif [ -n "${GITHUB_REF:-}" ]; then
+        # Fallback: parse GITHUB_REF (refs/heads/branch-name)
+        if [[ "${GITHUB_REF}" =~ refs/heads/(.+) ]]; then
+            branch="${BASH_REMATCH[1]}"
+        fi
+    fi
+
+    # Method 2: Try git command (works locally)
+    if [ -z "$branch" ]; then
+        branch=$(git -C "$REPO_ROOT" branch --show-current 2>/dev/null || echo "")
+    fi
+
+    # Method 3: Parse git symbolic-ref
+    if [ -z "$branch" ]; then
+        branch=$(git -C "$REPO_ROOT" symbolic-ref --short HEAD 2>/dev/null || echo "")
+    fi
+
+    echo "$branch"
+}
+
+# Function to detect repository URL (works in both local and GitHub Actions)
+detect_repo_url() {
+    local repo_url=""
+
+    # Method 1: For GitHub Actions PR events, check if it's a fork PR
+    if [ -n "${GITHUB_EVENT_PATH:-}" ] && [ -f "${GITHUB_EVENT_PATH}" ]; then
+        # Try to get head repository from event payload (for fork PRs)
+        local head_repo=$(jq -r '.pull_request.head.repo.clone_url // empty' "${GITHUB_EVENT_PATH}" 2>/dev/null)
+        if [ -n "$head_repo" ]; then
+            repo_url="$head_repo"
+            # Remove .git suffix if present
+            repo_url="${repo_url%.git}"
+        fi
+    fi
+
+    # Method 2: Check GitHub Actions environment variables (for non-fork PRs and pushes)
+    if [ -z "$repo_url" ] && [ -n "${GITHUB_REPOSITORY:-}" ]; then
+        # GITHUB_REPOSITORY is in format "owner/repo"
+        repo_url="https://github.com/${GITHUB_REPOSITORY}"
+    fi
+
+    # Method 3: Get from git remote (works locally)
+    if [ -z "$repo_url" ]; then
+        repo_url=$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null || echo "")
+
+        # Convert SSH URLs to HTTPS for Argo
+        if [[ "$repo_url" =~ ^git@github\.com:(.+)\.git$ ]]; then
+            repo_url="https://github.com/${BASH_REMATCH[1]}"
+        elif [[ "$repo_url" =~ ^git@github\.com:(.+)$ ]]; then
+            repo_url="https://github.com/${BASH_REMATCH[1]}"
+        fi
+    fi
+
+    echo "$repo_url"
+}
+
+# Detect repository and branch
+DEPLOY_REPO=$(detect_repo_url)
+DEPLOY_BRANCH=$(detect_branch)
+
+# Fallback to defaults if detection fails
+if [ -z "$DEPLOY_REPO" ]; then
+    DEPLOY_REPO="https://github.com/redhat-et/kagenti-demo-deployment"
+fi
+
+if [ -z "$DEPLOY_BRANCH" ]; then
+    DEPLOY_BRANCH="main"
+fi
+
 echo ""
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║       Kagenti Platform Quick Redeploy Script                  ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
+echo -e "${GREEN}Configuration:${NC}"
+echo -e "  Repository: ${BLUE}${DEPLOY_REPO}${NC}"
+echo -e "  Branch:     ${BLUE}${DEPLOY_BRANCH}${NC}"
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo -e "  Mode:       ${YELLOW}GitHub Actions${NC}"
+    echo -e "  Event:      ${GITHUB_EVENT_NAME:-N/A}"
+fi
+echo ""
 
-# Pre-flight: Ask about agent images
-AGENT_IMAGE_MODE="skip"
+# Pre-flight: Ask about agent images (or use CI_MODE env var)
+AGENT_IMAGE_MODE="${AGENT_IMAGE_MODE:-skip}"
 AGENT_SOURCE_DIR="${AGENT_SOURCE_DIR:-$REPO_ROOT/../agent-examples-local}"
-if [ -d "$AGENT_SOURCE_DIR" ]; then
+
+# Skip prompts in CI mode
+if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo -e "${YELLOW}→ CI mode detected - skipping agent image loading${NC}"
+    AGENT_IMAGE_MODE="skip"
+elif [ -d "$AGENT_SOURCE_DIR" ]; then
     echo -e "${BLUE}Agent source found at: $AGENT_SOURCE_DIR${NC}"
     echo ""
     echo "Build agent images? (y/n/skip) [default: skip]"
@@ -58,31 +151,38 @@ else
 fi
 echo ""
 
-# Pre-flight: Ask about operator images
-OPERATOR_IMAGE_MODE="load"
-echo "Load operator images? (y/n/skip) [default: y]"
-echo "  y     - Load pre-built images from Docker (30 seconds)"
-echo "  n     - Rebuild from source (2-5 minutes)"
-echo "  skip  - Skip operator image loading (operators won't start)"
-echo ""
-echo -n "Your choice: "
-read -r -t 15 operator_response || operator_response="y"
-echo ""
+# Pre-flight: Ask about operator images (or use CI_MODE env var)
+OPERATOR_IMAGE_MODE="${OPERATOR_IMAGE_MODE:-load}"
 
-case "$operator_response" in
-    n|N)
-        OPERATOR_IMAGE_MODE="rebuild"
-        echo -e "${YELLOW}→ Will rebuild operator images from source${NC}"
-        ;;
-    skip|SKIP|s|S)
-        OPERATOR_IMAGE_MODE="skip"
-        echo -e "${YELLOW}→ Will skip operator image loading${NC}"
-        ;;
-    *)
-        OPERATOR_IMAGE_MODE="load"
-        echo -e "${GREEN}→ Will load pre-built operator images${NC}"
-        ;;
-esac
+# Skip prompts in CI mode - use tar files
+if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo -e "${YELLOW}→ CI mode detected - will load operators from tar files${NC}"
+    OPERATOR_IMAGE_MODE="load-tar"
+else
+    echo "Load operator images? (y/n/skip) [default: y]"
+    echo "  y     - Load pre-built images from Docker (30 seconds)"
+    echo "  n     - Rebuild from source (2-5 minutes)"
+    echo "  skip  - Skip operator image loading (operators won't start)"
+    echo ""
+    echo -n "Your choice: "
+    read -r -t 15 operator_response || operator_response="y"
+    echo ""
+
+    case "$operator_response" in
+        n|N)
+            OPERATOR_IMAGE_MODE="rebuild"
+            echo -e "${YELLOW}→ Will rebuild operator images from source${NC}"
+            ;;
+        skip|SKIP|s|S)
+            OPERATOR_IMAGE_MODE="skip"
+            echo -e "${YELLOW}→ Will skip operator image loading${NC}"
+            ;;
+        *)
+            OPERATOR_IMAGE_MODE="load"
+            echo -e "${GREEN}→ Will load pre-built operator images${NC}"
+            ;;
+    esac
+fi
 echo ""
 
 # Step 1: Cleanup existing cluster
@@ -145,6 +245,44 @@ case "$OPERATOR_IMAGE_MODE" in
     skip)
         echo -e "${YELLOW}⊘ Skipping operator image loading${NC}"
         ;;
+    load-tar)
+        # CI mode: load from tar files in .images directory
+        echo -e "${GREEN}→ Loading operator images from tar files${NC}"
+        IMAGES_DIR="$REPO_ROOT/.images"
+
+        TAR_FILES=(
+            "$IMAGES_DIR/kagenti-operator-dev.tar"
+            "$IMAGES_DIR/kagenti-platform-operator-dev.tar"
+        )
+
+        loaded_count=0
+        for tar_file in "${TAR_FILES[@]}"; do
+            if [ ! -f "$tar_file" ]; then
+                echo -e "${RED}✗ Missing operator image tar file: $tar_file${NC}"
+                echo "  Please run: ./scripts/export-operator-images.sh"
+                exit 1
+            fi
+
+            image_name=$(basename "$tar_file" .tar)
+            echo "  Loading $image_name..."
+
+            # Load the image and capture output
+            if kind load image-archive "$tar_file" --name kagenti-demo 2>&1; then
+                loaded_count=$((loaded_count + 1))
+                echo -e "${GREEN}  ✓ Loaded $image_name${NC}"
+            else
+                echo -e "${RED}✗ Failed to load: $tar_file${NC}"
+                exit 1
+            fi
+        done
+
+        if [ "$loaded_count" -eq 2 ]; then
+            echo -e "${GREEN}✓ Loaded $loaded_count operator images from tar files${NC}"
+        else
+            echo -e "${RED}✗ Failed to load all operator images${NC}"
+            exit 1
+        fi
+        ;;
     load)
         # Default: load pre-built images
         echo -e "${GREEN}→ Loading pre-built operator images from Docker${NC}"
@@ -191,12 +329,65 @@ echo ""
 
 # Step 5: Bootstrap ArgoCD Applications
 echo -e "${BLUE}[5/7] Bootstrapping ArgoCD Applications...${NC}"
-if "$SCRIPT_DIR/kind/03-bootstrap-apps.sh"; then
-    echo -e "${GREEN}✓ ArgoCD Applications bootstrapped${NC}"
+
+# Generate root-app.yaml dynamically with detected repo/branch
+ROOT_APP_YAML="/tmp/root-app-kagenti-$(date +%s).yaml"
+cat > "$ROOT_APP_YAML" <<EOF
+# Root Application (App-of-Apps Pattern)
+# Auto-generated by quick-redeploy.sh
+# Repository: ${DEPLOY_REPO}
+# Branch: ${DEPLOY_BRANCH}
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagenti-platform-kind
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: ${DEPLOY_REPO}
+    targetRevision: ${DEPLOY_BRANCH}
+    path: argocd/applications/kind-local
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+EOF
+
+echo "  Creating root Application (App-of-Apps)..."
+echo "  Using: ${DEPLOY_REPO} @ ${DEPLOY_BRANCH}"
+
+if kubectl apply -f "$ROOT_APP_YAML"; then
+    echo -e "${GREEN}✓ Root Application created${NC}"
 else
-    echo -e "${RED}✗ ArgoCD bootstrap failed${NC}"
+    echo -e "${RED}✗ Failed to create root Application${NC}"
     exit 1
 fi
+
+# Wait for ArgoCD to detect the app
+sleep 3
+
+# List Applications
+echo "  ArgoCD Applications:"
+if command -v argocd &>/dev/null; then
+    argocd app list --port-forward --port-forward-namespace argocd --grpc-web 2>/dev/null || \
+        kubectl get applications -n argocd
+else
+    kubectl get applications -n argocd
+fi
+
+echo -e "${GREEN}✓ ArgoCD Applications bootstrapped${NC}"
 echo ""
 
 # Step 6: Load Agent Images (based on user choice)
@@ -226,20 +417,25 @@ else
 fi
 echo ""
 
-# Step 7: Sync root ArgoCD Application
+# Step 7: Sync root ArgoCD Application (optional - automated sync will handle it)
 echo -e "${BLUE}[7/7] Syncing root ArgoCD Application...${NC}"
 echo "This will deploy the entire platform. Please wait..."
 echo ""
 
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 
-# Sync the root app
-if argocd app sync kagenti-platform-kind \
-    --port-forward --port-forward-namespace "$ARGOCD_NAMESPACE" --grpc-web \
-    --timeout 600 2>/dev/null; then
-    echo -e "${GREEN}✓ Root application synced${NC}"
+# Try manual sync for faster deployment (optional - automated sync policy will handle it otherwise)
+if command -v argocd &>/dev/null; then
+    if argocd app sync kagenti-platform-kind \
+        --port-forward --port-forward-namespace "$ARGOCD_NAMESPACE" --grpc-web \
+        --timeout 600 2>/dev/null; then
+        echo -e "${GREEN}✓ Root application synced manually${NC}"
+    else
+        echo -e "${YELLOW}⚠ Manual sync skipped - automated sync will handle deployment${NC}"
+        echo "   (ArgoCD has automated sync policy enabled)"
+    fi
 else
-    echo -e "${YELLOW}⚠ Root application sync completed with warnings${NC}"
+    echo -e "${YELLOW}⚠ ArgoCD CLI not available - relying on automated sync${NC}"
 fi
 echo ""
 
@@ -255,6 +451,10 @@ echo "╚═══════════════════════�
 echo ""
 echo -e "${GREEN}✓ Cluster redeployed successfully!${NC}"
 echo ""
+echo -e "${BLUE}Configuration:${NC}"
+echo -e "  Repository: ${DEPLOY_REPO}"
+echo -e "  Branch:     ${DEPLOY_BRANCH}"
+echo ""
 echo "Next steps:"
 echo "  1. Wait 5-10 minutes for all pods to become ready"
 echo "  2. Check platform status:"
@@ -267,7 +467,7 @@ echo "     Kagenti:  https://kagenti.localtest.me:9443"
 echo "     Grafana:  https://grafana.localtest.me:9443"
 echo ""
 echo "  4. Get ArgoCD admin password:"
-echo "     cat /tmp/argocd-pass.txt"
+echo "     kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
 echo ""
-echo "Total deployment time: Started $(date)"
+echo "Deployment time: $(date)"
 echo ""

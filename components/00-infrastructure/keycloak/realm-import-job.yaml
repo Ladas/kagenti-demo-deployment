@@ -159,6 +159,57 @@ spec:
                 echo "Client ${CLIENT_ID} configured (secret auto-generated on creation)"
               }
 
+              # Function to create realm role
+              create_role() {
+                REALM=$1
+                ROLE_NAME=$2
+                ROLE_DESC=$3
+
+                echo "Creating role: ${ROLE_NAME} in realm ${REALM}..."
+                curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM}/roles" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "{
+                    \"name\": \"${ROLE_NAME}\",
+                    \"description\": \"${ROLE_DESC}\"
+                  }" || echo "Role ${ROLE_NAME} may already exist, continuing..."
+                echo "Role ${ROLE_NAME} created/verified"
+              }
+
+              # Function to add protocol mapper to client
+              add_protocol_mapper() {
+                REALM=$1
+                CLIENT_ID=$2
+                MAPPER_NAME=$3
+
+                echo "Adding protocol mapper '${MAPPER_NAME}' to client ${CLIENT_ID} in realm ${REALM}..."
+
+                # Get client UUID
+                CLIENT_UUID=$(curl -sf "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${CLIENT_ID}" \
+                  -H "Authorization: Bearer ${TOKEN}" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+
+                if [ -n "$CLIENT_UUID" ]; then
+                  curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${CLIENT_UUID}/protocol-mappers/models" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "Content-Type: application/json" \
+                    -d "{
+                      \"name\": \"${MAPPER_NAME}\",
+                      \"protocol\": \"openid-connect\",
+                      \"protocolMapper\": \"oidc-usermodel-realm-role-mapper\",
+                      \"consentRequired\": false,
+                      \"config\": {
+                        \"multivalued\": \"true\",
+                        \"userinfo.token.claim\": \"true\",
+                        \"id.token.claim\": \"true\",
+                        \"access.token.claim\": \"true\",
+                        \"claim.name\": \"roles\",
+                        \"jsonType.label\": \"String\"
+                      }
+                    }" || echo "Protocol mapper ${MAPPER_NAME} may already exist, continuing..."
+                  echo "Protocol mapper '${MAPPER_NAME}' added/verified for client ${CLIENT_ID}"
+                fi
+              }
+
               # Function to create user
               create_user() {
                 REALM=$1
@@ -200,15 +251,55 @@ spec:
                 fi
               }
 
+              # Function to assign role to user
+              assign_role_to_user() {
+                REALM=$1
+                USERNAME=$2
+                ROLE_NAME=$3
+
+                echo "Assigning role '${ROLE_NAME}' to user ${USERNAME} in realm ${REALM}..."
+
+                # Get user ID
+                USER_ID=$(curl -sf "${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${USERNAME}" \
+                  -H "Authorization: Bearer ${TOKEN}" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+
+                # Get role representation
+                ROLE_JSON=$(curl -sf "${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${ROLE_NAME}" \
+                  -H "Authorization: Bearer ${TOKEN}")
+
+                if [ -n "$USER_ID" ] && [ -n "$ROLE_JSON" ]; then
+                  curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM}/users/${USER_ID}/role-mappings/realm" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "Content-Type: application/json" \
+                    -d "[${ROLE_JSON}]" || echo "Role ${ROLE_NAME} may already be assigned to ${USERNAME}, continuing..."
+                  echo "Role '${ROLE_NAME}' assigned to user ${USERNAME}"
+                fi
+              }
+
               # Create kubernetes realm (includes all observability stack)
               create_realm "kubernetes" "Kubernetes Realm" "false"
+
+              # Create realm roles for Grafana RBAC
+              create_role "kubernetes" "admin" "Admin role for Grafana"
+              create_role "kubernetes" "editor" "Editor role for Grafana"
+              create_role "kubernetes" "viewer" "Viewer role for Grafana"
+
+              # Create clients
               create_client "kubernetes" "grafana" "Grafana" "https://grafana.localtest.me:9443/*" "https://grafana.localtest.me:9443"
               create_client "kubernetes" "k8s-dashboard" "Kubernetes Dashboard" "https://dashboard.localtest.me:9443/*" "https://dashboard.localtest.me:9443"
               create_client "kubernetes" "kiali" "Kiali Service Mesh" "https://kiali.localtest.me:9443/*" "https://kiali.localtest.me:9443"
               create_client "kubernetes" "prometheus" "Prometheus" "https://prometheus.localtest.me:9443/*" "https://prometheus.localtest.me:9443"
               create_client "kubernetes" "tempo" "Tempo Tracing" "https://tempo.localtest.me:9443/*" "https://tempo.localtest.me:9443"
+
+              # Add protocol mapper to Grafana client to include roles in token
+              add_protocol_mapper "kubernetes" "grafana" "realm roles"
+
+              # Create users
               create_user "kubernetes" "admin" "admin@kagenti.local" "Admin" "User" "admin"
               create_user "kubernetes" "platform-admin" "platform-admin@localtest.me" "Platform" "Admin" "admin123"
+
+              # Assign roles to users
+              assign_role_to_user "kubernetes" "platform-admin" "admin"
 
               # Create kagenti realm
               create_realm "kagenti" "Kagenti Realm" "true"

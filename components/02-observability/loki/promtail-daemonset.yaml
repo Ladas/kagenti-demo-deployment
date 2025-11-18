@@ -1,0 +1,135 @@
+# Promtail DaemonSet
+# Runs one Promtail pod on each node to collect logs
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: observability
+  labels:
+    app: promtail
+    app.kubernetes.io/name: promtail
+    app.kubernetes.io/component: logging
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: promtail
+        app.kubernetes.io/name: promtail
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3101"
+        prometheus.io/path: "/metrics"
+        sidecar.istio.io/inject: "false"  # Don't inject Istio sidecar
+    spec:
+      serviceAccountName: promtail
+
+      # Tolerate all taints (run on all nodes, including control plane)
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+
+      containers:
+      - name: promtail
+        image: grafana/promtail:3.0.0
+        imagePullPolicy: IfNotPresent
+        args:
+          - -config.file=/etc/promtail/promtail.yaml
+          - -config.expand-env=true
+
+        ports:
+        - name: http-metrics
+          containerPort: 3101
+          protocol: TCP
+
+        env:
+          # Add node name as environment variable
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+
+        volumeMounts:
+          # Promtail configuration
+          - name: config
+            mountPath: /etc/promtail
+            readOnly: true
+
+          # Position tracking (where we left off reading logs)
+          - name: positions
+            mountPath: /tmp
+
+          # Pod logs (read-only)
+          - name: pods
+            mountPath: /var/log/pods
+            readOnly: true
+
+          # Container runtime logs (docker/containerd)
+          - name: containers
+            mountPath: /var/lib/docker/containers
+            readOnly: true
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          runAsUser: 0  # Need root to read /var/log/pods
+
+        # Increase file descriptor limit (default 1024 is too low for monitoring many pods)
+        # Promtail needs to open many log files simultaneously
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3101
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3101
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+
+      volumes:
+        # Promtail configuration from ConfigMap
+        - name: config
+          configMap:
+            name: promtail-config
+
+        # Position tracking (emptyDir)
+        - name: positions
+          emptyDir: {}
+
+        # Host paths for log collection
+        - name: pods
+          hostPath:
+            path: /var/log/pods
+            type: Directory
+
+        - name: containers
+          hostPath:
+            path: /var/lib/docker/containers
+            type: DirectoryOrCreate

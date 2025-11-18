@@ -1,0 +1,129 @@
+# Sample Grafana Alert Rule
+# This creates a test alert to validate the Grafana → AlertManager integration
+#
+# To apply this rule, use the Grafana API:
+# kubectl exec -n observability deployment/grafana -- \
+#   curl -X POST -H "Content-Type: application/json" \
+#   -u admin:admin123 \
+#   http://localhost:3000/api/v1/provisioning/alert-rules \
+#   -d @/tmp/alert-rule.json
+
+apiVersion: 1
+
+groups:
+  - name: test_alerts
+    interval: 1m
+    orgId: 1
+    folder: Kagenti
+    rules:
+      # Test alert that always fires (for testing)
+      - uid: test-alert-always-firing
+        title: Test Alert - Always Firing
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093  # Prometheus
+            model:
+              expr: vector(1)  # Always returns 1
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: OK
+        execErrState: OK
+        for: 10s
+        annotations:
+          description: This is a test alert that always fires to validate the Grafana → AlertManager integration.
+          summary: Test alert for AlertManager integration
+        labels:
+          severity: warning
+          namespace: observability
+          component: grafana
+          test: "true"
+
+      # Realistic alert: High CPU usage
+      - uid: high-cpu-usage
+        title: High CPU Usage
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093  # Prometheus
+            model:
+              expr: |
+                sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (namespace, pod)
+                / sum(machine_cpu_cores) * 100 > 80
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        annotations:
+          description: 'Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has CPU usage above 80%: {{ printf "%.2f" $values.A.Value }}%'
+          summary: High CPU usage detected
+        labels:
+          severity: critical
+          namespace: '{{ $labels.namespace }}'
+          pod: '{{ $labels.pod }}'
+
+      # Realistic alert: Pod restart count
+      - uid: high-pod-restarts
+        title: High Pod Restart Count
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: PBFA97CFB590B2093  # Prometheus
+            model:
+              expr: |
+                increase(kube_pod_container_status_restarts_total[5m]) > 2
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: OK
+        execErrState: OK
+        for: 1m
+        annotations:
+          description: 'Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $values.A.Value }} times in the last 5 minutes'
+          summary: Pod is restarting frequently
+        labels:
+          severity: warning
+          namespace: '{{ $labels.namespace }}'
+          pod: '{{ $labels.pod }}'
+
+      # Realistic alert: Prometheus target down
+      - uid: prometheus-target-down
+        title: Prometheus Target Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: PBFA97CFB590B2093  # Prometheus
+            model:
+              expr: up{job!=""} == 0
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: OK
+        execErrState: OK
+        for: 1m
+        annotations:
+          description: 'Prometheus target {{ $labels.job }} is down (instance: {{ $labels.instance }})'
+          summary: Prometheus scrape target is unreachable
+        labels:
+          severity: critical
+          job: '{{ $labels.job }}'
+          instance: '{{ $labels.instance }}'

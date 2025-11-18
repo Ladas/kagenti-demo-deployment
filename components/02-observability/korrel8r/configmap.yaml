@@ -1,0 +1,69 @@
+# Korrel8r Configuration
+# Signal correlation engine for traces, logs, and metrics
+# Ref: https://korrel8r.github.io/korrel8r/
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: korrel8r-config
+  namespace: observability
+data:
+  korrel8r.yaml: |
+    # Observability datasources
+    stores:
+      # Tempo for distributed traces
+      - domain: trace
+        store:
+          type: tempo
+          url: http://tempo.observability.svc:3200
+          timeout: 30s
+
+      # Loki for logs
+      - domain: log
+        store:
+          type: loki
+          url: http://loki-query-frontend.observability.svc:3100
+          timeout: 30s
+
+      # Prometheus for metrics
+      - domain: metric
+        store:
+          type: prometheus
+          url: http://prometheus.observability.svc:9090
+          timeout: 30s
+
+    # Correlation rules (automatic relationship discovery)
+    rules:
+      # Trace → Log correlation (via trace_id)
+      - name: trace_to_log
+        start: trace
+        goal: log
+        query: |
+          {trace_id="$trace_id"}
+
+      # Log → Trace correlation (via trace_id in logs)
+      - name: log_to_trace
+        start: log
+        goal: trace
+        query: |
+          traceID="$trace_id"
+
+      # Trace → Metric correlation (via service name)
+      - name: trace_to_metric
+        start: trace
+        goal: metric
+        query: |
+          {service_name="$service_name"}
+
+      # Metric → Trace correlation (via service + time range)
+      - name: metric_to_trace
+        start: metric
+        goal: trace
+        query: |
+          service.name="$service_name" AND timestamp >= $start AND timestamp <= $end
+
+      # Log → Metric correlation (via service + namespace)
+      - name: log_to_metric
+        start: log
+        goal: metric
+        query: |
+          {namespace="$namespace", app="$app"}

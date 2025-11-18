@@ -1,0 +1,22 @@
+# Korrel8r Service
+# Exposes correlation API for Grafana integration
+# Ref: https://korrel8r.github.io/korrel8r/
+apiVersion: v1
+kind: Service
+metadata:
+  name: korrel8r
+  namespace: observability
+  labels:
+    app: korrel8r
+    app.kubernetes.io/name: korrel8r
+    app.kubernetes.io/component: correlation
+    app.kubernetes.io/part-of: observability
+spec:
+  selector:
+    app: korrel8r
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+    protocol: TCP
+  type: ClusterIP

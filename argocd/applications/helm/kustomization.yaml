@@ -7,10 +7,16 @@ resources:
   - istiod.yaml
 
   # Wave 5 - Infrastructure Services (Helm-based)
-  - spire-crds.yaml
-  - spire.yaml
+  # DISABLED: SPIRE apps failing - temporarily disabled
+  # - spire-crds.yaml
+  # - spire.yaml
   - container-registry.yaml
   - kiali.yaml
+  - opentelemetry-operator.yaml
+  # DISABLED 2025-11-18: Korrel8r Operator has same Go runtime panic as Korrel8r service
+  # Both quay.io/korrel8r/operator:0.1.7 and quay.io/korrel8r/korrel8r:* crash identically
+  # See TODO_TRACING.md Issue 1 for details
+  # - korrel8r-operator.yaml
 
   # Wave 10 - Kagenti Operators
   # NOTE: Both operators deploy identical Tekton pipeline ConfigMaps

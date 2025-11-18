@@ -201,19 +201,23 @@ spec:
 
           readinessProbe:
             httpGet:
+              # Use management health endpoint (lightweight, always responds with 200)
+              # Note: This returns OK early during startup, before realms are fully initialized
+              # PostSync hooks should have retry logic to handle realm initialization timing
               path: /health/ready
               port: 9000
               scheme: HTTP
+            initialDelaySeconds: 30
             periodSeconds: 10
             successThreshold: 1
-            failureThreshold: 3
+            failureThreshold: 60
             timeoutSeconds: 1
 
           # Resource limits
           resources:
             requests:
               memory: "1700Mi"
-              cpu: "500m"
+              cpu: "100m"
             limits:
               memory: "2Gi"
               cpu: "2000m"

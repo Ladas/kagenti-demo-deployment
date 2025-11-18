@@ -1,4 +1,4 @@
-name: ArgoCD App State Validation
+name: Platform Validation & E2E Tests
 
 on:
   push:
@@ -29,6 +29,13 @@ on:
         default: false
         type: boolean
 
+# Explicit permissions for fork PRs (required for PR comments)
+permissions:
+  contents: read           # Read repository files
+  pull-requests: write     # Comment on PRs
+  actions: read            # Read workflow runs
+  checks: write            # Update check status
+
 env:
   PYTHON_VERSION: '3.11'
   KIND_VERSION: 'v0.20.0'
@@ -39,7 +46,7 @@ jobs:
   validate-app-state:
     name: Validate ArgoCD Application State
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60  # Extended to 60 minutes for complete platform testing (all apps including optional observability, Kiali, Ollama)
 
     steps:
       - name: Checkout repository
@@ -87,107 +94,61 @@ jobs:
 
       - name: Install ArgoCD CLI
         run: |
-          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/download/${{ env.ARGOCD_VERSION }}/argocd-linux-amd64
+          cd /tmp
+          curl -fsSL -o argocd "https://github.com/argoproj/argo-cd/releases/download/${{ env.ARGOCD_VERSION }}/argocd-linux-amd64"
           chmod +x argocd
-          sudo mv argocd /usr/local/bin/
+          sudo mv argocd /usr/local/bin/argocd
           argocd version --client
 
-      - name: Create Kind cluster
+      - name: Build and export operator images for CI
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |
-          chmod +x ./scripts/kind/01-create-cluster.sh
-          ./scripts/kind/01-create-cluster.sh
+          echo "🔨 Building operator images for CI (AMD64)..."
 
-      - name: Install ArgoCD
+          # Clone operator repository
+          git clone --depth 1 --branch fix/add-kagenti-operator-image-build \
+            https://github.com/Ladas/kagenti-operator /tmp/kagenti-operator
+
+          # Build kagenti-operator
+          echo "Building kagenti-operator..."
+          cd /tmp/kagenti-operator/kagenti-operator
+          docker build -t localhost:5001/kagenti-operator:dev .
+
+          # Build platform-operator
+          echo "Building platform-operator..."
+          cd /tmp/kagenti-operator/platform-operator
+          docker build -t localhost:5001/kagenti-platform-operator:dev .
+
+          # Export as tar files for quick-redeploy.sh
+          echo "Exporting operator images as tar files..."
+          cd $GITHUB_WORKSPACE
+          mkdir -p .images
+          docker save localhost:5001/kagenti-operator:dev -o .images/kagenti-operator-dev.tar
+          docker save localhost:5001/kagenti-platform-operator:dev -o .images/kagenti-platform-operator-dev.tar
+
+          echo "✅ Operator images built and exported successfully (AMD64)"
+          ls -lah .images/
+
+      - name: Deploy Platform with quick-redeploy.sh
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |
-          chmod +x ./scripts/kind/02-install-argocd.sh
-          ./scripts/kind/02-install-argocd.sh
+          chmod +x ./scripts/quick-redeploy.sh
+          # CI mode skips interactive prompts automatically
+          ./scripts/quick-redeploy.sh
 
-      - name: Bootstrap ArgoCD applications
-        if: steps.cluster_mode.outputs.mode == 'kind'
+      - name: Wait for ArgoCD applications to sync and become healthy
         run: |
-          chmod +x ./scripts/kind/03-bootstrap-apps.sh
-          ./scripts/kind/03-bootstrap-apps.sh
+          echo "Waiting for ArgoCD applications to sync and become healthy..."
+          echo "Using enhanced monitoring script with formatted status tables..."
+          echo ""
 
-      - name: Wait for ArgoCD to be ready
-        if: steps.cluster_mode.outputs.mode == 'kind'
-        run: |
-          echo "Waiting for ArgoCD to be ready..."
-          kubectl wait --for=condition=available \
-            deployment/argocd-server \
-            -n argocd \
-            --timeout=300s
-
-          kubectl wait --for=condition=available \
-            deployment/argocd-application-controller \
-            -n argocd \
-            --timeout=300s
-
-      - name: Sync critical applications (Wave 0)
-        if: steps.cluster_mode.outputs.mode == 'kind'
-        run: |
-          echo "Syncing Wave 0 - Core Infrastructure..."
-          argocd app sync gateway-api cert-manager tekton istio-base istiod istio-config \
-            --port-forward \
-            --port-forward-namespace argocd \
-            --grpc-web \
-            --timeout 600 || true
-
-      - name: Sync infrastructure services (Wave 5)
-        if: steps.cluster_mode.outputs.mode == 'kind'
-        run: |
-          echo "Syncing Wave 5 - Infrastructure Services..."
-          argocd app sync keycloak container-registry kiali \
-            --port-forward \
-            --port-forward-namespace argocd \
-            --grpc-web \
-            --timeout 600 || true
-
-      - name: Sync operators (Wave 10)
-        if: steps.cluster_mode.outputs.mode == 'kind'
-        run: |
-          echo "Syncing Wave 10 - Operators..."
-          argocd app sync kagenti-operator platform-operator \
-            --port-forward \
-            --port-forward-namespace argocd \
-            --grpc-web \
-            --timeout 600 || true
-
-      - name: Sync platform (Wave 15)
-        if: steps.cluster_mode.outputs.mode == 'kind'
-        run: |
-          echo "Syncing Wave 15 - Platform..."
-          argocd app sync platform \
-            --port-forward \
-            --port-forward-namespace argocd \
-            --grpc-web \
-            --timeout 600 || true
-
-      - name: Sync observability (Wave 20)
-        if: steps.cluster_mode.outputs.mode == 'kind'
-        run: |
-          echo "Syncing Wave 20 - Observability..."
-          argocd app sync observability \
-            --port-forward \
-            --port-forward-namespace argocd \
-            --grpc-web \
-            --timeout 600 || true
-
-      - name: Sync agents (Wave 25)
-        if: steps.cluster_mode.outputs.mode == 'kind'
-        run: |
-          echo "Syncing Wave 25 - Agents..."
-          argocd app sync agents \
-            --port-forward \
-            --port-forward-namespace argocd \
-            --grpc-web \
-            --timeout 600 || true
-
-      - name: Wait for applications to stabilize
-        run: |
-          echo "Waiting for applications to stabilize..."
-          sleep 60
+          # Run enhanced monitoring script with 60-minute timeout
+          # Script monitors ALL apps (CRITICAL and OPTIONAL) and displays:
+          # - Formatted ArgoCD application status table
+          # - Formatted pod status by namespace table
+          # - Progress tracking with elapsed time
+          # - Smart failure logic (only fails on CRITICAL apps degraded)
+          ./scripts/monitor-argocd-apps.sh 3600
 
       - name: Set test parameters
         id: test_params
@@ -195,9 +156,10 @@ jobs:
           EXCLUDE_APPS="${{ inputs.exclude_apps }}"
           ONLY_CRITICAL="${{ inputs.only_critical }}"
 
+          # No automatic exclusions - test all apps in CI
+          # For manual runs, use workflow_dispatch inputs to exclude apps if needed
           if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
-            # For automated runs, be more lenient
-            EXCLUDE_APPS="agents,observability"
+            EXCLUDE_APPS=""
             ONLY_CRITICAL="false"
           fi
 
@@ -207,7 +169,7 @@ jobs:
       - name: Run app state validation
         id: validation
         run: |
-          PYTEST_ARGS="-v --html=report.html --self-contained-html --json-report --json-report-file=report.json"
+          PYTEST_ARGS="-v --html=app-state-report.html --self-contained-html --json-report --json-report-file=app-state-report.json"
 
           if [[ -n "${{ steps.test_params.outputs.exclude_apps }}" ]]; then
             PYTEST_ARGS="$PYTEST_ARGS --exclude-app=${{ steps.test_params.outputs.exclude_apps }}"
@@ -219,36 +181,132 @@ jobs:
 
           pytest tests/validation/test_app_state.py $PYTEST_ARGS
 
+      - name: Capture failing pod logs
+        if: failure()  # Only run if validation failed
+        run: |
+          echo "=== Capturing logs from failing pods ==="
+          mkdir -p /tmp/debug-logs
+
+          # Capture logs from all namespaces with CrashLoopBackOff pods
+          echo "Finding CrashLoopBackOff pods..."
+          kubectl get pods -A -o json | jq -r '
+            .items[] |
+            select(.status.containerStatuses[]? | select(.state.waiting?.reason == "CrashLoopBackOff")) |
+            "\(.metadata.namespace) \(.metadata.name)"
+          ' | while read ns pod; do
+            echo "Capturing logs from $ns/$pod"
+            kubectl logs -n "$ns" "$pod" --all-containers --tail=200 > "/tmp/debug-logs/${ns}_${pod}.log" 2>&1 || echo "Failed to get logs from $ns/$pod"
+            kubectl logs -n "$ns" "$pod" --all-containers --previous --tail=200 > "/tmp/debug-logs/${ns}_${pod}_previous.log" 2>&1 || echo "No previous logs for $ns/$pod"
+          done
+
+          # Specifically capture operator logs (even if not crashing)
+          echo "Capturing kagenti-operator logs..."
+          kubectl logs -n kagenti-operator -l control-plane=controller-manager --tail=200 > /tmp/debug-logs/kagenti-operator-all.log 2>&1 || echo "No kagenti-operator logs"
+
+          echo "Capturing kagenti-platform-operator logs..."
+          kubectl logs -n kagenti-platform-operator -l control-plane=controller-manager --tail=200 > /tmp/debug-logs/platform-operator-all.log 2>&1 || echo "No platform-operator logs"
+
+          # Tekton logs
+          echo "Capturing tekton logs..."
+          kubectl logs -n tekton-pipelines -l app.kubernetes.io/part-of=tekton-pipelines --tail=200 > /tmp/debug-logs/tekton-all.log 2>&1 || echo "No tekton logs"
+
+          # Capture all events sorted by time
+          echo "Capturing cluster events..."
+          kubectl get events -A --sort-by='.lastTimestamp' > /tmp/debug-logs/all-events.txt 2>&1
+
+          # Capture pod descriptions for failing pods
+          echo "Capturing pod descriptions..."
+          kubectl describe pods -n kagenti-operator > /tmp/debug-logs/kagenti-operator-describe.txt 2>&1 || true
+          kubectl describe pods -n kagenti-platform-operator > /tmp/debug-logs/platform-operator-describe.txt 2>&1 || true
+          kubectl describe pods -n tekton-pipelines > /tmp/debug-logs/tekton-describe.txt 2>&1 || true
+
+          # Capture ArgoCD application statuses
+          echo "Capturing ArgoCD application details..."
+          kubectl get applications -n argocd -o yaml > /tmp/debug-logs/argocd-applications.yaml 2>&1 || true
+
+          echo "=== Debug logs captured ==="
+          ls -lah /tmp/debug-logs/
+
+      - name: Upload debug logs
+        if: failure()  # Only upload if validation failed
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-debug-logs
+          path: /tmp/debug-logs/
+          retention-days: 7
+
+      - name: Run E2E platform tests
+        id: e2e_tests
+        continue-on-error: true
+        run: |
+          echo "Running E2E platform tests..."
+          PYTEST_ARGS="-v --tb=short --html=e2e-report.html --self-contained-html --json-report --json-report-file=e2e-report.json --continue-on-collection-errors"
+
+          if [[ -n "${{ steps.test_params.outputs.exclude_apps }}" ]]; then
+            PYTEST_ARGS="$PYTEST_ARGS --exclude-app=${{ steps.test_params.outputs.exclude_apps }}"
+          fi
+
+          pytest tests/e2e/test_platform_e2e.py $PYTEST_ARGS
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: validation-results
           path: |
-            report.html
-            report.json
+            app-state-report.html
+            app-state-report.json
+            e2e-report.html
+            e2e-report.json
           retention-days: 30
 
       - name: Parse test results
         if: always()
         id: parse_results
         run: |
-          if [[ -f report.json ]]; then
-            TOTAL=$(jq -r '.summary.total // 0' report.json)
-            PASSED=$(jq -r '.summary.passed // 0' report.json)
-            FAILED=$(jq -r '.summary.failed // 0' report.json)
-
-            echo "total=${TOTAL}" >> $GITHUB_OUTPUT
-            echo "passed=${PASSED}" >> $GITHUB_OUTPUT
-            echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          # Parse app state validation results
+          if [[ -f app-state-report.json ]]; then
+            APP_TOTAL=$(jq -r '.summary.total // 0' app-state-report.json)
+            APP_PASSED=$(jq -r '.summary.passed // 0' app-state-report.json)
+            APP_FAILED=$(jq -r '.summary.failed // 0' app-state-report.json)
           else
-            echo "total=0" >> $GITHUB_OUTPUT
-            echo "passed=0" >> $GITHUB_OUTPUT
-            echo "failed=0" >> $GITHUB_OUTPUT
+            APP_TOTAL=0
+            APP_PASSED=0
+            APP_FAILED=0
           fi
+
+          # Parse E2E test results
+          if [[ -f e2e-report.json ]]; then
+            E2E_TOTAL=$(jq -r '.summary.total // 0' e2e-report.json)
+            E2E_PASSED=$(jq -r '.summary.passed // 0' e2e-report.json)
+            E2E_FAILED=$(jq -r '.summary.failed // 0' e2e-report.json)
+            E2E_XFAILED=$(jq -r '.summary.xfailed // 0' e2e-report.json)
+          else
+            E2E_TOTAL=0
+            E2E_PASSED=0
+            E2E_FAILED=0
+            E2E_XFAILED=0
+          fi
+
+          # Combined totals
+          TOTAL=$((APP_TOTAL + E2E_TOTAL))
+          PASSED=$((APP_PASSED + E2E_PASSED))
+          FAILED=$((APP_FAILED + E2E_FAILED))
+
+          echo "total=${TOTAL}" >> $GITHUB_OUTPUT
+          echo "passed=${PASSED}" >> $GITHUB_OUTPUT
+          echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          echo "app_total=${APP_TOTAL}" >> $GITHUB_OUTPUT
+          echo "app_passed=${APP_PASSED}" >> $GITHUB_OUTPUT
+          echo "app_failed=${APP_FAILED}" >> $GITHUB_OUTPUT
+          echo "e2e_total=${E2E_TOTAL}" >> $GITHUB_OUTPUT
+          echo "e2e_passed=${E2E_PASSED}" >> $GITHUB_OUTPUT
+          echo "e2e_failed=${E2E_FAILED}" >> $GITHUB_OUTPUT
+          echo "e2e_xfailed=${E2E_XFAILED}" >> $GITHUB_OUTPUT
 
       - name: Comment on PR
         if: github.event_name == 'pull_request' && always()
+        continue-on-error: true  # Don't fail job if comment fails
         uses: actions/github-script@v7
         with:
           script: |
@@ -256,12 +314,32 @@ jobs:
             const passed = '${{ steps.parse_results.outputs.passed }}';
             const failed = '${{ steps.parse_results.outputs.failed }}';
 
+            const appTotal = '${{ steps.parse_results.outputs.app_total }}';
+            const appPassed = '${{ steps.parse_results.outputs.app_passed }}';
+            const appFailed = '${{ steps.parse_results.outputs.app_failed }}';
+
+            const e2eTotal = '${{ steps.parse_results.outputs.e2e_total }}';
+            const e2ePassed = '${{ steps.parse_results.outputs.e2e_passed }}';
+            const e2eFailed = '${{ steps.parse_results.outputs.e2e_failed }}';
+            const e2eXFailed = '${{ steps.parse_results.outputs.e2e_xfailed }}';
+
             const status = failed === '0' ? '✅ PASSED' : '❌ FAILED';
             const color = failed === '0' ? '🟢' : '🔴';
 
-            const comment = `## ${color} ArgoCD App State Validation ${status}
+            const comment = `## ${color} Platform Validation & E2E Tests ${status}
 
-            **Test Results:**
+            ### 📋 App State Validation
+            - Total: ${appTotal}
+            - Passed: ✅ ${appPassed}
+            - Failed: ❌ ${appFailed}
+
+            ### 🧪 E2E Platform Tests
+            - Total: ${e2eTotal}
+            - Passed: ✅ ${e2ePassed}
+            - Failed: ❌ ${e2eFailed}
+            - Expected Failures: ⚠️ ${e2eXFailed}
+
+            ### 📊 Combined Results
             - Total Tests: ${total}
             - Passed: ✅ ${passed}
             - Failed: ❌ ${failed}
@@ -283,13 +361,30 @@ jobs:
       - name: Generate summary
         if: always()
         run: |
-          echo "## ArgoCD App State Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Platform Validation & E2E Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 📋 App State Validation" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ${{ steps.validation.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total:** ${{ steps.parse_results.outputs.app_total }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Passed:** ${{ steps.parse_results.outputs.app_passed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed:** ${{ steps.parse_results.outputs.app_failed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 🧪 E2E Platform Tests" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.e2e_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total:** ${{ steps.parse_results.outputs.e2e_total }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Passed:** ${{ steps.parse_results.outputs.e2e_passed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed:** ${{ steps.parse_results.outputs.e2e_failed }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Expected Failures:** ${{ steps.parse_results.outputs.e2e_xfailed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 📊 Combined Results" >> $GITHUB_STEP_SUMMARY
           echo "**Total Tests:** ${{ steps.parse_results.outputs.total }}" >> $GITHUB_STEP_SUMMARY
           echo "**Passed:** ${{ steps.parse_results.outputs.passed }}" >> $GITHUB_STEP_SUMMARY
           echo "**Failed:** ${{ steps.parse_results.outputs.failed }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
           echo "**Cluster Mode:** ${{ steps.cluster_mode.outputs.mode }}" >> $GITHUB_STEP_SUMMARY
           echo "**Excluded Apps:** ${{ steps.test_params.outputs.exclude_apps || 'None' }}" >> $GITHUB_STEP_SUMMARY
           echo "**Only Critical:** ${{ steps.test_params.outputs.only_critical }}" >> $GITHUB_STEP_SUMMARY

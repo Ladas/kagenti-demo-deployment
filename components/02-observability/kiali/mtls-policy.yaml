@@ -1,0 +1,17 @@
+# PERMISSIVE mTLS for Kiali
+# Kiali is accessed via OAuth2-Proxy which connects using plain HTTP
+# Kiali also needs to query Prometheus/Istio which may not have mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: kiali-permissive
+  namespace: kiali-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kiali
+  mtls:
+    mode: PERMISSIVE
+  portLevelMtls:
+    "20001":
+      mode: PERMISSIVE

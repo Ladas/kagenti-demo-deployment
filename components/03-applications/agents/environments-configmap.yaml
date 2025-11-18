@@ -1,0 +1,24 @@
+# Environments ConfigMap for kagenti UI
+# Required for agent build environment configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: environments
+  namespace: team1
+  labels:
+    app.kubernetes.io/name: environments
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: agents
+data:
+  # Container registry configuration for agent builds
+  CONTAINER_REGISTRY: "localhost:5001"
+  # Build environment
+  ENVIRONMENT: "kind-local"
+
+  # Ollama LLM Configuration (shared by all agents)
+  LLM_API_BASE: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+  LLM_MODEL: "qwen2.5:3b"
+  LLM_API_KEY: "dummy"
+  OPENAI_API_BASE: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+  OPENAI_API_KEY: "dummy"
+  OPENAI_MODEL_NAME: "qwen2.5:3b"

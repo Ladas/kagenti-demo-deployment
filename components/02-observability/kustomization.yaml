@@ -5,14 +5,32 @@ resources:
   # OpenTelemetry Collector
   - otel-collector/
 
+  # OpenTelemetry Auto-Instrumentation
+  - otel-instrumentation/
+
+  # Prometheus (metrics storage and API for Grafana)
+  - prometheus/
+
   # Tempo (distributed tracing backend - infrastructure traces)
   - tempo/
+
+  # Loki (log aggregation backend)
+  - loki/
 
   # Phoenix (LLM observability - agent/LLM traces)
   - phoenix/
 
   # Grafana (dashboards and visualization)
   - grafana/
+
+  # AlertManager (alert aggregation and routing)
+  - alertmanager/
+
+  # Korrel8r (signal correlation engine for trace↔log↔metric)
+  # DISABLED 2025-11-18: CrashLoopBackOff persists across ALL versions (0.7.6, 0.8.4, latest)
+  # Go runtime panic in goroutine - fundamental issue with container image
+  # See TODO_TRACING.md Known Issues for details
+  # - korrel8r/
 
   # Kube-state-metrics (Kubernetes metrics)
   - kube-state-metrics/deployment.yaml
@@ -27,6 +45,5 @@ resources:
   - mtls-policy.yaml
 
 # NOTE: Kiali is now deployed via Helm (argocd/applications/helm/kiali.yaml)
-# NOTE: Prometheus is part of Istio/kagenti-deps (to be extracted)
 # NOTE: This layer can deploy in parallel with 01-platform (sync wave 15 or 20)
 #       OR after platform if grafana needs Keycloak OIDC (sync wave 20)

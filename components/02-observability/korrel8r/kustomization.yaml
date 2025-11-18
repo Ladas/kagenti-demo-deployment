@@ -1,0 +1,15 @@
+# Kustomization for Korrel8r
+# Signal correlation engine for observability
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: observability
+  app.kubernetes.io/managed-by: argocd

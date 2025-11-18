@@ -6,3 +6,4 @@ metadata:
     name: team1
     app.kubernetes.io/part-of: kagenti
     istio-injection: enabled
+    kagenti-enabled: "true"  # Allows kagenti UI to discover this namespace

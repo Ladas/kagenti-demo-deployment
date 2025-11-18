@@ -1,0 +1,12 @@
+# DestinationRule for Phoenix
+# Since Phoenix has no Istio sidecar, clients must use plain HTTP (not mTLS)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: phoenix-disable-mtls
+  namespace: observability
+spec:
+  host: phoenix.observability.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE  # Clients must use plain HTTP, Phoenix has no sidecar

@@ -11,14 +11,20 @@ resources:
   - 00-infrastructure
   - reflector.yaml  # Kubernetes Reflector for OAuth secret mirroring
 
+  # Wave 10 - Operators
+  - kagenti-operator.yaml
+  - platform-operator.yaml
+
   # Wave 15 - Platform
   - platform.yaml
+  - ollama.yaml
 
   # Wave 20 - Observability
   - observability.yaml
 
   # Wave 25 - Applications
-  - agents.yaml
+  # NOTE: agents.yaml removed - agents will be imported dynamically via AgentBuild CRDs
+  # See scripts/import-agents-via-ui.sh for agent import workflow
 
 # NOTE: Keycloak and SPIRE are now deployed via Helm (see ../helm/)
 # NOTE: Container Registry is deployed via Helm (see ../helm/container-registry.yaml)

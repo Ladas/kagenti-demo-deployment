@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: korrel8r-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+  labels:
+    kagenti.dev/layer: infrastructure
+    kagenti.dev/component: korrel8r-operator
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/korrel8r/operator.git
+    targetRevision: v0.1.7
+    path: config/default
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: korrel8r
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

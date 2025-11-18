@@ -18,14 +18,63 @@ data:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://prometheus.istio-system:9090
+        url: http://prometheus.observability.svc:9090
         isDefault: true
         editable: true
-      - name: OTEL
-        type: prometheus
+        jsonData:
+          httpMethod: POST
+          timeInterval: 30s
+      - name: Tempo
+        type: tempo
         access: proxy
-        url: http://otel-collector.kagenti-system:8889
+        url: http://tempo.observability.svc:3200
+        uid: tempo
         editable: true
+        jsonData:
+          httpMethod: GET
+          # Trace → Log correlation
+          tracesToLogsV2:
+            datasourceUid: 'loki'
+            spanStartTimeShift: '-1h'
+            spanEndTimeShift: '1h'
+            filterByTraceID: true
+            filterBySpanID: false
+            customQuery: false
+            tags:
+              - key: 'service.name'
+                value: 'app'
+          # Trace → Metric correlation
+          tracesToMetrics:
+            datasourceUid: 'otel-metrics'
+            queries:
+              - name: 'Sample query'
+                query: 'sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m]))'
+          serviceMap:
+            datasourceUid: 'otel-metrics'
+          nodeGraph:
+            enabled: true
+          search:
+            hide: false
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki-query-frontend.observability.svc:3100
+        uid: loki
+        editable: true
+        jsonData:
+          httpMethod: GET
+          maxLines: 1000
+          # Log → Trace correlation
+          derivedFields:
+            # Extract trace_id from logs and link to Tempo
+            - datasourceUid: tempo
+              matcherRegex: "trace_id[=:]\\s*(\\w+)"
+              name: TraceID
+              url: "$${__value.raw}"
+            # Extract request_id from logs for correlation
+            - matcherRegex: "request_id[=:]\\s*(\\w+)"
+              name: RequestID
+              url: ""
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -62,6 +111,8 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       containers:
       - name: grafana
@@ -74,7 +125,7 @@ spec:
         - name: GF_SECURITY_ADMIN_USER
           value: "admin"
         - name: GF_SECURITY_ADMIN_PASSWORD
-          value: "admin"
+          value: "admin123"
 
         # Disable anonymous auth
         - name: GF_AUTH_ANONYMOUS_ENABLED
@@ -110,6 +161,12 @@ spec:
           value: "contains(roles[*], 'admin') && 'Admin' || contains(roles[*], 'editor') && 'Editor' || 'Viewer'"
         - name: GF_AUTH_SIGNOUT_REDIRECT_URL
           value: "https://keycloak.localtest.me:9443/realms/kubernetes/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fgrafana.localtest.me%3A9443"
+
+        # Unified Alerting configuration
+        - name: GF_UNIFIED_ALERTING_ENABLED
+          value: "true"
+        - name: GF_ALERTING_ENABLED
+          value: "false"  # Disable legacy alerting
         volumeMounts:
         - name: grafana-storage
           mountPath: /var/lib/grafana
@@ -119,9 +176,11 @@ spec:
           mountPath: /etc/grafana/provisioning/dashboards
         - name: grafana-dashboards
           mountPath: /etc/grafana/dashboards
+        - name: grafana-alerting
+          mountPath: /etc/grafana/provisioning/alerting
         resources:
           requests:
-            cpu: 100m
+            cpu: 50m
             memory: 256Mi
           limits:
             cpu: 500m
@@ -150,6 +209,9 @@ spec:
       - name: grafana-dashboards
         configMap:
           name: grafana-dashboards
+      - name: grafana-alerting
+        configMap:
+          name: grafana-alerting
 ---
 apiVersion: v1
 kind: Service

@@ -1,11 +1,11 @@
-name: E2E Platform Tests
+name: E2E Platform Tests (Standalone)
+
+# DISABLED: E2E tests have been merged into "Platform Validation & E2E Tests" workflow
+# This standalone version is disabled to avoid duplicate test runs and wasted CI time
+# See: .github/workflows/app-state-validation.yml for the merged workflow
 
 on:
-  push:
-    branches: [ main, argocd-gitops-dev ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:  # Manual trigger only
 
 env:
   KIND_VERSION: v0.20.0

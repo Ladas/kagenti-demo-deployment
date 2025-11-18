@@ -1,0 +1,140 @@
+# Grafana Alloy DaemonSet
+# Modern unified telemetry collector replacing deprecated Promtail
+# Runs one Alloy pod on each node to collect logs, metrics, and traces
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: alloy
+  namespace: observability
+  labels:
+    app: alloy
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/component: telemetry
+spec:
+  selector:
+    matchLabels:
+      app: alloy
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: alloy
+        app.kubernetes.io/name: alloy
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "12345"
+        prometheus.io/path: "/metrics"
+        sidecar.istio.io/inject: "false"  # Don't inject Istio sidecar
+    spec:
+      serviceAccountName: alloy
+
+      # Tolerate all taints (run on all nodes, including control plane)
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+
+      containers:
+      - name: alloy
+        image: grafana/alloy:v1.5.1
+        imagePullPolicy: IfNotPresent
+        args:
+          - run
+          - --server.http.listen-addr=0.0.0.0:12345
+          - --stability.level=generally-available
+          - /etc/alloy/config.alloy
+
+        ports:
+        # Alloy HTTP server (metrics, health checks)
+        - name: http-metrics
+          containerPort: 12345
+          protocol: TCP
+
+        # OTLP receivers
+        - name: otlp-grpc
+          containerPort: 4317
+          protocol: TCP
+        - name: otlp-http
+          containerPort: 4318
+          protocol: TCP
+
+        env:
+          # Add node name as environment variable
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+
+          # Enable structured logging
+          - name: ALLOY_LOG_LEVEL
+            value: "info"
+          - name: ALLOY_LOG_FORMAT
+            value: "logfmt"
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        volumeMounts:
+          # Alloy configuration
+          - name: config
+            mountPath: /etc/alloy
+            readOnly: true
+
+          # Position tracking (where we left off reading logs)
+          - name: positions
+            mountPath: /tmp/alloy
+
+          # Alloy data directory (required for remotecfg service)
+          - name: data
+            mountPath: /data-alloy
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          # Alloy runs as non-root and accesses logs via Kubernetes API
+          runAsNonRoot: true
+          runAsUser: 65534  # nobody user
+
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 12345
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 5
+
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 12345
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+
+      volumes:
+        # Alloy configuration from ConfigMap
+        - name: config
+          configMap:
+            name: alloy-config
+
+        # Position tracking (emptyDir)
+        - name: positions
+          emptyDir: {}
+
+        # Alloy data directory (emptyDir)
+        - name: data
+          emptyDir: {}

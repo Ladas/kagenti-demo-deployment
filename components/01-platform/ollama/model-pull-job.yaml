@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-pull-qwen
+  namespace: kagenti-system
+  labels:
+    app: ollama
+    app.kubernetes.io/name: ollama-model-pull
+    app.kubernetes.io/part-of: kagenti
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: ollama-model-pull
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: model-pull
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "Waiting for Ollama service to be ready..."
+          until curl -sf http://ollama.kagenti-system.svc.cluster.local:11434/ > /dev/null; do
+            echo "Ollama not ready, waiting..."
+            sleep 5
+          done
+
+          echo "Ollama is ready, pulling Qwen model..."
+          curl -X POST http://ollama.kagenti-system.svc.cluster.local:11434/api/pull \
+            -H "Content-Type: application/json" \
+            -d '{"name": "qwen2.5:3b"}' \
+            --max-time 600
+
+          echo "Qwen model pulled successfully!"
+
+          # Verify model is available
+          echo "Verifying model..."
+          curl -X POST http://ollama.kagenti-system.svc.cluster.local:11434/api/tags

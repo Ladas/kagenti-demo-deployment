@@ -1,0 +1,139 @@
+# AlertManager Configuration
+# Defines alert routing, receivers, and notification behavior
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: observability
+data:
+  alertmanager.yml: |
+    # Global configuration
+    global:
+      # Slack API URL (if using Slack receiver)
+      # slack_api_url: '<secret-webhook-url>'
+
+      # SMTP settings (if using email receiver)
+      # smtp_smarthost: 'smtp.example.com:587'
+      # smtp_from: 'alertmanager@example.com'
+      # smtp_auth_username: '<username>'
+      # smtp_auth_password: '<password>'
+
+      # How often to check for resolved alerts
+      resolve_timeout: 5m
+
+    # Templates for notification messages
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
+
+    # Alert routing tree
+    # Alerts are matched against routes in order
+    route:
+      # Default receiver for all alerts
+      receiver: 'default'
+
+      # Group alerts by these labels
+      group_by: ['alertname', 'namespace', 'severity']
+
+      # Wait 30 seconds before sending first notification
+      # This allows grouping of multiple alerts that fire simultaneously
+      group_wait: 30s
+
+      # Wait 5 minutes before sending notification about new alerts
+      # that belong to an already-notified group
+      group_interval: 5m
+
+      # Re-send notification if alert is still firing after 12 hours
+      repeat_interval: 12h
+
+      # Child routes (evaluated in order)
+      routes:
+        # Critical alerts - route to critical receiver
+        - match:
+            severity: critical
+          receiver: 'critical-alerts'
+          group_wait: 10s          # Faster for critical alerts
+          repeat_interval: 4h       # More frequent repeats
+          continue: true            # Also try next routes
+
+        # Warning alerts - route to warning receiver
+        - match:
+            severity: warning
+          receiver: 'warning-alerts'
+          continue: true            # Also try next routes
+
+        # Info alerts - route to info receiver
+        - match:
+            severity: info
+          receiver: 'info-alerts'
+          continue: true
+
+        # Send ALL alerts to Korrel8r for correlation
+        # This route has no match condition, so it catches everything
+        - receiver: 'korrel8r'
+          continue: false           # Stop routing after this
+
+    # Inhibition rules
+    # Suppress alerts based on other firing alerts
+    inhibit_rules:
+      # Suppress warning if critical alert for same service is firing
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'namespace', 'pod']
+
+      # Suppress info if warning for same service is firing
+      - source_match:
+          severity: 'warning'
+        target_match:
+          severity: 'info'
+        equal: ['alertname', 'namespace', 'pod']
+
+    # Receivers define where notifications are sent
+    receivers:
+      # Default receiver (no-op, just logs alerts)
+      - name: 'default'
+        # No webhook/email/slack configured - alerts only logged
+
+      # Critical alerts receiver
+      # TODO: Configure PagerDuty or critical Slack channel
+      - name: 'critical-alerts'
+        # Uncomment and configure for production:
+        # pagerduty_configs:
+        #   - service_key: '<pagerduty-integration-key>'
+        #     description: '{{ .GroupLabels.alertname }}'
+        #     severity: '{{ .GroupLabels.severity }}'
+
+        # Or use Slack:
+        # slack_configs:
+        #   - api_url: '<slack-webhook-url>'
+        #     channel: '#critical-alerts'
+        #     title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+        #     text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+      # Warning alerts receiver
+      - name: 'warning-alerts'
+        # Uncomment and configure for production:
+        # slack_configs:
+        #   - api_url: '<slack-webhook-url>'
+        #     channel: '#warnings'
+        #     title: 'Warning: {{ .GroupLabels.alertname }}'
+        #     text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+      # Info alerts receiver
+      - name: 'info-alerts'
+        # Optional: send to low-priority channel
+
+      # Korrel8r receiver - for signal correlation
+      # Korrel8r receives ALL alerts and correlates them with traces/logs/metrics
+      - name: 'korrel8r'
+        webhook_configs:
+          - url: 'http://korrel8r.observability.svc:8080/api/v1/alerts'
+            send_resolved: true     # Send both firing and resolved alerts
+            max_alerts: 0            # No limit on alerts per webhook
+            http_config:
+              follow_redirects: true
+
+    # Silence matchers (can be managed via API)
+    # Example: silence all alerts from a namespace during maintenance
+    # silences: []

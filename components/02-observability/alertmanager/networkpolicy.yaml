@@ -1,0 +1,94 @@
+# AlertManager NetworkPolicy
+# Restricts network access to/from AlertManager
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: alertmanager
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app: alertmanager
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  # Ingress: Allow traffic FROM these sources
+  ingress:
+    # Allow from Grafana (sends alerts via webhook)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
+      ports:
+        - protocol: TCP
+          port: 9093
+
+    # Allow from Prometheus (may send alerts if configured)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 9093
+
+    # Allow from debug/admin pods (for troubleshooting)
+    # - from:
+    #     - podSelector:
+    #         matchLabels:
+    #           role: debug
+    #   ports:
+    #     - protocol: TCP
+    #       port: 9093
+
+  # Egress: Allow traffic TO these destinations
+  egress:
+    # Allow to Korrel8r (alert correlation)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: korrel8r
+      ports:
+        - protocol: TCP
+          port: 8080
+
+    # Allow to Istio control plane (for sidecar)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: istio-system
+      ports:
+        - protocol: TCP
+          port: 15012  # istiod xDS
+        - protocol: TCP
+          port: 15017  # istiod webhook
+
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Allow HTTPS to external services (Slack, PagerDuty, etc.)
+    # This allows ANY external HTTPS - restrict in production
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+
+    # Allow HTTP to external services (some webhooks use HTTP)
+    # Uncomment if needed (less secure)
+    # - to:
+    #     - namespaceSelector: {}
+    #   ports:
+    #     - protocol: TCP
+    #       port: 80
