@@ -183,10 +183,10 @@ OpenInference is a set of OpenTelemetry conventions specifically for AI/LLM appl
 
 **OTEL Collector Configuration**:
 6. **OTEL Operator** - ❌ Not deployed (for auto-instrumentation)
-7. **Baggage propagation** - ❌ Not configured in OTEL collector (Phase 7)
-8. **Resource detection** - ❌ Not configured in OTEL collector
+7. **Baggage propagation** - ✅ **CONFIGURED 2025-11-14** - Attributes processor copies baggage to spans (Phase 1.2 complete)
+8. **Resource detection** - ✅ **CONFIGURED 2025-11-14** - Detects env, system, docker metadata (Phase 1.2 complete)
 9. **OTEL Logs export** - ⚠️ **PARTIAL** - Loki deployed but OTEL→Loki pipeline not configured
-10. **Span metrics generation** - ❌ Not configured (for RED metrics from traces)
+10. **Span metrics generation** - ✅ **CONFIGURED** - spanmetrics connector enabled (Phase 1.2 complete)
 11. **Service graph generation** - ❌ Not configured (for dependency visualization)
 
 **Application Instrumentation**:

@@ -14,9 +14,9 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
-MONITOR_TIMEOUT="${1:-900}"  # Default: 15 minutes (900 seconds)
-POLL_INTERVAL=30  # Check every 30 seconds (reduced from 10s for less noise)
-DEGRADED_GRACE_PERIOD=300  # 5 minutes grace period for Degraded apps to recover
+MONITOR_TIMEOUT="${1:-1800}"  # Default: 30 minutes (1800 seconds)
+POLL_INTERVAL=15  # Check every 15 seconds
+DEGRADED_GRACE_PERIOD=600  # 10 minutes grace period for Degraded apps to recover
 
 # Track when apps first became Degraded (file-based, bash 3.2 compatible)
 # Creates timestamped files in /tmp/argocd-monitor-degraded-<app-name>
@@ -54,6 +54,10 @@ CRITICAL_APPS=(
     "kagenti-platform-operator"
     "platform"
     "kagenti-ui"
+    "container-registry"
+    "keycloak-platform-rbac"
+    "opentelemetry-operator"
+    "reflector"
 )
 
 # Optional apps can be Progressing without failing
@@ -62,6 +66,8 @@ OPTIONAL_APPS=(
     "kiali"
     "ollama"
     "agents"
+    "spire"
+    "spire-crds"
 )
 
 # Function to check if app is critical

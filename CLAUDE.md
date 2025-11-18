@@ -973,6 +973,546 @@ kubectl exec -n observability deployment/grafana -- \
 
 ---
 
+## 🔍 Observability & Troubleshooting Guide
+
+**Comprehensive guide to using Grafana for alerts, logs, and metrics.**
+
+### Claude Code Observability Skills
+
+**Claude Code has specialized skills for observability tasks**. These can be invoked automatically or explicitly:
+
+- **check-alerts**: Check firing alerts and alert status
+- **check-logs**: Query Loki logs and search for errors
+- **check-metrics**: Query Prometheus metrics and analyze performance
+- **investigate-incident**: Perform RCA and create incident documentation
+- **platform-health**: Comprehensive platform health checks
+
+**Skills are located at**: `.claude/skills/*/SKILL.md`
+
+### Finding Alerts in Grafana
+
+**Access Grafana**: https://grafana.localtest.me:9443 (admin / admin123)
+
+#### Alert List (Active Alerts)
+
+1. Navigate to: **Alerting** → **Alert list** (bell icon in sidebar)
+2. Shows: Currently firing alerts, pending alerts, and silences
+3. Filter by:
+   - State: Firing, Pending, Normal
+   - Severity: Critical, Warning, Info
+   - Component: prometheus, grafana, keycloak, etc.
+
+**Quick view firing alerts**:
+- Red badge on Alerting icon shows count of firing alerts
+- Click badge to jump directly to firing alerts
+
+#### Alert Rules (All Configured Alerts)
+
+1. Navigate to: **Alerting** → **Alert rules**
+2. Shows: All 24 configured alert rules
+3. Organized by folder: "Kagenti"
+4. For each alert see:
+   - Current state (Normal, Firing, Pending, Error, No data)
+   - Last evaluation time
+   - Labels (severity, component, layer)
+   - Evaluation query (PromQL)
+
+**Click on alert to see**:
+- Query results
+- Evaluation history (graph of alert state over time)
+- Annotations (description, runbook URL, summary)
+- Alert instances (if firing, shows which specific instance)
+
+#### Alert Details
+
+**To investigate a specific alert**:
+
+1. **Alerting** → **Alert rules** → Click alert name
+2. View tabs:
+   - **Query**: See PromQL query and test it
+   - **History**: See state transitions over time
+   - **Instances**: See which specific instances firing (e.g., which pod)
+
+**Example: Investigating "Pod High CPU Usage" alert**:
+```
+Query tab shows:
+  sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace, pod)
+  / sum(container_spec_cpu_quota / container_spec_cpu_period) by (namespace, pod) * 100 > 90
+
+Instances tab shows:
+  {namespace="observability", pod="prometheus-xxx"} = 95%
+```
+
+#### Alert Runbooks
+
+**Every alert has a runbook**. Find it via:
+
+1. **In Grafana**: Click alert → See "runbook_url" annotation
+2. **In filesystem**: `docs/runbooks/alerts/<alert-uid>.md`
+
+**Example runbook flow**:
+```
+Alert fires: "Prometheus Down"
+→ Check annotation: runbook_url: docs/runbooks/alerts/prometheus-down.md
+→ Follow runbook sections: Meaning, Impact, Diagnosis, Mitigation
+→ Execute diagnosis commands
+→ Apply mitigation steps
+```
+
+#### Silencing Alerts
+
+**To silence an alert during maintenance**:
+
+1. **Alerting** → **Silences**
+2. Click **+ Add silence**
+3. Configure:
+   - **Matchers**: `alertname = YourAlertName`
+   - **Duration**: Start/end times
+   - **Comment**: Reason for silence
+4. Click **Submit**
+
+**Via API** (temporary, not GitOps):
+```bash
+kubectl exec -n observability deployment/grafana -- \
+  curl -s -X POST 'http://localhost:3000/api/alertmanager/grafana/api/v2/silences' \
+  -u admin:admin123 -H 'Content-Type: application/json' -d '{
+    "matchers": [{"name": "alertname", "value": "PodHighCPUUsage", "isRegex": false}],
+    "startsAt": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
+    "endsAt": "'$(date -u -v+2H +%Y-%m-%dT%H:%M:%SZ)'",
+    "comment": "Planned maintenance"
+  }'
+```
+
+### Finding Logs in Grafana
+
+**Loki** provides log aggregation. Access via **Explore** or **Dashboards**.
+
+#### Explore View (Ad-hoc Log Queries)
+
+1. Navigate to: **Explore** (compass icon in sidebar)
+2. Select datasource: **Loki**
+3. Enter LogQL query
+4. Click **Run query**
+
+**Example queries**:
+
+```logql
+# All logs from observability namespace
+{kubernetes_namespace_name="observability"}
+
+# Logs from specific pod
+{kubernetes_pod_name=~"prometheus.*"}
+
+# Error logs only
+{kubernetes_namespace_name="observability"} |= "error"
+
+# Logs with specific level (if JSON structured)
+{kubernetes_namespace_name="observability"} | json | level="error"
+
+# Count errors per namespace (last 5 minutes)
+sum by (kubernetes_namespace_name) (
+  count_over_time({kubernetes_namespace_name=~".+"} |= "error" [5m])
+)
+
+# Search for connection errors
+{kubernetes_namespace_name=~".+"} |~ "connection (refused|timeout|reset)"
+
+# Find authentication failures
+{kubernetes_namespace_name=~"keycloak|oauth2-proxy"} |~ "auth.*fail|unauthorized"
+```
+
+**Query builder tips**:
+- **Label filters** (in `{}`): Select logs by namespace, pod, container
+- **Line filters** (`|=`, `!=`, `|~`, `!~`): Search log content
+- **Parser** (`| json`, `| logfmt`): Parse structured logs
+- **Line filter after parse** (`| field="value"`): Filter parsed fields
+- **Aggregation** (`count_over_time`, `rate`, `sum by`): Metrics from logs
+
+**Time range selector**:
+- Top-right corner: Last 5m, 15m, 1h, 6h, 24h, custom
+- For investigating incidents: Select time range around when issue occurred
+
+#### Loki Logs Dashboard
+
+**Pre-built dashboard**: https://grafana.localtest.me:9443/d/loki-logs/loki-logs
+
+**Features**:
+1. **Filters** (top of dashboard):
+   - Namespace selector
+   - Pod name filter
+   - Log level filter
+   - Search text
+
+2. **Panels**:
+   - **Log Volume by Level**: Graph showing errors vs warnings over time
+   - **Log Volume by Namespace**: Compare log rate across namespaces
+   - **Logs per Second**: Current ingestion rate
+   - **Log Lines**: Scrollable log viewer with search highlighting
+
+**Use cases**:
+- **After deployment**: Filter to namespace, check for errors in last 15m
+- **Incident investigation**: Select time range, filter by pod, search error keywords
+- **Pattern analysis**: View log volume graph to see when errors spiked
+
+#### Common Log Queries for Troubleshooting
+
+**Find errors after deployment**:
+```logql
+{kubernetes_namespace_name="<namespace>"} |= "error"
+  | line_format "{{.timestamp}} {{.pod}} {{.message}}"
+  # Time range: Last 15 minutes
+```
+
+**Find pod crash causes**:
+```logql
+{kubernetes_pod_name="<pod-name>"}
+  |~ "error|fatal|panic|exception"
+  # Use "previous" pod instance in kubectl logs instead
+```
+
+**Find timeout issues**:
+```logql
+{kubernetes_namespace_name=~".+"}
+  |~ "timeout|timed out|deadline exceeded|context deadline"
+```
+
+**Find database connection issues**:
+```logql
+{kubernetes_namespace_name=~".+"}
+  |~ "database.*error|connection.*refused|SQL.*error|postgres.*error"
+```
+
+**Correlation with metrics**:
+1. Open **Explore** in split view (icon top-right)
+2. Left pane: Loki logs query
+3. Right pane: Prometheus metrics query
+4. Same time range → correlate log errors with metric spikes
+
+### Finding Metrics in Grafana
+
+**Prometheus** provides metrics. Access via **Explore** or **Dashboards**.
+
+#### Explore View (Ad-hoc Metric Queries)
+
+1. Navigate to: **Explore** (compass icon in sidebar)
+2. Select datasource: **Prometheus**
+3. Enter PromQL query
+4. Click **Run query**
+
+**Example queries**:
+
+```promql
+# Check if service is up
+up{job="kubernetes-pods", app="prometheus"}
+
+# Pod CPU usage (percentage of limit)
+sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (namespace, pod)
+  / sum(container_spec_cpu_quota / container_spec_cpu_period) by (namespace, pod) * 100
+
+# Pod memory usage (percentage of limit)
+sum(container_memory_working_set_bytes{container!=""}) by (namespace, pod)
+  / sum(container_spec_memory_limit_bytes{container!=""}) by (namespace, pod) * 100
+
+# Top 10 CPU consuming pods
+topk(10,
+  sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace, pod)
+)
+
+# Top 10 memory consuming pods
+topk(10,
+  sum(container_memory_working_set_bytes) by (namespace, pod)
+)
+
+# Pod restart count (last hour)
+increase(kube_pod_container_status_restarts_total[1h])
+
+# Deployment replica availability
+kube_deployment_status_replicas_available{namespace="observability"}
+
+# Network I/O rate
+sum by (pod) (
+  rate(container_network_receive_bytes_total[5m]) +
+  rate(container_network_transmit_bytes_total[5m])
+)
+
+# Disk usage percentage
+(kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100
+```
+
+**Query tips**:
+- **rate()** for counters: `rate(metric[5m])` converts counter to per-second rate
+- **increase()** for totals: `increase(metric[1h])` shows total change
+- **avg/sum/max/min** for aggregation: `avg by (namespace) (metric)`
+- **topk/bottomk** for top-N: `topk(10, metric)`
+- **Comparison operators**: `> 80`, `< 20`, `!= 0`
+
+#### Pre-built Dashboards
+
+**Kubernetes Dashboards** (imported from kube-prometheus-stack):
+
+1. **Kubernetes / Compute Resources / Cluster**:
+   - URL: https://grafana.localtest.me:9443/d/kubernetes-compute-resources-cluster
+   - Shows: Cluster-wide CPU, memory, network, disk
+
+2. **Kubernetes / Compute Resources / Namespace (Pods)**:
+   - URL: https://grafana.localtest.me:9443/d/kubernetes-compute-resources-namespace-pods
+   - Shows: Per-namespace pod resources
+   - Filter by namespace at top
+
+3. **Kubernetes / Compute Resources / Pod**:
+   - URL: https://grafana.localtest.me:9443/d/kubernetes-compute-resources-pod
+   - Shows: Individual pod metrics
+   - Filter by namespace + pod
+
+4. **Prometheus**:
+   - URL: https://grafana.localtest.me:9443/d/prometheus
+   - Shows: Prometheus self-monitoring (scrape duration, targets, storage)
+
+5. **Istio Mesh**:
+   - Shows: Service mesh metrics (request rate, latency, errors)
+
+**Navigate dashboards**:
+- **Home** → **Dashboards** → Browse by folder
+- **Search** (top-left): Type dashboard name
+- **Starred dashboards**: Click star icon to bookmark
+
+#### Common Metric Queries for Troubleshooting
+
+**Service health check**:
+```promql
+# Is service up?
+up{job="kubernetes-pods", app="<app-name>"}
+
+# Replica count
+kube_deployment_status_replicas_available{deployment="<name>"}
+```
+
+**Resource pressure**:
+```promql
+# Pods using >80% CPU
+sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace, pod)
+  / sum(container_spec_cpu_quota / container_spec_cpu_period) by (namespace, pod) * 100 > 80
+
+# Pods using >80% memory
+sum(container_memory_working_set_bytes) by (namespace, pod)
+  / sum(container_spec_memory_limit_bytes) by (namespace, pod) * 100 > 80
+
+# Node memory pressure
+kube_node_status_condition{condition="MemoryPressure", status="true"}
+```
+
+**Pod restarts**:
+```promql
+# Pods with restarts in last hour
+increase(kube_pod_container_status_restarts_total[1h]) > 0
+
+# Restart rate
+rate(kube_pod_container_status_restarts_total[5m])
+```
+
+**Disk usage**:
+```promql
+# PVCs >85% full
+(kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100 > 85
+```
+
+### Querying Observability Tools for Specific Problems
+
+**Use Claude Code skills** for common queries, or use these patterns:
+
+#### Problem: "Service is down"
+
+**Steps**:
+1. Check alert: Use `check-alerts` skill or Grafana → Alerting → Alert list
+2. Check pod status: `kubectl get pods -n <namespace> -l app=<service>`
+3. Check logs: Use `check-logs` skill or Loki query:
+   ```logql
+   {kubernetes_namespace_name="<namespace>", kubernetes_pod_name=~"<service>.*"} |= "error"
+   ```
+4. Check metrics: Use `check-metrics` skill or Prometheus query:
+   ```promql
+   up{job="kubernetes-pods", app="<service>"}
+   kube_deployment_status_replicas_available{deployment="<service>"}
+   ```
+
+#### Problem: "High CPU usage"
+
+**Steps**:
+1. Find top consumers: Use `check-metrics` skill or:
+   ```promql
+   topk(10, sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace, pod))
+   ```
+2. Check specific pod CPU:
+   ```promql
+   sum(rate(container_cpu_usage_seconds_total{pod="<pod-name>"}[5m])) by (container)
+   ```
+3. Check logs for busy work:
+   ```logql
+   {kubernetes_pod_name="<pod-name>"} |~ "processing|handling|executing"
+   ```
+4. Compare to limits:
+   ```bash
+   kubectl describe pod <pod-name> -n <namespace> | grep -A5 "Limits:"
+   ```
+
+#### Problem: "Pods restarting frequently"
+
+**Steps**:
+1. Check restart count:
+   ```promql
+   increase(kube_pod_container_status_restarts_total{pod="<pod-name>"}[1h])
+   ```
+2. Check previous logs: `kubectl logs <pod-name> -n <namespace> --previous`
+3. Check for OOM kills:
+   ```bash
+   kubectl get events -n <namespace> | grep OOM
+   ```
+4. Check resource usage before crash:
+   ```promql
+   container_memory_working_set_bytes{pod="<pod-name>"}
+   ```
+
+#### Problem: "Slow response times"
+
+**Steps**:
+1. Check Istio request duration:
+   ```promql
+   histogram_quantile(0.95, rate(istio_request_duration_milliseconds_bucket[5m]))
+   ```
+2. Check application logs for slow queries:
+   ```logql
+   {kubernetes_namespace_name="<namespace>"} |~ "slow|duration|took.*ms"
+   ```
+3. Check resource saturation:
+   ```promql
+   sum(rate(container_cpu_usage_seconds_total{namespace="<namespace>"}[5m]))
+   ```
+
+#### Problem: "Errors in logs but no alerts"
+
+**Steps**:
+1. Query error rate:
+   ```logql
+   sum by (kubernetes_namespace_name) (
+     count_over_time({kubernetes_namespace_name=~".+"} |= "error" [5m])
+   )
+   ```
+2. Check if alert exists: Grafana → Alerting → Alert rules
+3. Test alert query:
+   ```bash
+   kubectl exec -n observability deployment/grafana -- \
+     curl -s -G 'http://prometheus.observability.svc:9090/api/v1/query' \
+     --data-urlencode 'query=<alert-query>'
+   ```
+4. If no alert: Create one following [docs/04-observability/ADDING_NEW_ALERTS.md](./docs/04-observability/ADDING_NEW_ALERTS.md)
+
+#### Problem: "Certificate expiring soon"
+
+**Steps**:
+1. Check certificate status:
+   ```bash
+   kubectl get certificate -A
+   ```
+2. Check expiration via metrics:
+   ```promql
+   (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400
+   ```
+3. Check cert-manager logs:
+   ```logql
+   {kubernetes_namespace_name="cert-manager"} |= "error"
+   ```
+
+### Observability Workflow Examples
+
+#### After Deployment
+
+```bash
+# 1. Check platform health
+./scripts/platform-status.sh
+
+# 2. Check for new alerts
+# Use check-alerts skill or:
+kubectl exec -n observability deployment/grafana -- \
+  curl -s 'http://localhost:3000/api/alertmanager/grafana/api/v2/alerts' \
+  -u admin:admin123 | python3 -c "
+import sys, json
+alerts = json.load(sys.stdin)
+firing = [a for a in alerts if a.get('status', {}).get('state') == 'active']
+print(f'Firing: {len(firing)}')
+for a in firing: print(f\"  {a['labels']['alertname']}\")
+"
+
+# 3. Check logs for errors in last 15m
+# In Grafana Explore → Loki:
+{kubernetes_namespace_name="<deployed-namespace>"} |= "error"
+# Time range: Last 15 minutes
+
+# 4. Verify pod health
+kubectl get pods -n <namespace>
+```
+
+#### During Incident Investigation
+
+```bash
+# 1. Use investigate-incident skill, or manually:
+
+# 2. Capture evidence
+kubectl get pods -A | grep -vE "Running|Completed" > /tmp/failing-pods.txt
+kubectl get events -A --sort-by='.lastTimestamp' | tail -50 > /tmp/recent-events.txt
+
+# 3. Query logs around incident time
+# In Grafana → Explore → Loki
+# Set time range to incident window
+{kubernetes_namespace_name=~".+"} |= "error"
+
+# 4. Check metrics correlation
+# In Grafana → Explore → Prometheus
+# Same time range as logs
+rate(container_cpu_usage_seconds_total[5m])
+kube_pod_container_status_restarts_total
+
+# 5. Document in TODO_INCIDENTS.md
+```
+
+#### Proactive Monitoring
+
+```bash
+# Daily health check
+./scripts/platform-status.sh
+
+# Check for warnings in logs (last 24h)
+# Grafana → Explore → Loki, time range: Last 24 hours
+{kubernetes_namespace_name=~".+"} |= "warn"
+
+# Check resource trends
+# Grafana → Dashboard: "Kubernetes / Compute Resources / Cluster"
+# Look for: Increasing memory usage, CPU spikes, disk growth
+
+# Review alert history
+# Grafana → Alerting → Alert list → Show "Normal" state
+# Check which alerts fired recently and resolved
+```
+
+### Related Documentation
+
+- **Alert Runbooks**: [docs/runbooks/alerts/](./docs/runbooks/alerts/) - Alert-specific investigation steps
+- **Alert Testing**: [docs/04-observability/ALERT_TESTING_GUIDE.md](./docs/04-observability/ALERT_TESTING_GUIDE.md)
+- **Adding Alerts**: [docs/04-observability/ADDING_NEW_ALERTS.md](./docs/04-observability/ADDING_NEW_ALERTS.md)
+- **Incident Tracking**: [TODO_INCIDENTS.md](./TODO_INCIDENTS.md)
+- **Claude Code Skills**: `.claude/skills/*/SKILL.md`
+
+### Observability Best Practices
+
+1. **Check alerts first**: Before diving into logs/metrics, see if an alert fired
+2. **Follow runbooks**: Every alert has a runbook with proven steps
+3. **Use skills**: Invoke Claude Code skills for common queries
+4. **Time correlation**: Align time ranges across logs, metrics, and alerts
+5. **Capture snapshots**: Use `./scripts/capture-platform-snapshot.sh` before investigating
+6. **Document incidents**: Update TODO_INCIDENTS.md with findings
+7. **Test alert queries**: Validate PromQL queries in Prometheus before adding alerts
+
+---
+
 ## 📁 Repository Structure
 
 ```

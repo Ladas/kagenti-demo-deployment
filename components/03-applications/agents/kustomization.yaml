@@ -14,6 +14,7 @@ resources:
   - code-agent.yaml
   - orchestrator-agent.yaml
   - weather-service.yaml
+  - weather-mcp-tool.yaml
   - httproutes.yaml
 
 # Override image tags to use locally loaded images
@@ -25,6 +26,8 @@ images:
   - name: localhost:5001/orchestrator-agent
     newTag: v0.0.15
   - name: localhost:5001/weather-service
+    newTag: v0.0.1
+  - name: localhost:5001/weather-mcp-tool
     newTag: v0.0.1
 
 labels:
