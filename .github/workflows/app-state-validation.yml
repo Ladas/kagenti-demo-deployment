@@ -129,6 +129,25 @@ jobs:
           echo "✅ Operator images built and exported successfully (AMD64)"
           ls -lah .images/
 
+      - name: Clean up Docker to free disk space
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        run: |
+          echo "🧹 Cleaning up Docker resources to prevent disk exhaustion..."
+          echo "Before cleanup:"
+          df -h
+          docker system df
+
+          # Remove build cache, unused images, and stopped containers
+          docker system prune -af --volumes
+
+          # Remove operator repository clone to save space
+          rm -rf /tmp/kagenti-operator
+
+          echo ""
+          echo "After cleanup:"
+          df -h
+          docker system df
+
       - name: Deploy Platform with quick-redeploy.sh
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |
