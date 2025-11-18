@@ -278,14 +278,67 @@ The operator may start before the certificate is fully available, caching an inv
 
 ## Workarounds
 
-### Temporary: Disable Webhook Validation (NOT RECOMMENDED)
+### Option 1: Temporary Disable Webhook for Testing (DEVELOPMENT ONLY)
+
+**⚠️ WARNING**: This bypasses validation entirely. Use ONLY for development testing.
+
 ```bash
-# Patch webhook to set failurePolicy to Ignore (DANGEROUS)
+# 1. Check current failure policy
+kubectl get mutatingwebhookconfigurations kagenti-operator-mutating-webhook-configuration \
+  -o jsonpath='{.webhooks[0].failurePolicy}'
+# Output: Fail
+
+# 2. Change to Ignore (allows requests to proceed even if webhook fails)
 kubectl patch mutatingwebhookconfigurations kagenti-operator-mutating-webhook-configuration \
   --type='json' -p='[{"op": "replace", "path": "/webhooks/0/failurePolicy", "value":"Ignore"}]'
+
+# 3. Test AgentBuild creation
+./scripts/import-agents-via-ui.sh \
+  "https://github.com/redhat-et/agent-examples.git" \
+  "a2a/weather_service" \
+  "weather-agent" \
+  "team1"
+
+# 4. RESTORE original policy after testing
+kubectl patch mutatingwebhookconfigurations kagenti-operator-mutating-webhook-configuration \
+  --type='json' -p='[{"op": "replace", "path": "/webhooks/0/failurePolicy", "value":"Fail"}]'
 ```
 
-**⚠️ WARNING**: This bypasses validation and may allow invalid AgentBuilds
+**Risks**:
+- Invalid AgentBuilds may be accepted
+- Webhook mutations (defaulting, validation logic) are skipped
+- NOT suitable for production or CI
+
+**When to use**:
+- Local development testing only
+- To verify import script functionality
+- To unblock Phase 0.5 testing temporarily
+
+### Option 2: Disable Webhook Entirely (DEVELOPMENT ONLY)
+
+**⚠️ EVEN MORE DANGEROUS**: Completely removes webhook validation.
+
+```bash
+# 1. Delete webhook configuration
+kubectl delete mutatingwebhookconfigurations kagenti-operator-mutating-webhook-configuration
+
+# 2. Test AgentBuild creation
+./scripts/import-agents-via-ui.sh \
+  "https://github.com/redhat-et/agent-examples.git" \
+  "a2a/weather_service" \
+  "weather-agent" \
+  "team1"
+
+# 3. Restore webhook (requires operator restart or ArgoCD sync)
+argocd app sync kagenti-operator --port-forward --port-forward-namespace argocd --grpc-web
+```
+
+**Risks**:
+- ALL webhook functionality lost
+- No validation, no defaulting, no mutation
+- May cause operator or platform issues
+
+**NOT RECOMMENDED** - Use Option 1 instead
 
 ### Alternative: Static Agent Deployment
 Use static Kubernetes manifests instead of AgentBuild CRDs:
