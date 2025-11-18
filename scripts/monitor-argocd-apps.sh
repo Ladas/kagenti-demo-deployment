@@ -584,6 +584,10 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
                     echo -e "${RED}FAILURE: Platform did not become healthy within grace period${NC}"
                     echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
                     echo ""
+                    echo -e "${CYAN}[EXIT POINT 1] Exiting with code 1${NC}"
+                    echo -e "${CYAN}Reason: Critical app '$degraded_app' degraded for ${DEGRADED_DURATION}s (grace period: ${DEGRADED_GRACE_PERIOD}s)${NC}"
+                    echo -e "${CYAN}Elapsed time: ${ELAPSED}s / Timeout: ${MONITOR_TIMEOUT}s${NC}"
+                    echo ""
                     exit 1
                 fi
             fi
@@ -609,6 +613,10 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
         echo ""
         echo -e "${GREEN}✅ All applications are healthy and synced!${NC}"
         echo "Total time: ${ELAPSED}s ($(($ELAPSED / 60))m)"
+        echo ""
+        echo -e "${CYAN}[EXIT POINT 2] Exiting with code 0 (SUCCESS - ALL APPS HEALTHY)${NC}"
+        echo -e "${CYAN}Reason: All ${TOTAL_APPS} apps are Healthy and Synced${NC}"
+        echo -e "${CYAN}Elapsed time: ${ELAPSED}s / Timeout: ${MONITOR_TIMEOUT}s${NC}"
         echo ""
         exit 0
     fi
@@ -665,6 +673,10 @@ echo ""
 if [ $CRITICAL_FAILED -eq 1 ]; then
     echo -e "${RED}❌ Some critical applications are not healthy${NC}"
     echo ""
+    echo -e "${CYAN}[EXIT POINT 3] Exiting with code 1${NC}"
+    echo -e "${CYAN}Reason: TIMEOUT reached (${MONITOR_TIMEOUT}s) with critical apps unhealthy${NC}"
+    echo -e "${CYAN}Final status: ${FINAL_HEALTHY}/${FINAL_TOTAL} healthy, ${FINAL_SYNCED}/${FINAL_TOTAL} synced${NC}"
+    echo ""
     exit 1
 fi
 
@@ -672,11 +684,19 @@ fi
 if [ "$FINAL_HEALTHY" -eq 0 ] && [ "$FINAL_TOTAL" -gt 0 ]; then
     echo -e "${RED}❌ No healthy applications found${NC}"
     echo ""
+    echo -e "${CYAN}[EXIT POINT 4] Exiting with code 1${NC}"
+    echo -e "${CYAN}Reason: TIMEOUT reached (${MONITOR_TIMEOUT}s) with ZERO healthy apps${NC}"
+    echo -e "${CYAN}Final status: 0/${FINAL_TOTAL} healthy${NC}"
+    echo ""
     exit 1
 fi
 
 echo -e "${GREEN}✅ All critical applications are healthy${NC}"
 echo -e "${YELLOW}⚠️  Some optional applications may still be progressing (observability, Kiali, Ollama)${NC}"
+echo ""
+echo -e "${CYAN}[EXIT POINT 5] Exiting with code 0 (SUCCESS - TIMEOUT WITH CRITICAL APPS HEALTHY)${NC}"
+echo -e "${CYAN}Reason: TIMEOUT reached (${MONITOR_TIMEOUT}s) but all critical apps are healthy${NC}"
+echo -e "${CYAN}Final status: ${FINAL_HEALTHY}/${FINAL_TOTAL} healthy (critical apps: OK, optional apps: may be progressing)${NC}"
 echo ""
 
 exit 0
