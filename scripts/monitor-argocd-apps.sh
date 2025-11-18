@@ -89,6 +89,98 @@ is_agent_app() {
     return 1
 }
 
+# Function to print detailed failure information for degraded pods
+print_degraded_pod_details() {
+    local degraded_apps="$1"
+
+    if [ -z "$degraded_apps" ] || [ "$degraded_apps" = "0" ]; then
+        return
+    fi
+
+    echo ""
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${RED}⚠️  DEGRADED PODS DETECTED - Failure Details${NC}"
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Get all degraded applications
+    kubectl get applications -n "$ARGOCD_NAMESPACE" -o json 2>/dev/null | \
+        jq -r '.items[] | select(.status.health.status == "Degraded" or .status.health.status == "Missing") | .metadata.name' | \
+        while read -r app_name; do
+
+        echo -e "${YELLOW}Application: ${app_name}${NC}"
+
+        # Get the namespace from the app spec
+        local app_namespace=$(kubectl get application "$app_name" -n "$ARGOCD_NAMESPACE" -o jsonpath='{.spec.destination.namespace}' 2>/dev/null || echo "$app_name")
+
+        # Find failing pods in the namespace
+        local failing_pods=$(kubectl get pods -n "$app_namespace" --no-headers 2>/dev/null | grep -v "Running\|Completed" || echo "")
+
+        if [ -n "$failing_pods" ]; then
+            echo -e "${CYAN}  Namespace: ${app_namespace}${NC}"
+            echo ""
+
+            while IFS= read -r pod_line; do
+                local pod_name=$(echo "$pod_line" | awk '{print $1}')
+                local pod_status=$(echo "$pod_line" | awk '{print $3}')
+                local pod_ready=$(echo "$pod_line" | awk '{print $2}')
+
+                echo -e "${RED}    Pod: ${pod_name}${NC}"
+                echo -e "${RED}    Status: ${pod_status} (Ready: ${pod_ready})${NC}"
+
+                # Get pod reason/message from conditions
+                local pod_reason=$(kubectl get pod "$pod_name" -n "$app_namespace" -o jsonpath='{.status.conditions[?(@.status=="False")].reason}' 2>/dev/null || echo "Unknown")
+                local pod_message=$(kubectl get pod "$pod_name" -n "$app_namespace" -o jsonpath='{.status.conditions[?(@.status=="False")].message}' 2>/dev/null || echo "No message")
+
+                # Get container statuses
+                local container_states=$(kubectl get pod "$pod_name" -n "$app_namespace" -o jsonpath='{range .status.containerStatuses[*]}{.name}{"|"}{.state}{"\n"}{end}' 2>/dev/null)
+
+                if [ -n "$container_states" ]; then
+                    echo -e "${CYAN}    Container States:${NC}"
+                    while IFS='|' read -r container_name container_state; do
+                        if [ -n "$container_name" ]; then
+                            # Parse the state JSON
+                            local state_reason=$(echo "$container_state" | jq -r '.waiting.reason // .terminated.reason // "running"' 2>/dev/null || echo "unknown")
+                            local state_message=$(echo "$container_state" | jq -r '.waiting.message // .terminated.message // ""' 2>/dev/null || echo "")
+
+                            if [ "$state_reason" != "running" ] && [ "$state_reason" != "null" ]; then
+                                echo -e "${RED}      - ${container_name}: ${state_reason}${NC}"
+                                if [ -n "$state_message" ] && [ "$state_message" != "null" ]; then
+                                    echo -e "${RED}        Message: ${state_message}${NC}"
+                                fi
+                            fi
+                        fi
+                    done <<< "$container_states"
+                fi
+
+                # Get recent events for the pod
+                local recent_events=$(kubectl get events -n "$app_namespace" --field-selector involvedObject.name="$pod_name" --sort-by='.lastTimestamp' 2>/dev/null | tail -3 || echo "")
+                if [ -n "$recent_events" ]; then
+                    echo -e "${CYAN}    Recent Events:${NC}"
+                    echo "$recent_events" | tail -n +2 | while read -r event_line; do
+                        local event_reason=$(echo "$event_line" | awk '{print $4}')
+                        local event_message=$(echo "$event_line" | cut -d' ' -f5-)
+                        if [ -n "$event_reason" ]; then
+                            echo -e "${YELLOW}      - ${event_reason}: ${event_message}${NC}"
+                        fi
+                    done
+                fi
+
+                echo ""
+            done <<< "$failing_pods"
+        else
+            echo -e "${CYAN}  Namespace: ${app_namespace} (no failing pods found - may be resource issue)${NC}"
+            echo ""
+        fi
+
+        echo "────────────────────────────────────────────────────"
+        echo ""
+    done
+
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+}
+
 # Function to print ArgoCD application status table
 print_argocd_status_table() {
     echo ""
@@ -371,6 +463,9 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
         print_argocd_status_table
         print_pod_status_table
         print_resource_usage
+
+        # Print degraded pod details if any
+        print_degraded_pod_details "$DEGRADED_APPS"
 
         # Print progress summary
         echo -e "${CYAN}Progress Summary:${NC}"
