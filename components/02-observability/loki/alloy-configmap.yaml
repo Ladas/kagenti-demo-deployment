@@ -154,9 +154,6 @@ data:
         min_backoff_period    = "500ms"
         max_backoff_period    = "5m"
         max_backoff_retries   = 10
-
-        // Connection timeout
-        timeout = "10s"
       }
     }
 
