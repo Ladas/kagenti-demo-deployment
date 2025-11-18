@@ -564,6 +564,18 @@
             ]
           }
         ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "show": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
       }
     },
     {
@@ -593,6 +605,18 @@
             "gradientMode": "opacity"
           },
           "unit": "reqps"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "show": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
         }
       }
     },

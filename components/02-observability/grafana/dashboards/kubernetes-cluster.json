@@ -629,6 +629,18 @@
                 ]
               }
             ]
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "show": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
           }
         },
         {
