@@ -94,6 +94,10 @@ spec:
           - name: positions
             mountPath: /tmp/alloy
 
+          # Alloy data directory (required for remotecfg service)
+          - name: data
+            mountPath: /data-alloy
+
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -129,4 +133,8 @@ spec:
 
         # Position tracking (emptyDir)
         - name: positions
+          emptyDir: {}
+
+        # Alloy data directory (emptyDir)
+        - name: data
           emptyDir: {}
