@@ -17,7 +17,7 @@ ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 MONITOR_TIMEOUT="${1:-1800}"  # Default: 30 minutes (1800 seconds)
 POLL_INTERVAL=15  # Check every 15 seconds
 DEGRADED_GRACE_PERIOD=600  # 10 minutes grace period for Degraded apps to recover
-KUBECTL_TIMEOUT=30  # Timeout for kubectl commands (seconds)
+KUBECTL_TIMEOUT=60  # Timeout for kubectl commands (seconds) - increased for resource-constrained CI
 
 # Helper function: Run kubectl with timeout
 kubectl_with_timeout() {
