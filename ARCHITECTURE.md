@@ -921,7 +921,7 @@ kagenti-demo-deployment/
 ### Architecture & Design
 
 - [argocd_architecture.md](./argocd_architecture.md) - ArgoCD architecture, sync waves
-- [docs/ENCRYPTION_ARCHITECTURE.md](./docs/ENCRYPTION_ARCHITECTURE.md) - TLS 1.3 + mTLS STRICT
+- [docs/08-security/encryption.md](./docs/08-security/encryption.md) - TLS 1.3 + mTLS STRICT
 - [docs/OBSERVABILITY_ARCHITECTURE.md](./docs/OBSERVABILITY_ARCHITECTURE.md) - Dual-backend tracing
 
 ### Component Documentation

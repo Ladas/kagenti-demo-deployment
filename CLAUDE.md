@@ -859,8 +859,8 @@ kubectl get destinationrule -A
 ```
 
 **See also:**
-- [docs/ENCRYPTION_ARCHITECTURE.md](./docs/ENCRYPTION_ARCHITECTURE.md) - Full encryption architecture
-- [docs/PRODUCTION_SECURITY_ROADMAP.md](./docs/PRODUCTION_SECURITY_ROADMAP.md) - SPIRE integration roadmap
+- [docs/08-security/encryption.md](./docs/08-security/encryption.md) - Full encryption architecture
+- [TODO_SECURITY.md](./TODO_SECURITY.md) - Production security roadmap (SPIRE integration + OpenShift prep)
 
 ---
 
@@ -1651,8 +1651,8 @@ kagenti-demo-deployment/
 ## 📚 Further Reading
 
 - [argocd_architecture.md](./argocd_architecture.md) - ArgoCD architecture and sync waves
-- [docs/ENCRYPTION_ARCHITECTURE.md](./docs/ENCRYPTION_ARCHITECTURE.md) - Encryption and mTLS
-- [docs/INTEGRATION_TESTS.md](./docs/INTEGRATION_TESTS.md) - Testing strategy
+- [docs/08-security/encryption.md](./docs/08-security/encryption.md) - Encryption and mTLS
+- [docs/CI_CD_TESTING.md](./docs/CI_CD_TESTING.md) - Integration testing strategy
 - [TODO_TESTS.md](./TODO_TESTS.md) - Testing roadmap
 - [ArgoCD Best Practices](https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/)
 - [Istio mTLS](https://istio.io/latest/docs/concepts/security/#mutual-tls-authentication)

@@ -645,7 +645,7 @@ See [CLAUDE.md](./CLAUDE.md) for:
 ### Internal Documentation
 
 - [argocd_architecture.md](./argocd_architecture.md) - ArgoCD architecture and sync waves
-- [ENCRYPTION_ARCHITECTURE.md](./docs/ENCRYPTION_ARCHITECTURE.md) - Encryption and mTLS details
+- [docs/08-security/encryption.md](./docs/08-security/encryption.md) - Encryption and mTLS details
 - [OBSERVABILITY_ARCHITECTURE.md](./docs/OBSERVABILITY_ARCHITECTURE.md) - Dual-backend tracing architecture
 - [HTTPS_ACCESS_GUIDE.md](./HTTPS_ACCESS_GUIDE.md) - Service URLs and access details
 - [HTTPS_ENFORCEMENT_SUMMARY.md](./HTTPS_ENFORCEMENT_SUMMARY.md) - TLS implementation details

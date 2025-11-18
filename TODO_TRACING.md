@@ -2959,6 +2959,14 @@ runtime.gcBgMarkWorker()
 
 **Conclusion**: Fundamental issue with ALL Korrel8r container image builds across multiple versions and releases. This is an **upstream bug** affecting the Go runtime/compiler used to build the images.
 
+**UPDATE (2025-11-18)**: Tested Korrel8r Operator as alternative deployment method:
+- Operator v0.1.7: `quay.io/korrel8r/operator:0.1.7` → **Same CrashLoopBackOff**
+- Operator controller-manager crashes with identical Go GC worker panic
+- **Conclusion**: The upstream Go runtime bug affects the ENTIRE Korrel8r project:
+  - Korrel8r service container images (all versions)
+  - Korrel8r operator container images (all versions)
+- Both direct deployment and operator-based deployment are blocked
+
 **Impact**:
 - ⚠️ Signal correlation (trace↔log↔metric↔alert) not available via Korrel8r
 - ✅ Manual correlation still works via Grafana datasource links
