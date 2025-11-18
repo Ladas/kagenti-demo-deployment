@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/Ladas/kagenti-demo-deployment
     # TODO: Change to your fork URL
-    targetRevision: argocd-gitops-dev-phase-1
+    targetRevision: argocd-gitops-dev-phase-2
     # TODO: Change to main when ready
     path: operators/overlays/local/platform-operator
     # This overlay references the operator repo remotely and patches for local dev

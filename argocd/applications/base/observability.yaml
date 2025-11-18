@@ -15,7 +15,7 @@ spec:
 
   source:
     repoURL: https://github.com/Ladas/kagenti-demo-deployment.git
-    targetRevision: argocd-gitops-dev-phase-1
+    targetRevision: argocd-gitops-dev-phase-2
     path: components/02-observability
 
   destination:
