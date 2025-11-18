@@ -407,14 +407,25 @@ print_resource_usage() {
         printf "Available: %.2f GB\n" "$MEM_AVAILABLE_GB"
     fi
 
-    # Disk usage
-    if command -v df &> /dev/null; then
-        DISK_USAGE=$(df -BG /var/lib/docker 2>/dev/null | tail -1 | awk '{print $3,$2,$5}' || echo "N/A N/A N/A")
-        DISK_USED=$(echo $DISK_USAGE | awk '{print $1}')
-        DISK_TOTAL=$(echo $DISK_USAGE | awk '{print $2}')
-        DISK_PCT=$(echo $DISK_USAGE | awk '{print $3}')
+    # Disk usage - use docker system df (works on Linux and macOS)
+    if command -v docker &> /dev/null; then
+        # Get Docker disk usage
+        DOCKER_DISK=$(docker system df 2>/dev/null | grep "Images\|Containers\|Volumes\|Build" | awk '{sum+=$4} END {printf "%.1fGB", sum}')
 
-        printf "Disk (docker): %s / %s (%s)\n" "$DISK_USED" "$DISK_TOTAL" "$DISK_PCT"
+        # Get total disk (Linux: /var/lib/docker, macOS: root filesystem)
+        if [ -d /var/lib/docker ]; then
+            # Linux (CI)
+            DISK_TOTAL=$(df -BG /var/lib/docker 2>/dev/null | tail -1 | awk '{print $2}' | sed 's/G/GB/')
+            DISK_AVAIL=$(df -BG /var/lib/docker 2>/dev/null | tail -1 | awk '{print $4}' | sed 's/G/GB/')
+            DISK_PCT=$(df -BG /var/lib/docker 2>/dev/null | tail -1 | awk '{print $5}')
+        else
+            # macOS (local dev)
+            DISK_TOTAL=$(df -h / | tail -1 | awk '{print $2}')
+            DISK_AVAIL=$(df -h / | tail -1 | awk '{print $4}')
+            DISK_PCT=$(df -h / | tail -1 | awk '{print $5}')
+        fi
+
+        printf "Disk: %s total, %s Docker, %s avail (%s used)\n" "$DISK_TOTAL" "$DOCKER_DISK" "$DISK_AVAIL" "$DISK_PCT"
     fi
 
     # CPU load

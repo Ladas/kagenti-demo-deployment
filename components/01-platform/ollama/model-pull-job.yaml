@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: ollama-model-pull
+      annotations:
+        sidecar.istio.io/inject: "false"  # No sidecar - Ollama has no sidecar, must use plain HTTP
     spec:
       restartPolicy: OnFailure
       containers:
@@ -24,9 +26,16 @@ spec:
         - |
           set -e
           echo "Waiting for Ollama service to be ready..."
+          TIMEOUT=300  # 5 minutes
+          ELAPSED=0
           until curl -sf http://ollama.kagenti-system.svc.cluster.local:11434/ > /dev/null; do
-            echo "Ollama not ready, waiting..."
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "ERROR: Ollama service did not become ready within ${TIMEOUT}s"
+              exit 1
+            fi
+            echo "Ollama not ready, waiting... (${ELAPSED}s / ${TIMEOUT}s)"
             sleep 5
+            ELAPSED=$((ELAPSED + 5))
           done
 
           echo "Ollama is ready, pulling Qwen model..."
