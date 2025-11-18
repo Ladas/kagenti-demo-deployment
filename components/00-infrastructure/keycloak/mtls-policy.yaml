@@ -10,10 +10,10 @@ spec:
     mode: STRICT
 
 ---
-# Port-level mTLS policy for Keycloak (ingress from Istio Gateway)
-# Gateway pod HAS Istio sidecar, uses mTLS for all traffic
-# STRICT mode enforces encryption for all service-to-service traffic
-# Gateway terminates TLS from client, sends mTLS to Keycloak sidecar
+# Port-level mTLS policy for Keycloak
+# Port 8080: STRICT mTLS for application traffic (OAuth2, API calls)
+# Port 9000: DISABLE mTLS for health checks (kubelet doesn't have sidecar)
+# This allows secure service-to-service communication while enabling health probes
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
@@ -24,7 +24,10 @@ spec:
     matchLabels:
       app: keycloak
   mtls:
-    mode: STRICT  # Enforce mTLS on all ports including 8080
+    mode: STRICT  # Default: enforce mTLS on all ports
+  portLevelMtls:
+    9000:
+      mode: DISABLE  # Allow kubelet health checks without mTLS
 
 ---
 # Disable mTLS for PostgreSQL service
