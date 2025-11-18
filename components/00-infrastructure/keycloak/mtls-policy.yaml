@@ -42,9 +42,9 @@ spec:
       mode: DISABLE
 
 ---
-# Disable mTLS for Keycloak service
-# Keycloak does NOT have Istio sidecar (plain keycloak container)
-# Pods with sidecars connect to Keycloak via plain HTTP (no mTLS)
+# Enable mTLS for Keycloak service
+# Keycloak HAS Istio sidecar injected
+# Pods with sidecars connect to Keycloak via mTLS
 # Service name: 'keycloak' (vanilla StatefulSet deployment, not operator)
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
@@ -55,4 +55,4 @@ spec:
   host: keycloak.keycloak.svc.cluster.local
   trafficPolicy:
     tls:
-      mode: DISABLE
+      mode: ISTIO_MUTUAL
