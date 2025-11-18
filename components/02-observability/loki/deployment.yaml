@@ -33,6 +33,27 @@ spec:
         runAsNonRoot: true
         runAsUser: 10001
 
+      # Fix permissions on hostPath volumes before Loki starts
+      initContainers:
+      - name: fix-permissions
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          chown -R 10001:10001 /loki
+          chown -R 10001:10001 /wal
+          chmod -R 755 /loki
+          chmod -R 755 /wal
+        volumeMounts:
+        - name: storage
+          mountPath: /loki
+        - name: wal
+          mountPath: /wal
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+
       containers:
       - name: loki
         image: grafana/loki:3.0.0
