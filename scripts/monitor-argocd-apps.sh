@@ -166,6 +166,34 @@ print_degraded_pod_details() {
                     done
                 fi
 
+                # Get recent error logs from failing containers
+                echo -e "${CYAN}    Recent Container Logs (last 20 lines with errors):${NC}"
+                local has_logs=false
+
+                # Try current pod logs
+                local current_logs=$(kubectl logs "$pod_name" -n "$app_namespace" --all-containers=true --tail=20 2>/dev/null | grep -iE "error|fatal|panic|exception|failed" || echo "")
+                if [ -n "$current_logs" ]; then
+                    has_logs=true
+                    echo -e "${RED}      [Current]${NC}"
+                    echo "$current_logs" | while IFS= read -r log_line; do
+                        echo -e "${RED}        $log_line${NC}"
+                    done
+                fi
+
+                # Try previous pod logs (for CrashLoopBackOff)
+                local previous_logs=$(kubectl logs "$pod_name" -n "$app_namespace" --all-containers=true --previous --tail=20 2>/dev/null | grep -iE "error|fatal|panic|exception|failed" || echo "")
+                if [ -n "$previous_logs" ]; then
+                    has_logs=true
+                    echo -e "${RED}      [Previous - before crash]${NC}"
+                    echo "$previous_logs" | while IFS= read -r log_line; do
+                        echo -e "${RED}        $log_line${NC}"
+                    done
+                fi
+
+                if [ "$has_logs" = false ]; then
+                    echo -e "${YELLOW}      (no error logs found in last 20 lines)${NC}"
+                fi
+
                 echo ""
             done <<< "$failing_pods"
         else
