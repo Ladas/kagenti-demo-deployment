@@ -146,15 +146,14 @@ data:
         url = "http://loki-query-frontend.observability.svc:3100/loki/api/v1/push"
 
         // Batch configuration for efficient log shipping
-        batch_size = "1MiB"
         batch_wait = "1s"
+        batch_size = "1MiB"
 
-        // Retry configuration
-        backoff_config {
-          min_period = "500ms"
-          max_period = "5m"
-          max_retries = 10
-        }
+        // Retry configuration (Alloy v1.5.1 syntax)
+        retry_on_http_429     = true
+        min_backoff_period    = "500ms"
+        max_backoff_period    = "5m"
+        max_backoff_retries   = 10
 
         // Connection timeout
         timeout = "10s"
