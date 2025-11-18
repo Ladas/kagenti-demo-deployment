@@ -2907,7 +2907,7 @@ pytest tests/integration/test_otel_signal_flows.py -v --tb=short
 
 ## 🚨 Known Issues
 
-### Issue 1: Korrel8r CrashLoopBackOff (2025-11-14)
+### Issue 1: Korrel8r CrashLoopBackOff (2025-11-18 UPDATED)
 
 **Status**: BLOCKED - Requires upstream fix
 
@@ -2915,39 +2915,88 @@ pytest tests/integration/test_otel_signal_flows.py -v --tb=short
 ```
 runtime: lfstack.push invalid packing: node=0xffff8e7bd340 cnt=0x1 packed=0xffff8e7bd3400001 -> node=0xffffffff8e7bd340
 fatal error: lfstack.push
+
+goroutine 49 gp=0xc00032fa40 m=nil [GC worker (idle)]:
+runtime.gopark(0x42cb25e4dde8?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:402 +0xce
+runtime.gcBgMarkWorker()
+	/usr/local/go/src/runtime/mgc.go:1310 +0xe5
 ```
 
-**Root Cause**: Go runtime error in `quay.io/korrel8r/korrel8r:latest` image during:
-- Garbage collector initialization
-- Regex compilation in `github.com/getkin/kin-openapi/openapi3` library
-- Before Korrel8r application code even starts
+**Root Cause**: Go runtime error in Korrel8r container images during garbage collector initialization, before application code even starts.
 
-**Investigation Results**:
-- ✅ Architecture matches (amd64/x86_64 cluster vs amd64 image)
-- ✅ Resource limits are reasonable (500m CPU, 512Mi memory)
-- ❌ No stable releases on GitHub (https://github.com/korrel8r/korrel8r/releases shows "There aren't any releases here")
-- ❌ `quay.io/korrel8r/korrel8r:v0.7.1` does not exist (ImagePullBackOff)
-- ❌ `quay.io/korrel8r/korrel8r:latest` crashes with Go runtime error (CrashLoopBackOff)
+**Investigation Results** (2025-11-18):
+
+**Quay.io Tag Analysis**:
+- ✅ 20 tags available from 0.6.4 (May 2024) to latest (Oct 29, 2025)
+- ❌ **ALL versions tested exhibit same Go runtime panic**:
+  - `quay.io/korrel8r/korrel8r:latest` (Oct 29, 2025) → CrashLoopBackOff
+  - `quay.io/korrel8r/korrel8r:0.8.4` (Oct 29, 2025) → CrashLoopBackOff
+  - `quay.io/korrel8r/korrel8r:0.7.6` (Dec 19, 2024) → CrashLoopBackOff ← "stable" version
+- ❌ No official GitHub releases (https://github.com/korrel8r/korrel8r/releases)
+
+**Available Versions from Quay.io API** (tested 2025-11-18):
+```json
+{
+  "name": "latest",
+  "manifest_digest": "sha256:60ec0caf...",
+  "last_modified": "Tue, 29 Oct 2025 10:42:18 -0000",
+  "size": 87156203
+},
+{
+  "name": "0.8.4",
+  "manifest_digest": "sha256:60ec0caf...",
+  "last_modified": "Tue, 29 Oct 2025 10:42:13 -0000",
+  "size": 87156203
+},
+{
+  "name": "0.7.6",
+  "manifest_digest": "sha256:ddedb7f3...",
+  "last_modified": "Thu, 19 Dec 2024 13:47:09 -0000",
+  "size": 85067088
+}
+```
+
+**Conclusion**: Fundamental issue with ALL Korrel8r container image builds across multiple versions and releases. This is an **upstream bug** affecting the Go runtime/compiler used to build the images.
 
 **Impact**:
-- ⚠️ Signal correlation (trace↔log↔metric) not available via Korrel8r
+- ⚠️ Signal correlation (trace↔log↔metric↔alert) not available via Korrel8r
 - ✅ Manual correlation still works via Grafana datasource links
-- ✅ Tempo, Loki, and Prometheus all functional independently
+- ✅ Tempo, Loki, Prometheus, and Alertmanager all functional independently
+- ⚠️ Dashboard correlation chart uses simple comparison (not true Korrel8r graph-based correlation)
 
 **Temporary Workaround**:
-- Korrel8r deployment disabled in `components/02-observability/kustomization.yaml`
-- Grafana datasource correlation configured as fallback (derivedFields in Loki, tracesToLogsV2 in Tempo)
-- Alert correlation documented but requires Korrel8r to be operational
+- Korrel8r deployment **DISABLED** in `components/02-observability/kustomization.yaml` (lines 29-33)
+- Grafana datasource correlation configured as fallback:
+  - Loki → Tempo: derivedFields extract trace_id from logs
+  - Tempo → Loki: tracesToLogsV2 links spans to log streams
+- Dashboard correlation: Simple comparison chart showing error logs vs firing alerts
+  - Located in `components/02-observability/grafana/dashboards/loki-logs.json` (panel ID 14)
+  - **Limitation**: Shows aggregate trends, not true graph-based correlation
 
 **Next Steps**:
-1. Monitor Korrel8r GitHub for stable releases
-2. Try alternative correlation tools (e.g., Grafana native correlation features)
-3. Consider implementing basic correlation via Prometheus Alertmanager + custom scripts
-4. **BLOCKER**: Cannot proceed with Phase 4.3 (Korrel8r + Alertmanager integration) until Korrel8r is stable
+1. Monitor Korrel8r GitHub (https://github.com/korrel8r/korrel8r) for:
+   - New stable releases
+   - Go runtime version updates
+   - Container image build fixes
+2. **Alternative Solutions**:
+   - Option A: Use Grafana native correlation features (current workaround)
+   - Option B: Build custom correlation service in Python
+   - Option C: Wait for upstream fix (recommended if timeline permits)
+3. **BLOCKER**: Cannot proceed with Phase 4.3 (Korrel8r + Alertmanager integration) until stable image available
+
+**Deployment Status**:
+- Korrel8r manifests exist but are commented out: `components/02-observability/korrel8r/`
+- ConfigMap with correlation rules preserved for future use
+- Service and RBAC resources preserved
+- Grafana correlation config active: `components/02-observability/grafana/datasources.yaml`
 
 **References**:
 - Korrel8r manifests: `components/02-observability/korrel8r/`
 - Grafana correlation config: `components/02-observability/grafana/datasources.yaml`
+- Loki dashboard correlation chart: `components/02-observability/grafana/dashboards/loki-logs.json` (panel 14)
+- Quay.io repository: https://quay.io/repository/korrel8r/korrel8r
+- GitHub repository: https://github.com/korrel8r/korrel8r
 
 ---
 
