@@ -73,17 +73,38 @@ jobs:
             echo "mode=kind" >> $GITHUB_OUTPUT
           fi
 
-      - name: Maximize build disk space
+      - name: Free up disk space (manual cleanup)
         if: steps.cluster_mode.outputs.mode == 'kind'
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 4096        # Reserve 4GB for OS
-          swap-size-mb: 1024           # 1GB swap
-          remove-dotnet: 'true'        # ~20GB freed
-          remove-android: 'true'       # ~10GB freed
-          remove-haskell: 'true'       # ~5GB freed
-          remove-codeql: 'true'        # ~5GB freed
-          remove-docker-images: 'true' # ~5GB freed (pre-installed images we don't need)
+        run: |
+          echo "🧹 Freeing up disk space by removing pre-installed software..."
+          echo "Disk usage BEFORE cleanup:"
+          df -h /
+
+          # Remove large pre-installed software
+          echo "Removing .NET SDK (~20GB)..."
+          sudo rm -rf /usr/share/dotnet || true
+
+          echo "Removing Android SDK (~10GB)..."
+          sudo rm -rf /usr/local/lib/android || true
+
+          echo "Removing Haskell (~5GB)..."
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+
+          echo "Removing CodeQL (~5GB)..."
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+
+          echo "Removing unused tools..."
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /usr/local/share/chromium || true
+          sudo rm -rf /usr/local/lib/node_modules || true
+
+          echo ""
+          echo "Disk usage AFTER cleanup:"
+          df -h /
+
+          echo ""
+          echo "✅ Cleanup complete"
 
       - name: Set up Docker (for Kind)
         if: steps.cluster_mode.outputs.mode == 'kind'
