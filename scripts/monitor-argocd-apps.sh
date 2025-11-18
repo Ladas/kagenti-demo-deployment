@@ -513,13 +513,9 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
 
     # Only update display if status changed
     if [ "$CURRENT_STATUS" != "$LAST_STATUS" ]; then
-        # Only clear screen if in interactive terminal (not CI)
-        if [ -t 1 ] && [ -n "${TERM:-}" ]; then
-            clear
-        else
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        fi
+        # Don't clear screen, just print separator
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         echo -e "${BLUE}Monitoring ArgoCD Applications with Enhanced Status Tables...${NC}"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -581,8 +577,8 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
 
         LAST_STATUS="$CURRENT_STATUS"
     else
-        # Status unchanged - print heartbeat every 60 seconds
-        if [ $((ELAPSED % 60)) -eq 0 ] && [ "$ELAPSED" -gt 0 ]; then
+        # Status unchanged - print heartbeat every 30 seconds
+        if [ $((ELAPSED % 30)) -eq 0 ] && [ "$ELAPSED" -gt 0 ]; then
             TIMESTAMP=$(date "+%H:%M:%S")
             echo ""
             echo -e "${CYAN}[$TIMESTAMP] Heartbeat: Monitoring... (${ELAPSED}s elapsed, status unchanged)${NC}"
