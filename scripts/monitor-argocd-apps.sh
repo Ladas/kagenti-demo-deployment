@@ -17,6 +17,33 @@ ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 MONITOR_TIMEOUT="${1:-1800}"  # Default: 30 minutes (1800 seconds)
 POLL_INTERVAL=15  # Check every 15 seconds
 DEGRADED_GRACE_PERIOD=600  # 10 minutes grace period for Degraded apps to recover
+KUBECTL_TIMEOUT=30  # Timeout for kubectl commands (seconds)
+
+# Helper function: Run kubectl with timeout
+kubectl_with_timeout() {
+    local timeout_duration=${KUBECTL_TIMEOUT}
+    local cmd="$@"
+
+    # Run command in background
+    eval "$cmd" &
+    local cmd_pid=$!
+
+    # Wait with timeout
+    local count=0
+    while kill -0 $cmd_pid 2>/dev/null; do
+        if [ $count -ge $timeout_duration ]; then
+            kill -9 $cmd_pid 2>/dev/null
+            echo "ERROR: kubectl command timed out after ${timeout_duration}s" >&2
+            return 124  # timeout exit code
+        fi
+        sleep 1
+        count=$((count + 1))
+    done
+
+    # Get exit code
+    wait $cmd_pid
+    return $?
+}
 
 # Track when apps first became Degraded (file-based, bash 3.2 compatible)
 # Creates timestamped files in /tmp/argocd-monitor-degraded-<app-name>
@@ -420,8 +447,29 @@ LAST_STATUS=""
 while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
     ELAPSED=$(($(date +%s) - MONITOR_START))
 
-    # Get all applications
-    ALL_APPS=$(kubectl get applications -n "$ARGOCD_NAMESPACE" -o json 2>/dev/null)
+    # Get all applications (with timeout)
+    KUBECTL_OUTPUT_FILE=$(mktemp)
+    (kubectl get applications -n "$ARGOCD_NAMESPACE" -o json 2>/dev/null > "$KUBECTL_OUTPUT_FILE") &
+    KUBECTL_PID=$!
+
+    # Wait for kubectl with timeout
+    KUBECTL_COUNT=0
+    while kill -0 $KUBECTL_PID 2>/dev/null; do
+        if [ $KUBECTL_COUNT -ge $KUBECTL_TIMEOUT ]; then
+            kill -9 $KUBECTL_PID 2>/dev/null
+            rm -f "$KUBECTL_OUTPUT_FILE"
+            echo -e "${RED}ERROR: kubectl get applications timed out after ${KUBECTL_TIMEOUT}s${NC}"
+            echo -e "${RED}ArgoCD may be unresponsive. Waiting ${POLL_INTERVAL}s before retry...${NC}"
+            sleep $POLL_INTERVAL
+            continue
+        fi
+        sleep 1
+        KUBECTL_COUNT=$((KUBECTL_COUNT + 1))
+    done
+
+    # Read result
+    ALL_APPS=$(cat "$KUBECTL_OUTPUT_FILE" 2>/dev/null)
+    rm -f "$KUBECTL_OUTPUT_FILE"
 
     if [ -z "$ALL_APPS" ] || [ "$ALL_APPS" = "null" ]; then
         echo "Waiting for applications to appear..."
@@ -532,6 +580,14 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
         fi
 
         LAST_STATUS="$CURRENT_STATUS"
+    else
+        # Status unchanged - print heartbeat every 60 seconds
+        if [ $((ELAPSED % 60)) -eq 0 ] && [ "$ELAPSED" -gt 0 ]; then
+            TIMESTAMP=$(date "+%H:%M:%S")
+            echo ""
+            echo -e "${CYAN}[$TIMESTAMP] Heartbeat: Monitoring... (${ELAPSED}s elapsed, status unchanged)${NC}"
+            echo -e "${CYAN}  Apps: ${HEALTHY_APPS}/${TOTAL_APPS} Healthy | Synced: ${SYNCED_APPS}/${TOTAL_APPS}${NC}"
+        fi
     fi
 
     # Check for failure conditions with grace period
@@ -631,8 +687,27 @@ echo ""
 echo -e "${YELLOW}⚠️  Timeout reached after ${MONITOR_TIMEOUT}s ($(($MONITOR_TIMEOUT / 60))m)${NC}"
 echo ""
 
-# Final status check
-FINAL_APPS=$(kubectl get applications -n "$ARGOCD_NAMESPACE" -o json 2>/dev/null)
+# Final status check (with timeout)
+FINAL_APPS_FILE=$(mktemp)
+(kubectl get applications -n "$ARGOCD_NAMESPACE" -o json 2>/dev/null > "$FINAL_APPS_FILE") &
+FINAL_KUBECTL_PID=$!
+
+# Wait with timeout
+FINAL_COUNT=0
+while kill -0 $FINAL_KUBECTL_PID 2>/dev/null; do
+    if [ $FINAL_COUNT -ge $KUBECTL_TIMEOUT ]; then
+        kill -9 $FINAL_KUBECTL_PID 2>/dev/null
+        echo -e "${RED}WARNING: Final kubectl check timed out - using last known status${NC}"
+        echo "$ALL_APPS" > "$FINAL_APPS_FILE"  # Use last successful result
+        break
+    fi
+    sleep 1
+    FINAL_COUNT=$((FINAL_COUNT + 1))
+done
+
+FINAL_APPS=$(cat "$FINAL_APPS_FILE" 2>/dev/null)
+rm -f "$FINAL_APPS_FILE"
+
 FINAL_HEALTHY=$(echo "$FINAL_APPS" | jq -r '[.items[] | select(.status.health.status == "Healthy")] | length')
 FINAL_TOTAL=$(echo "$FINAL_APPS" | jq -r '.items | length')
 FINAL_SYNCED=$(echo "$FINAL_APPS" | jq -r '[.items[] | select(.status.sync.status == "Synced")] | length')
