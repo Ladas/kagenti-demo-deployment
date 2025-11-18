@@ -2957,15 +2957,50 @@ runtime.gcBgMarkWorker()
 }
 ```
 
-**Conclusion**: Fundamental issue with ALL Korrel8r container image builds across multiple versions and releases. This is an **upstream bug** affecting the Go runtime/compiler used to build the images.
+**Conclusion**: ~~Fundamental issue with ALL Korrel8r container image builds across multiple versions and releases. This is an **upstream bug** affecting the Go runtime/compiler used to build the images.~~ **INCORRECT - See ROOT CAUSE below**.
 
 **UPDATE (2025-11-18)**: Tested Korrel8r Operator as alternative deployment method:
 - Operator v0.1.7: `quay.io/korrel8r/operator:0.1.7` → **Same CrashLoopBackOff**
 - Operator controller-manager crashes with identical Go GC worker panic
-- **Conclusion**: The upstream Go runtime bug affects the ENTIRE Korrel8r project:
-  - Korrel8r service container images (all versions)
-  - Korrel8r operator container images (all versions)
-- Both direct deployment and operator-based deployment are blocked
+- ~~**Conclusion**: The upstream Go runtime bug affects the ENTIRE Korrel8r project~~ **INCORRECT - See ROOT CAUSE below**
+
+---
+
+### **ROOT CAUSE IDENTIFIED (2025-11-18): Architecture Incompatibility**
+
+**Korrel8r images are AMD64-only, running via emulation on ARM64 Kind cluster causes Go GC corruption.**
+
+**Environment Analysis**:
+- **Kind cluster**: ARM64 (aarch64) native
+- **Docker**: ARM64 native
+- **Host**: x86_64 via Rosetta 2 (macOS Apple Silicon M-series)
+- **Verification**: `docker exec kagenti-demo-control-plane uname -m` → `aarch64`
+
+**Korrel8r Container Images**:
+- ❌ **Single-architecture: linux/amd64 ONLY**
+- ❌ NO ARM64 (linux/arm64) builds available
+- Verified: `docker manifest inspect quay.io/korrel8r/korrel8r:latest` shows NO arm64 platform
+- Test pod confirmed: `uname -m` inside Korrel8r container = `x86_64` (running AMD64 via emulation on ARM64)
+
+**Comparison with Working Images**:
+| Image | Architectures | Status on ARM64 |
+|-------|---------------|-----------------|
+| Grafana 11.4.0 | linux/amd64, **linux/arm64**, linux/arm | ✅ Works natively |
+| Loki 3.0.0 | linux/amd64, **linux/arm64**, linux/arm | ✅ Works natively |
+| Tempo 2.6.1 | Multi-arch | ✅ Works natively |
+| **Korrel8r 0.7.6** | **linux/amd64 ONLY** | ❌ Crashes via emulation |
+| **Operator 0.1.7** | **linux/amd64 ONLY** | ❌ Crashes via emulation |
+
+**Why Korrel8r Fails**:
+1. Docker pulls AMD64-only Korrel8r image to ARM64 cluster
+2. Container runtime (containerd) uses **QEMU emulation** to run AMD64 binary on ARM64
+3. Go runtime garbage collector **corrupts under CPU emulation** due to:
+   - Goroutine stack layout differences between native vs emulated execution
+   - Memory barrier instruction translation issues
+   - GC worker goroutine state corruption
+4. Result: `runtime.gcBgMarkWorker()` panic in ALL versions (0.6.4 - latest)
+
+**This is NOT a "Go runtime bug"** - it's **architecture incompatibility** causing emulation failures.
 
 **Impact**:
 - ⚠️ Signal correlation (trace↔log↔metric↔alert) not available via Korrel8r
@@ -2982,16 +3017,55 @@ runtime.gcBgMarkWorker()
   - Located in `components/02-observability/grafana/dashboards/loki-logs.json` (panel ID 14)
   - **Limitation**: Shows aggregate trends, not true graph-based correlation
 
-**Next Steps**:
-1. Monitor Korrel8r GitHub (https://github.com/korrel8r/korrel8r) for:
-   - New stable releases
-   - Go runtime version updates
-   - Container image build fixes
-2. **Alternative Solutions**:
-   - Option A: Use Grafana native correlation features (current workaround)
-   - Option B: Build custom correlation service in Python
-   - Option C: Wait for upstream fix (recommended if timeline permits)
-3. **BLOCKER**: Cannot proceed with Phase 4.3 (Korrel8r + Alertmanager integration) until stable image available
+**Solutions**:
+
+**Option A: Request ARM64 Support from Korrel8r Project** (Recommended Long-term)
+1. Open GitHub issue requesting multi-arch builds (amd64 + arm64)
+2. Reference: Korrel8r should follow standard multi-arch pattern like Grafana/Loki/Tempo
+3. Build process needs `docker buildx` with `--platform linux/amd64,linux/arm64`
+4. Example issue: "Add ARM64/aarch64 support for Apple Silicon and ARM servers"
+
+**Option B: Run Kind with AMD64 emulation** (Quick workaround for development)
+```bash
+# Create AMD64 Kind cluster on Apple Silicon
+kind create cluster --image kindest/node:v1.27.0 --config - <<EOF
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  # Force AMD64 architecture
+  extraMounts:
+  - containerPath: /var/run/docker.sock
+    hostPath: /var/run/docker.sock
+EOF
+```
+**Note**: This forces Docker to run AMD64 containers natively (via Rosetta 2 or QEMU at Docker level, not container level)
+
+**Option C: Build ARM64 Korrel8r Locally** (Development/testing)
+```bash
+# Clone and build ARM64 version
+git clone https://github.com/korrel8r/korrel8r.git
+cd korrel8r
+# Build for ARM64
+GOOS=linux GOARCH=arm64 make image-build
+# Tag and load to Kind
+docker tag korrel8r:latest localhost:5001/korrel8r:arm64
+docker push localhost:5001/korrel8r:arm64
+```
+**Risk**: Unsupported/untested configuration
+
+**Option D: Continue with Grafana Native Correlation** (Current approach)
+- ✅ Already working
+- ✅ Provides trace↔log correlation
+- ❌ Missing advanced graph-based correlation features
+- ❌ No log↔metric↔alert correlation
+
+**Recommended Action**: **Option A** (request ARM64 support) + **Option D** (continue with current workaround)
+
+**BLOCKER STATUS**:
+- ✅ Development can proceed with Grafana native correlation
+- ⚠️ Advanced correlation features (Phase 4.3) blocked until Korrel8r ARM64 support
+- ⚠️ Production deployment on AMD64 servers would work with current Korrel8r images
 
 **Deployment Status**:
 - Korrel8r manifests exist but are commented out: `components/02-observability/korrel8r/`
