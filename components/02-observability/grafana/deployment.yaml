@@ -28,9 +28,22 @@ data:
         type: tempo
         access: proxy
         url: http://tempo.observability.svc:3200
+        uid: tempo
         editable: true
         jsonData:
           httpMethod: GET
+          # Trace → Log correlation
+          tracesToLogsV2:
+            datasourceUid: 'loki'
+            spanStartTimeShift: '-1h'
+            spanEndTimeShift: '1h'
+            filterByTraceID: true
+            filterBySpanID: false
+            customQuery: false
+            tags:
+              - key: 'service.name'
+                value: 'app'
+          # Trace → Metric correlation
           tracesToMetrics:
             datasourceUid: 'otel-metrics'
             queries:
@@ -46,17 +59,19 @@ data:
         type: loki
         access: proxy
         url: http://loki-query-frontend.observability.svc:3100
+        uid: loki
         editable: true
         jsonData:
           httpMethod: GET
           maxLines: 1000
+          # Log → Trace correlation
           derivedFields:
             # Extract trace_id from logs and link to Tempo
             - datasourceUid: tempo
               matcherRegex: "trace_id[=:]\\s*(\\w+)"
               name: TraceID
               url: "$${__value.raw}"
-            # Extract request_id from logs
+            # Extract request_id from logs for correlation
             - matcherRegex: "request_id[=:]\\s*(\\w+)"
               name: RequestID
               url: ""
