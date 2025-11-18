@@ -449,9 +449,9 @@ groups:
           component: alertmanager
           layer: observability
 
-      # Promtail DaemonSet health
-      - uid: promtail-pods-down
-        title: Promtail Log Collection Degraded
+      # Alloy DaemonSet health (replaces Promtail)
+      - uid: alloy-pods-down
+        title: Alloy Telemetry Collection Degraded
         condition: A
         data:
           - refId: A
@@ -462,45 +462,19 @@ groups:
             datasourceUid: PBFA97CFB590B2093
             model:
               expr: |
-                (kube_daemonset_status_number_available{namespace="observability",daemonset="promtail"}
-                / kube_daemonset_status_desired_number_scheduled{namespace="observability",daemonset="promtail"}) < 0.8
+                (kube_daemonset_status_number_available{namespace="observability",daemonset="alloy"}
+                / kube_daemonset_status_desired_number_scheduled{namespace="observability",daemonset="alloy"}) < 0.8
               refId: A
         noDataState: OK
         execErrState: OK
         for: 5m
         annotations:
-          description: 'Less than 80% of Promtail pods are running. Log collection is degraded.'
-          summary: Promtail DaemonSet has insufficient replicas
+          description: 'Less than 80% of Alloy pods are running. Log and telemetry collection is degraded.'
+          summary: Alloy DaemonSet has insufficient replicas
+          runbook_url: 'https://grafana.com/docs/alloy/latest/troubleshoot/'
         labels:
           severity: warning
-          component: promtail
-          layer: observability
-
-      # Promtail file descriptor usage
-      - uid: promtail-high-file-descriptors
-        title: Promtail High File Descriptor Usage
-        condition: A
-        data:
-          - refId: A
-            queryType: ''
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: PBFA97CFB590B2093
-            model:
-              expr: |
-                promtail_files_active_total > 5000
-              refId: A
-        noDataState: OK
-        execErrState: OK
-        for: 10m
-        annotations:
-          description: 'Promtail on {{ $labels.instance }} is monitoring {{ printf "%.0f" $values.A.Value }} active files (threshold: 5000). This may lead to "too many open files" errors.'
-          summary: Promtail file descriptor usage is high
-          runbook_url: 'https://grafana.com/docs/loki/latest/clients/promtail/troubleshooting/'
-        labels:
-          severity: warning
-          component: promtail
+          component: alloy
           layer: observability
 
   # ========================================

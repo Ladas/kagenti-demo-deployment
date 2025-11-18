@@ -25,10 +25,11 @@ resources:
   - deployment.yaml
   - service.yaml
 
-  # Promtail log collector
-  - promtail-rbac.yaml
-  - promtail-configmap.yaml
-  - promtail-daemonset.yaml
+  # Alloy telemetry collector (replaces deprecated Promtail)
+  - alloy-rbac.yaml
+  - alloy-configmap.yaml
+  - alloy-daemonset.yaml
+  - alloy-service.yaml
 
 labels:
   - pairs:
@@ -42,7 +43,9 @@ commonAnnotations:
   config.kubernetes.io/origin: |
     path: components/observability/loki/kustomization.yaml
   description: |
-    Log aggregation with Loki.
-    Handles: Kubernetes logs, application logs, structured logging.
+    Log aggregation with Loki and Grafana Alloy.
+    Alloy: Unified telemetry collector (logs, metrics, traces via OTLP).
+    Loki: Log storage and querying.
+    Handles: Kubernetes logs, application logs, structured logging, OTLP telemetry.
     Tempo handles: Distributed traces.
     OTEL Metrics handles: Metrics and monitoring.

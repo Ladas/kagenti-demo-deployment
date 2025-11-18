@@ -1,0 +1,233 @@
+# Grafana Alloy Configuration
+# Modern unified telemetry collector replacing deprecated Promtail
+# Collects logs, metrics, traces, and profiles from Kubernetes
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: observability
+  labels:
+    app: alloy
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/component: telemetry
+data:
+  config.alloy: |
+    // ============================================
+    // Logging Configuration
+    // ============================================
+
+    // Logging settings for Alloy itself
+    logging {
+      level  = "info"
+      format = "logfmt"
+    }
+
+    // ============================================
+    // Kubernetes Pod Discovery
+    // ============================================
+
+    // Discover all pods in the cluster
+    discovery.kubernetes "pods" {
+      role = "pod"
+    }
+
+    // Relabel discovered pods to add useful metadata
+    discovery.relabel "kubernetes_pods" {
+      targets = discovery.kubernetes.pods.targets
+
+      // Add namespace label
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      // Add pod name label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+
+      // Add container name label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+
+      // Add app label (from pod labels)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        target_label  = "app"
+      }
+
+      // Add job label (from app.kubernetes.io/name)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+        target_label  = "job"
+      }
+
+      // Add node name label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_node_name"]
+        target_label  = "node"
+      }
+
+      // Drop logs from Alloy itself (avoid log loop)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        regex         = "alloy"
+        action        = "drop"
+      }
+
+      // Drop logs from Loki itself (avoid log loop)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        regex         = "loki"
+        action        = "drop"
+      }
+
+      // Drop kube-system namespace logs (very noisy)
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        regex         = "kube-system"
+        action        = "drop"
+      }
+
+      // Drop metallb-system namespace logs (very noisy)
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        regex         = "metallb-system"
+        action        = "drop"
+      }
+    }
+
+    // ============================================
+    // Kubernetes Pod Log Collection
+    // ============================================
+
+    // Collect logs from Kubernetes pods using the Kubernetes API
+    // This is more efficient than file-based collection
+    loki.source.kubernetes "pods" {
+      targets    = discovery.relabel.kubernetes_pods.output
+      forward_to = [loki.process.add_metadata.receiver]
+    }
+
+    // Process logs to extract structured fields
+    loki.process "add_metadata" {
+      forward_to = [loki.write.local.receiver]
+
+      // Extract JSON fields if logs are JSON formatted
+      stage.json {
+        expressions = {
+          trace_id    = "trace_id",
+          span_id     = "span_id",
+          request_id  = "request_id",
+          level       = "level",
+          user_id     = "user.id",
+          tenant_id   = "tenant.id",
+        }
+      }
+
+      // Add low-cardinality fields as labels
+      stage.labels {
+        values = {
+          level = "",
+        }
+      }
+    }
+
+    // ============================================
+    // Loki Write Configuration
+    // ============================================
+
+    // Send logs to Loki
+    loki.write "local" {
+      endpoint {
+        url = "http://loki-query-frontend.observability.svc:3100/loki/api/v1/push"
+
+        // Batch configuration for efficient log shipping
+        batch_size = "1MiB"
+        batch_wait = "1s"
+
+        // Retry configuration
+        backoff_config {
+          min_period = "500ms"
+          max_period = "5m"
+          max_retries = 10
+        }
+
+        // Connection timeout
+        timeout = "10s"
+      }
+    }
+
+    // ============================================
+    // OpenTelemetry Receiver (OTLP)
+    // ============================================
+
+    // Receive OTLP data from applications (traces, metrics, logs)
+    otelcol.receiver.otlp "default" {
+      // gRPC endpoint (default OTLP port 4317)
+      grpc {
+        endpoint = "0.0.0.0:4317"
+      }
+
+      // HTTP endpoint (default OTLP port 4318)
+      http {
+        endpoint = "0.0.0.0:4318"
+      }
+
+      output {
+        metrics = [otelcol.processor.batch.default.input]
+        logs    = [otelcol.processor.batch.default.input]
+        traces  = [otelcol.processor.batch.default.input]
+      }
+    }
+
+    // ============================================
+    // OpenTelemetry Processor (Batching)
+    // ============================================
+
+    // Batch telemetry data for efficient processing
+    otelcol.processor.batch "default" {
+      output {
+        metrics = [otelcol.exporter.prometheus.default.input]
+        logs    = [otelcol.exporter.loki.default.input]
+        traces  = [otelcol.exporter.otlp.tempo.input]
+      }
+    }
+
+    // ============================================
+    // OpenTelemetry Exporters
+    // ============================================
+
+    // Export traces to Tempo
+    otelcol.exporter.otlp "tempo" {
+      client {
+        endpoint = "tempo-distributor.observability.svc:4317"
+        tls {
+          insecure = true
+        }
+      }
+    }
+
+    // Export logs to Loki
+    otelcol.exporter.loki "default" {
+      forward_to = [loki.write.local.receiver]
+    }
+
+    // Export metrics to Prometheus
+    otelcol.exporter.prometheus "default" {
+      forward_to = [prometheus.remote_write.local.receiver]
+    }
+
+    // ============================================
+    // Prometheus Remote Write
+    // ============================================
+
+    // Send metrics to Prometheus
+    prometheus.remote_write "local" {
+      endpoint {
+        url = "http://prometheus.observability.svc:9090/api/v1/write"
+      }
+    }
