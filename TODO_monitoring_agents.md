@@ -1,9 +1,24 @@
 # Monitoring Agents System - Implementation Plan
 
+## ⚠️ PRIORITY: Basic Agent E2E Testing First
+
+**CRITICAL**: Before implementing monitoring agents, we MUST establish a working agent deployment pipeline:
+
+1. ✅ Get example agents (weather-agent, research-agent) working via Kagenti-UI import pattern
+2. ✅ Pass e2e tests locally and in CI with these example agents
+3. ✅ Create agent import script that runs post-deployment
+4. ✅ Remove static agents ArgoCD application (agents will be imported dynamically)
+5. THEN proceed with monitoring agent development
+
+**See Phase 0.5 below for detailed tasks.**
+
+---
+
 ## Overview
 Build an intelligent monitoring system using AI agents that:
-- Query Prometheus metrics, distributed traces (Phoenix/Tempo), logs (Loki), and correlation data (Korrel8r)
+- Query Prometheus metrics, distributed traces (Phoenix/Tempo), logs (Loki), AlertManager, and correlation data (Korrel8r)
 - Correlate observability data to identify issues and perform root cause analysis
+- Read existing SOPs and runbooks for remediation guidance
 - Automatically create PRs for infrastructure and application issues
 - Deploy via GitOps with automatic infrastructure connection using Kagenti AgentBuild CRD
 
@@ -16,7 +31,6 @@ Build an intelligent monitoring system using AI agents that:
 - [Phoenix Configuration Research](./RESEARCH_Phoenix_Configuration.md) - Comprehensive analysis of Phoenix/Arize deployment and configuration
 - [Authentication Architecture](./AUTHENTICATION_ARCHITECTURE.md) - Complete auth strategy (Keycloak + mTLS)
 - [Critical Review](./CRITICAL_REVIEW_TODO.md) - Issues found and recommendations
-- [Verification Phoenix vs Jaeger](./VERIFICATION_Phoenix_vs_Jaeger.md) - Proof of Phoenix independence
 - [Next Steps Complete](./NEXT_STEPS_COMPLETE.md) - Comprehensive implementation guide
 - [CLAUDE.md](./CLAUDE.md) - GitOps workflow and platform practices
 
@@ -118,15 +132,20 @@ Build an intelligent monitoring system using AI agents that:
 - ❌ **Tracing MCP Server** - Query Phoenix (LLM) and Tempo (infrastructure)
 - ❌ **Loki MCP Server** - Query logs via MCP tools
 - ❌ **Korrel8r MCP Server** - Use correlation engine via MCP
+- ❌ **AlertManager MCP Server** - Query Grafana Alertmanager for firing alerts and alert rules
 - ❌ **GitHub MCP Server** - Create PRs and issues
+- ❌ **Runbook/SOP Reader MCP Server** - Read existing runbooks and SOPs from docs/ directory for remediation guidance
+
+**Authentication**: All observability MCP servers will use a **read-only Keycloak service account** for authentication (to be created in Phase 1.5)
 
 #### Monitoring Agents (None exist yet)
 - ❌ **Metrics Monitoring Agent** - Detect metric anomalies
 - ❌ **Trace Analysis Agent** - Analyze traces for errors/latency
 - ❌ **Log Analysis Agent** - Detect error patterns in logs
-- ❌ **Correlation & RCA Agent** - Correlate signals and identify root causes
+- ❌ **Alert Monitoring Agent** - Monitor Grafana Alertmanager for firing alerts and analyze alert patterns
+- ❌ **Correlation & RCA Agent** - Correlate signals, read SOPs/runbooks, and identify root causes
 - ❌ **Orchestrator Agent** - Coordinate agent workflow
-- ❌ **GitHub Remediation Agent** - Create PRs with fixes
+- ❌ **GitHub Remediation Agent** - Create PRs with fixes using SOP guidance
 
 #### Agent Build Infrastructure (Partially exists)
 - ✅ **AgentBuild CRD** - Kagenti CRD for automated builds (DEPLOYED)
@@ -173,6 +192,150 @@ Build an intelligent monitoring system using AI agents that:
 | **Korrel8r** | `korrel8r.observability.svc:8080` | N/A | HTTP | Correlation API |
 | **Kiali** | `kiali.kiali-system.svc:20001` | https://kiali.localtest.me:9443 | HTTP | Service mesh UI |
 | **Container Registry** | `registry.container-registry.svc:5000` | N/A | HTTP | Agent image registry |
+
+---
+
+## Phase 0.5: Basic Agent E2E Testing Setup (PRIORITY)
+
+**CRITICAL PATH**: Establish working agent deployment pipeline BEFORE building monitoring agents.
+
+### 0.5.1 Prerequisites
+
+- [ ] Platform deployed and healthy (ArgoCD, Tekton, Keycloak, operators all ready)
+- [ ] Kagenti-UI deployed and accessible
+- [ ] Ollama deployed with models loaded (llama3.2:3b minimum)
+- [ ] Container registry functional
+
+### 0.5.2 Create Agent Import Script
+
+**Location**: `kagenti-demo-deployment/scripts/import-agents-via-ui.sh`
+
+This script will programmatically import agents using kagenti-ui's import functionality (simulating the UI workflow but via API/CLI).
+
+- [ ] **Research kagenti-ui import API/workflow**:
+  - [ ] Find kagenti-ui API endpoints for agent/tool import
+  - [ ] Identify request format (repository URL, agent/tool selection)
+  - [ ] Understand Tekton pipeline trigger mechanism
+  - [ ] Document authentication requirements (Keycloak tokens?)
+
+- [ ] **Implement import script**:
+  ```bash
+  #!/usr/bin/env bash
+  # Import agents and tools via kagenti-ui pattern
+  # Usage: ./import-agents-via-ui.sh <repo-url> <agent-name> <tool-name>
+
+  # 1. Wait for kagenti-ui to be ready
+  # 2. Get Keycloak auth token (or use service account)
+  # 3. Call kagenti-ui import API/trigger pipeline
+  # 4. Monitor AgentBuild CRD creation
+  # 5. Wait for agent deployment
+  # 6. Verify agent health
+  ```
+
+- [ ] **Test with example agents**:
+  - [ ] Import `weather-agent` from `/Users/ladas/Projects/OCTO/research/agent-examples`
+  - [ ] Import required MCP tool (weather API tool)
+  - [ ] Import `research-agent` from `/Users/ladas/Projects/OCTO/research/agent-examples-local`
+  - [ ] Verify all agents show up in kagenti-ui
+  - [ ] Verify agents are queryable
+
+### 0.5.3 Update quick-redeploy.sh
+
+**File**: `kagenti-demo-deployment/scripts/quick-redeploy.sh`
+
+- [ ] Add agent import step after kagenti-ui is ready:
+  ```bash
+  # After platform deployment completes
+  echo "🤖 Importing example agents..."
+  ./scripts/import-agents-via-ui.sh \
+    "https://github.com/redhat-et/agent-examples.git" \
+    "weather-agent" \
+    "weather-api-tool"
+
+  ./scripts/import-agents-via-ui.sh \
+    "https://github.com/redhat-et/agent-examples-local.git" \
+    "research-agent" \
+    ""
+  ```
+
+### 0.5.4 Remove Static Agents ArgoCD Application
+
+Currently agents might be deployed via static ArgoCD application. Remove it since agents will be imported dynamically.
+
+- [ ] **Remove from ArgoCD**:
+  - [ ] Check if `argocd/applications/base/agents.yaml` exists
+  - [ ] If yes, delete it (agents will be imported via kagenti-ui instead)
+  - [ ] Update root application to remove agents app reference
+  - [ ] Commit changes
+
+- [ ] **Clean up agent manifests**:
+  - [ ] Check `components/03-applications/agents/` directory
+  - [ ] Move example agents to `examples/` directory (for reference)
+  - [ ] Keep `monitoring/` subdirectory structure for future monitoring agents
+
+### 0.5.5 Create E2E Tests for Agent Import
+
+**Location**: `kagenti-demo-deployment/tests/e2e/test_agent_import.py`
+
+- [ ] **Test cases**:
+  ```python
+  def test_weather_agent_deployed():
+      """Verify weather-agent is deployed and healthy"""
+
+  def test_weather_agent_queryable():
+      """Verify weather-agent responds to queries"""
+
+  def test_research_agent_deployed():
+      """Verify research-agent is deployed and healthy"""
+
+  def test_research_agent_queryable():
+      """Verify research-agent can search and respond"""
+
+  def test_agent_mcp_tool_integration():
+      """Verify agents can use their MCP tools"""
+  ```
+
+- [ ] **Add to CI workflow**:
+  - [ ] Update `.github/workflows/app-state-validation.yml`
+  - [ ] Run agent import tests after platform deployment
+  - [ ] Ensure tests pass before proceeding
+
+### 0.5.6 Verify Locally
+
+- [ ] Run full redeploy: `./scripts/quick-redeploy.sh`
+- [ ] Verify agents imported successfully
+- [ ] Run e2e tests: `pytest tests/e2e/test_agent_import.py -v`
+- [ ] Check kagenti-ui shows imported agents
+- [ ] Test agent queries manually via UI
+
+### 0.5.7 Verify in CI
+
+- [ ] Push changes to branch
+- [ ] Trigger CI run
+- [ ] Monitor "Wait for ArgoCD applications" step
+- [ ] Monitor "Run agent import tests" step
+- [ ] Ensure all tests pass (app state + agent import)
+- [ ] Fix any issues and iterate
+
+### 0.5.8 Documentation
+
+- [ ] **Update CLAUDE.md** with agent import workflow
+- [ ] **Create docs/AGENT_IMPORT.md** with:
+  - How agent import works
+  - How to add new agents
+  - How to troubleshoot import failures
+  - API reference for import script
+
+### 0.5.9 Commit Changes
+
+- [ ] Commit agent import script
+- [ ] Commit quick-redeploy updates
+- [ ] Commit ArgoCD application removal
+- [ ] Commit e2e tests
+- [ ] Commit documentation
+- [ ] Create PR with title: "Establish agent import pipeline via kagenti-ui"
+
+**BLOCKER**: **DO NOT proceed to Phase 1** until all Phase 0.5 tasks are complete and CI is green.
 
 ---
 
