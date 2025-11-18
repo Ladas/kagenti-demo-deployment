@@ -4,7 +4,7 @@ metadata:
   name: oauth2-proxy
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "10"  # Deploy AFTER Keycloak (wave 5) + secrets extraction + reflection
   labels:
     kagenti.dev/layer: infrastructure
     kagenti.dev/component: oauth2-proxy
