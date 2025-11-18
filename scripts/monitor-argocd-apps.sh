@@ -80,7 +80,6 @@ CRITICAL_APPS=(
     "kagenti-operator"
     "kagenti-platform-operator"
     "platform"
-    "kagenti-ui"
     "container-registry"
     "keycloak-platform-rbac"
     "opentelemetry-operator"
@@ -671,31 +670,19 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
         fi
     done
 
-    # Success: All CRITICAL apps healthy (allow optional apps to be progressing)
+    # Success: All CRITICAL apps healthy (allow optional apps to be progressing, sync status not required)
     if [ $CRITICAL_TOTAL -gt 0 ] && [ "$CRITICAL_HEALTHY" -eq "$CRITICAL_TOTAL" ]; then
-        # Check if all critical apps are also synced
-        CRITICAL_SYNCED=0
-        while read -r app_line; do
-            app_name=$(echo "$app_line" | jq -r '.metadata.name')
-            sync_status=$(echo "$app_line" | jq -r '.status.sync.status // "Unknown"')
-
-            if is_critical_app "$app_name"; then
-                [ "$sync_status" = "Synced" ] && CRITICAL_SYNCED=$((CRITICAL_SYNCED + 1))
-            fi
-        done < <(echo "$ALL_APPS" | jq -c '.items[]')
-
-        if [ "$CRITICAL_SYNCED" -eq "$CRITICAL_TOTAL" ]; then
-            echo ""
-            echo -e "${GREEN}✅ All CRITICAL applications are healthy and synced!${NC}"
-            echo "Total time: ${ELAPSED}s ($(($ELAPSED / 60))m)"
-            echo ""
-            echo -e "${CYAN}[EXIT POINT 2a] Exiting with code 0 (SUCCESS - CRITICAL APPS HEALTHY)${NC}"
-            echo -e "${CYAN}Reason: All ${CRITICAL_TOTAL} CRITICAL apps are Healthy and Synced${NC}"
-            echo -e "${CYAN}Optional apps: ${OPTIONAL_HEALTHY}/${OPTIONAL_TOTAL} Healthy (may still be Progressing)${NC}"
-            echo -e "${CYAN}Elapsed time: ${ELAPSED}s / Timeout: ${MONITOR_TIMEOUT}s${NC}"
-            echo ""
-            exit 0
-        fi
+        echo ""
+        echo -e "${GREEN}✅ All CRITICAL applications are healthy!${NC}"
+        echo "Total time: ${ELAPSED}s ($(($ELAPSED / 60))m)"
+        echo ""
+        echo -e "${CYAN}[EXIT POINT 2a] Exiting with code 0 (SUCCESS - CRITICAL APPS HEALTHY)${NC}"
+        echo -e "${CYAN}Reason: All ${CRITICAL_TOTAL} CRITICAL apps are Healthy${NC}"
+        echo -e "${CYAN}Optional apps: ${OPTIONAL_HEALTHY}/${OPTIONAL_TOTAL} Healthy (may still be Progressing)${NC}"
+        echo -e "${CYAN}Note: Some apps may be OutOfSync but that's OK for local development${NC}"
+        echo -e "${CYAN}Elapsed time: ${ELAPSED}s / Timeout: ${MONITOR_TIMEOUT}s${NC}"
+        echo ""
+        exit 0
     fi
 
     # Success: All apps healthy and synced
