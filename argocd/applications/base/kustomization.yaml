@@ -23,7 +23,8 @@ resources:
   - observability.yaml
 
   # Wave 25 - Applications
-  - agents.yaml
+  # NOTE: agents.yaml removed - agents will be imported dynamically via AgentBuild CRDs
+  # See scripts/import-agents-via-ui.sh for agent import workflow
 
 # NOTE: Keycloak and SPIRE are now deployed via Helm (see ../helm/)
 # NOTE: Container Registry is deployed via Helm (see ../helm/container-registry.yaml)
