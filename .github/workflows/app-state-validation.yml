@@ -77,6 +77,18 @@ jobs:
         if: steps.cluster_mode.outputs.mode == 'kind'
         uses: docker/setup-buildx-action@v3
 
+      - name: Maximize build disk space
+        if: steps.cluster_mode.outputs.mode == 'kind'
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 4096        # Reserve 4GB for OS
+          swap-size-mb: 1024           # 1GB swap
+          remove-dotnet: 'true'        # ~20GB freed
+          remove-android: 'true'       # ~10GB freed
+          remove-haskell: 'true'       # ~5GB freed
+          remove-codeql: 'true'        # ~5GB freed
+          remove-docker-images: 'true' # ~5GB freed (pre-installed images we don't need)
+
       - name: Clean up Docker at workflow start
         if: steps.cluster_mode.outputs.mode == 'kind'
         run: |
