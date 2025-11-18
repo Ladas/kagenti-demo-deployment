@@ -4,8 +4,9 @@
   "tags": ["loki", "logs", "observability"],
   "timezone": "browser",
   "schemaVersion": 16,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
+  "description": "Loki log explorer with namespace filtering. Note: Logs are ephemeral and reset on Loki pod restart.",
   "templating": {
     "list": [
       {

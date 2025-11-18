@@ -102,7 +102,13 @@ spec:
       - name: config
         configMap:
           name: loki-config
+      # Use hostPath for Kind cluster persistence (data survives pod restarts)
+      # For production, use PersistentVolumeClaim with proper storage class
       - name: storage
-        emptyDir: {}
+        hostPath:
+          path: /mnt/loki-data
+          type: DirectoryOrCreate
       - name: wal
-        emptyDir: {}
+        hostPath:
+          path: /mnt/loki-wal
+          type: DirectoryOrCreate

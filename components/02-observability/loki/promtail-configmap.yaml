@@ -110,47 +110,21 @@ data:
             action: drop
             regex: loki
 
-          # Drop kube-system namespace logs to reduce file count
+          # Drop kube-system namespace logs (very noisy)
           - source_labels:
               - __meta_kubernetes_namespace
             action: drop
             regex: kube-system
 
-          # Drop metallb-system namespace logs to reduce file count
+          # Drop metallb-system namespace logs (very noisy)
           - source_labels:
               - __meta_kubernetes_namespace
             action: drop
             regex: metallb-system
 
-          # Drop argocd namespace logs to reduce file count
-          - source_labels:
-              - __meta_kubernetes_namespace
-            action: drop
-            regex: argocd
-
-          # Drop istio-system namespace logs to reduce file count
-          - source_labels:
-              - __meta_kubernetes_namespace
-            action: drop
-            regex: istio-system
-
-          # Drop cert-manager namespace logs to reduce file count
-          - source_labels:
-              - __meta_kubernetes_namespace
-            action: drop
-            regex: cert-manager
-
-          # Drop tekton-pipelines namespace logs to reduce file count
-          - source_labels:
-              - __meta_kubernetes_namespace
-            action: drop
-            regex: tekton-pipelines
-
-          # Drop reflector namespace logs to reduce file count
-          - source_labels:
-              - __meta_kubernetes_namespace
-            action: drop
-            regex: reflector
+          # Keep argocd, cert-manager, tekton, istio, reflector logs
+          # These are valuable for platform debugging
+          # Only drop them if log volume becomes an issue
 
           # Set log path to container logs
           - source_labels:
