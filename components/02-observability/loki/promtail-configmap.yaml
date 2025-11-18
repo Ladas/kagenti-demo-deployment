@@ -38,12 +38,6 @@ data:
         kubernetes_sd_configs:
           - role: pod
 
-        # Target configuration to prevent "too many open files" error
-        # Limits number of concurrent file watchers
-        # Files are closed and reopened based on sync_period
-        target_config:
-          sync_period: 30s  # Re-sync targets every 30 seconds (allows closing old files)
-
         pipeline_stages:
           # Extract JSON fields from logs (if JSON formatted)
           - cri: {}

@@ -559,8 +559,30 @@ while [ $(($(date +%s) - MONITOR_START)) -lt $MONITOR_TIMEOUT ]; do
                 # Only fail if degraded beyond grace period
                 if [ $DEGRADED_DURATION -ge $DEGRADED_GRACE_PERIOD ]; then
                     echo ""
-                    echo -e "${RED}❌ CRITICAL app '$degraded_app' has been Degraded for ${DEGRADED_DURATION}s (grace period: ${DEGRADED_GRACE_PERIOD}s)${NC}"
+                    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                    echo -e "${RED}❌ CRITICAL FAILURE: Platform deployment failed${NC}"
+                    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                    echo ""
+                    echo -e "${RED}Reason: CRITICAL app '$degraded_app' has been ${RED}Degraded/Missing${NC} for ${DEGRADED_DURATION}s${NC}"
+                    echo -e "${RED}Grace period: ${DEGRADED_GRACE_PERIOD}s (exceeded by $((DEGRADED_DURATION - DEGRADED_GRACE_PERIOD))s)${NC}"
                     echo -e "${RED}This indicates a persistent failure, not just initialization${NC}"
+                    echo ""
+
+                    # Show all degraded/missing apps before exit
+                    echo -e "${YELLOW}Degraded/Missing Applications Summary:${NC}"
+                    ALL_DEGRADED=$(echo "$ALL_APPS" | jq -r '[.items[] | select(.status.health.status == "Degraded" or .status.health.status == "Missing") | "\(.metadata.name): \(.status.health.status)"] | .[]')
+                    echo "$ALL_DEGRADED" | while read -r app_status; do
+                        echo -e "${RED}  ❌ $app_status${NC}"
+                    done
+                    echo ""
+
+                    # Call existing function to show detailed pod failure information
+                    print_degraded_pod_details "$DEGRADED_APPS"
+
+                    echo ""
+                    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                    echo -e "${RED}FAILURE: Platform did not become healthy within grace period${NC}"
+                    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
                     echo ""
                     exit 1
                 fi
