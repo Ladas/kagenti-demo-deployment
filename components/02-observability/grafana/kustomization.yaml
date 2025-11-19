@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: observability
 
 resources:
+  - rbac.yaml
   - deployment.yaml
   - httproute.yaml
   - destinationrule.yaml

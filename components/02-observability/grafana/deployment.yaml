@@ -115,6 +115,7 @@ spec:
         # Enable Istio sidecar for mTLS communication with Keycloak
         sidecar.istio.io/inject: "true"
     spec:
+      serviceAccountName: grafana
       initContainers:
       - name: wait-for-oauth-secret
         image: bitnami/kubectl:latest
