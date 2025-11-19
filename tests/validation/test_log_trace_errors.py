@@ -64,13 +64,19 @@ ACCEPTABLE_ERRORS = [
     r"Readiness probe failed.*not yet received INIT",
     r"Liveness probe failed.*not yet received INIT",
 
+    # Istio proxy startup info logs that contain "error" in config parameters
+    r"info\s+FLAG:.*error",
+    r"info\s+Envoy command:.*error",
+
     # Webhook configuration warnings (expected during cluster bootstrap)
     r"failed calling webhook.*connection refused",
     r"error getting webhook.*not found",
+    r"failed to verify certificate: x509: certificate is not valid for any names",
 
     # Temporary network errors during pod initialization
     r"dial tcp.*connection refused.*during startup",
     r"connect: connection refused.*container starting",
+    r"connection reset by peer",
 
     # ArgoCD sync warnings (expected during automated sync)
     r"ComparisonError.*resource is being applied",
@@ -95,6 +101,32 @@ ACCEPTABLE_ERRORS = [
     # Graceful shutdown messages
     r"context canceled",
     r"server closed",
+
+    # Kubernetes operator leader election (expected during multi-replica controllers)
+    r"error retrieving resource lock.*client rate limiter Wait returned an error",
+    r"leaderelection\.go.*error retrieving resource lock",
+
+    # TLS handshake errors (Istio/Envoy during startup and connection attempts)
+    r"http: TLS handshake error.*EOF",
+
+    # Agent build errors (Tekton ConfigMaps not deployed in Kind cluster)
+    r"Failed to trigger build.*step ConfigMap.*not found",
+    r"failed to load pipeline steps",
+    r"Reconciler error.*failed calling webhook",
+
+    # Alertmanager webhook errors (korrel8r not deployed in local Kind)
+    r"lookup korrel8r\.observability\.svc.*no such host",
+    r"dial tcp: lookup.*lame referral",
+
+    # Grafana plugin errors (duplicate registration - known Grafana issue)
+    r"plugin xychart is already registered",
+
+    # Loki internal errors (scheduler coordination)
+    r"error notifying scheduler about finished query.*EOF",
+
+    # OTel Collector errors (expected - no Docker daemon in Kubernetes pods)
+    r"failed to fetch Docker OS type.*Cannot connect to the Docker daemon",
+    r"failed to detect resource.*failed getting OS type",
 ]
 
 ACCEPTABLE_WARNINGS = [
@@ -110,6 +142,25 @@ ACCEPTABLE_WARNINGS = [
 
     # Tekton warnings
     r"failed to get task run.*not found",
+
+    # Envoy/Istio proxy warnings (deprecated config, expected)
+    r"Usage of the deprecated runtime key overload\.global_downstream_max_connections",
+    r"no configured limit to the number of allowed active downstream connections",
+
+    # Agent build warnings (Tekton not deployed in Kind)
+    r'"type": "Warning".*Pipeline run not found',
+    r'"type": "Warning".*Failed to start build',
+
+    # Grafana authentication warnings (expected - anonymous/initial requests)
+    r"Failed to authenticate request.*user token not found",
+
+    # OTel Collector startup warnings (expected)
+    r"failed to detect resource.*Docker",
+    r"connection refused.*tempo-collector",
+
+    # Tempo security warnings (0.0.0.0 binding)
+    r"Using the 0\.0\.0\.0 address exposes this server",
+    r"UseLocalHostAsDefaultHost",
 ]
 
 
