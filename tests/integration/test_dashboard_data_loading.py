@@ -195,7 +195,7 @@ class TestDashboardDataLoading:
 
         dashboard = json.loads(result.stdout)
         assert dashboard["dashboard"]["title"] == "Loki Logs Explorer"
-        assert len(dashboard["dashboard"]["panels"]) == 11
+        assert len(dashboard["dashboard"]["panels"]) == 14
 
         # Verify all variables are properly configured
         variables = dashboard["dashboard"]["templating"]["list"]
