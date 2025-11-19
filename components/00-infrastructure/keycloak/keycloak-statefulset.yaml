@@ -80,6 +80,9 @@ spec:
         app.kubernetes.io/name: keycloak
         app.kubernetes.io/part-of: kagenti
         app.kubernetes.io/component: authentication
+      annotations:
+        # Enable Istio sidecar for mTLS (required when namespace has istio-injection=enabled)
+        sidecar.istio.io/inject: "true"
     spec:
       containers:
         - name: keycloak
