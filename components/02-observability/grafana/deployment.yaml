@@ -112,8 +112,9 @@ spec:
       labels:
         app: grafana
       annotations:
-        # Enable Istio sidecar for mTLS communication with Keycloak
-        sidecar.istio.io/inject: "true"
+        # Disable Istio sidecar - Grafana accessed via Gateway (no mTLS needed)
+        # Data sources (Prometheus, Loki, Tempo) have PERMISSIVE mTLS to accept HTTP
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: grafana
       initContainers:
