@@ -72,12 +72,12 @@ def keycloak_admin_credentials():
 
     try:
         secret = k8s_api.read_namespaced_secret(
-            name="keycloak-admin-credentials",
+            name="keycloak-initial-admin",
             namespace="keycloak"
         )
 
-        username = base64.b64decode(secret.data["ADMIN_USERNAME"]).decode("utf-8")
-        password = base64.b64decode(secret.data["ADMIN_PASSWORD"]).decode("utf-8")
+        username = base64.b64decode(secret.data["username"]).decode("utf-8")
+        password = base64.b64decode(secret.data["password"]).decode("utf-8")
 
         return {"username": username, "password": password}
     except ApiException as e:
@@ -119,12 +119,16 @@ def keycloak_token(keycloak_admin_credentials) -> Dict[str, str]:
         pytest.skip(f"Could not acquire Keycloak token: {e}")
 
 
-def get_oauth_client_credentials(k8s_client, namespace: str, secret_name: str) -> Tuple[str, str]:
-    """Get OAuth2 client ID and secret from Kubernetes secret."""
+def get_oauth_client_credentials(k8s_client, secret_name: str) -> Tuple[str, str]:
+    """
+    Get OAuth2 client ID and secret from Kubernetes secret.
+
+    All OAuth client secrets are stored in the oauth2-proxy namespace.
+    """
     try:
         secret = k8s_client.read_namespaced_secret(
             name=secret_name,
-            namespace=namespace
+            namespace="oauth2-proxy"
         )
 
         client_id = base64.b64decode(secret.data["CLIENT_ID"]).decode("utf-8")
@@ -133,7 +137,7 @@ def get_oauth_client_credentials(k8s_client, namespace: str, secret_name: str) -
         return client_id, client_secret
 
     except ApiException as e:
-        pytest.skip(f"Could not read OAuth client secret {namespace}/{secret_name}: {e}")
+        pytest.skip(f"Could not read OAuth client secret oauth2-proxy/{secret_name}: {e}")
 
 
 # ============================================================================
@@ -190,8 +194,14 @@ class TestKeycloakTokens:
             # Verify expected claims
             assert "iss" in claims, "JWT missing 'iss' (issuer) claim"
             assert "exp" in claims, "JWT missing 'exp' (expiration) claim"
-            assert "sub" in claims, "JWT missing 'sub' (subject) claim"
 
+            # Check for principal identifier: 'sub' (user) or 'azp' (client)
+            # admin-cli uses client credentials, so it has 'azp' instead of 'sub'
+            has_principal = "sub" in claims or "azp" in claims
+            assert has_principal, "JWT missing principal claim ('sub' or 'azp')"
+
+        except AssertionError:
+            raise
         except Exception as e:
             pytest.fail(f"Could not decode JWT payload: {e}")
 
@@ -359,12 +369,12 @@ class TestOAuth2ClientSecrets:
         try:
             client_id, client_secret = get_oauth_client_credentials(
                 k8s_client,
-                "observability",
-                "phoenix-oauth-secret"
+                "phoenix-client-secret"
             )
 
             assert client_id, "Phoenix OAuth client ID is empty"
             assert client_secret, "Phoenix OAuth client secret is empty"
+            assert client_id == "phoenix", f"Expected client_id 'phoenix', got '{client_id}'"
 
         except Exception as e:
             pytest.skip(f"Phoenix OAuth secret not available: {e}")
@@ -374,12 +384,12 @@ class TestOAuth2ClientSecrets:
         try:
             client_id, client_secret = get_oauth_client_credentials(
                 k8s_client,
-                "kiali-system",
-                "kiali-oauth-secret"
+                "kiali-client-secret"
             )
 
             assert client_id, "Kiali OAuth client ID is empty"
             assert client_secret, "Kiali OAuth client secret is empty"
+            assert client_id == "kiali", f"Expected client_id 'kiali', got '{client_id}'"
 
         except Exception as e:
             pytest.skip(f"Kiali OAuth secret not available: {e}")
@@ -389,12 +399,12 @@ class TestOAuth2ClientSecrets:
         try:
             client_id, client_secret = get_oauth_client_credentials(
                 k8s_client,
-                "observability",
-                "prometheus-oauth-secret"
+                "prometheus-client-secret"
             )
 
             assert client_id, "Prometheus OAuth client ID is empty"
             assert client_secret, "Prometheus OAuth client secret is empty"
+            assert client_id == "prometheus", f"Expected client_id 'prometheus', got '{client_id}'"
 
         except Exception as e:
             pytest.skip(f"Prometheus OAuth secret not available: {e}")
