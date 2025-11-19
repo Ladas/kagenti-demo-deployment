@@ -199,7 +199,11 @@ check_pods() {
                 local ready_containers=$(echo "$ready" | cut -d'/' -f1)
                 local total_containers=$(echo "$ready" | cut -d'/' -f2)
 
+                # Count Running pods and successfully completed Jobs (Completed/Succeeded status)
                 if [ "$ready_containers" -eq "$total_containers" ] && [[ "$status" == "Running" || "$status" == "Succeeded" ]]; then
+                    healthy=$((healthy + 1))
+                elif [[ "$status" == "Completed" ]]; then
+                    # Completed Jobs count as healthy (0/1 is normal for completed Jobs)
                     healthy=$((healthy + 1))
                 elif [[ "$status" == "Failed" || "$status" == "Error" ]]; then
                     failed=$((failed + 1))
