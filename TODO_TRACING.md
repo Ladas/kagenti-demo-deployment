@@ -3062,10 +3062,181 @@ docker push localhost:5001/korrel8r:arm64
 
 **Recommended Action**: **Option A** (request ARM64 support) + **Option D** (continue with current workaround)
 
-**BLOCKER STATUS**:
+---
+
+### **ARM64 Image Availability Investigation (2025-11-19)**
+
+**Question**: Are ARM64 images available on Quay.io? How hard would it be to build ARM64 support?
+
+**Investigation Results**:
+
+**1. Quay.io Image Inspection**:
+
+```bash
+# Check manifest for multi-arch support
+docker manifest inspect quay.io/korrel8r/korrel8r:latest
+# Result: ❌ Single-platform image (no manifest list)
+
+# Verify architecture
+docker inspect quay.io/korrel8r/korrel8r:latest --format '{{.Architecture}}'
+# Result: amd64
+
+# Attempt ARM64 pull
+docker pull quay.io/korrel8r/korrel8r:latest --platform linux/arm64
+# Result: ❌ Error - "image with reference quay.io/korrel8r/korrel8r:latest was found but does not match the specified platform: wanted linux/arm64, actual: linux/amd64"
+```
+
+**Conclusion**: ❌ **NO ARM64 images available** on Quay.io - AMD64 only
+
+**2. GitHub Issue Search**:
+
+Searched 100 most recent issues for ARM64-related keywords:
+- `arm64`, `aarch64`, `apple silicon`, `m1`, `m2`, `m3`
+- `multi-arch`, `multiarch`, `platform`, `architecture`
+
+**Result**: ❌ **NO existing GitHub issues** requesting ARM64 support
+
+Found 1 false positive:
+- Issue #289: "Korrel8r can correlate Kubernetes resources and Prometheus alerts with traces" (about trace correlation, NOT ARM64)
+
+**3. Build System Analysis**:
+
+**Containerfile** (`github.com/korrel8r/korrel8r/main/Containerfile`):
+
+```dockerfile
+# Stage 1: Builder (Red Hat UBI9 Go toolset)
+FROM registry.access.redhat.com/ubi9/go-toolset AS builder
+
+# Build environment
+ENV CGO_ENABLED=1
+ENV GOOS=linux
+ENV GOFLAGS="-mod=readonly -tags=strictfipsruntime,openssl"
+ENV GOEXPERIMENT=strictfipsruntime
+
+# Build command
+RUN go build -tags netgo ./cmd/korrel8r
+
+# Stage 2: Runtime (Red Hat UBI9 minimal)
+FROM registry.access.redhat.com/ubi9/ubi-minimal
+```
+
+**Key Findings**:
+- ❌ **No `GOARCH` specified** (defaults to build platform architecture)
+- ❌ **No `TARGETOS`/`TARGETARCH` variables** (needed for multi-arch builds)
+- ✅ **Red Hat UBI9 base images support ARM64** (multi-arch ready)
+- ⚠️ **CGO_ENABLED=1** (requires cross-compilation setup for ARM64)
+- ⚠️ **FIPS-specific flags** (may require ARM64 testing/validation)
+
+**Makefile** (`github.com/korrel8r/korrel8r/main/Makefile`):
+
+```makefile
+# Image building
+IMGTOOL ?= $(shell which podman || which docker)
+
+image-build:
+	$(IMGTOOL) build -t $(IMG) .
+```
+
+**Key Findings**:
+- ❌ **No buildx or multi-arch support**
+- ❌ **No cross-compilation targets**
+- Uses standard `docker build` or `podman build` (single platform)
+
+**4. Build Difficulty Assessment**:
+
+**Complexity**: ⭐⭐ **MEDIUM** (relatively straightforward but requires several modifications)
+
+**Required Changes**:
+
+1. **Containerfile modifications**:
+   ```dockerfile
+   # Add build arguments for multi-arch
+   ARG TARGETOS=linux
+   ARG TARGETARCH=amd64
+
+   # Update build environment
+   ENV GOOS=${TARGETOS}
+   ENV GOARCH=${TARGETARCH}
+   ```
+
+2. **Makefile additions**:
+   ```makefile
+   # Multi-arch build with buildx
+   .PHONY: image-build-multiarch
+   image-build-multiarch:
+       docker buildx build --platform linux/amd64,linux/arm64 \
+         -t $(IMG) --push .
+   ```
+
+3. **Testing requirements**:
+   - Verify CGO cross-compilation works for ARM64
+   - Test FIPS build flags on ARM64 platform
+   - Validate Red Hat UBI9 ARM64 base images
+
+**Obstacles**:
+- ⚠️ CGO_ENABLED=1 requires cross-compilation toolchain (C compiler for ARM64)
+- ⚠️ FIPS-specific flags may have ARM64-specific behaviors (needs validation)
+- ⚠️ Red Hat OpenSSL library compatibility on ARM64 (FIPS mode)
+
+**Opportunities**:
+- ✅ Red Hat UBI9 images already support ARM64 natively
+- ✅ Go language has excellent cross-compilation support
+- ✅ No platform-specific assembly code detected in codebase
+
+**Estimated Effort**: 1-2 days for initial ARM64 build + 1 week for FIPS validation/testing
+
+---
+
+**5. Recommendations**:
+
+**Option A: Open Upstream GitHub Issue** ✅ **RECOMMENDED**
+
+**Issue Template**:
+```markdown
+**Title**: Add ARM64/aarch64 support for Apple Silicon and ARM servers
+
+**Description**:
+Korrel8r currently only provides AMD64 container images on Quay.io, which causes
+CrashLoopBackOff when running on ARM64 Kubernetes clusters (e.g., Apple Silicon
+development environments, AWS Graviton, Azure Ampere).
+
+**Requested Changes**:
+1. Add ARM64 builds to CI/CD pipeline
+2. Publish multi-arch images to Quay.io (linux/amd64 + linux/arm64)
+3. Use `docker buildx` for cross-platform builds
+
+**Benefits**:
+- Native ARM64 support (no QEMU emulation)
+- Compatibility with Apple Silicon Macs (M1/M2/M3)
+- Support for ARM-based cloud instances (AWS Graviton, Azure Ampere)
+- Follows multi-arch pattern of similar projects (Grafana, Loki, Tempo)
+
+**Technical Details**:
+- Containerfile needs `ARG TARGETARCH` + `ENV GOARCH=${TARGETARCH}`
+- Makefile needs buildx support: `--platform linux/amd64,linux/arm64`
+- Red Hat UBI9 base images already support ARM64
+- CGO cross-compilation may need attention (currently CGO_ENABLED=1)
+```
+
+**Option B: Contribute ARM64 Support** (if upstream responsive)
+- Fork repository
+- Implement multi-arch build changes
+- Test on ARM64 platform
+- Submit pull request with ARM64 support
+
+**Option C: Continue with Grafana Native Correlation** (Current Status)
+- ✅ Already working on ARM64
+- ⚠️ Missing Korrel8r's advanced graph-based correlation
+
+---
+
+**BLOCKER STATUS** (Updated 2025-11-19):
 - ✅ Development can proceed with Grafana native correlation
 - ⚠️ Advanced correlation features (Phase 4.3) blocked until Korrel8r ARM64 support
 - ⚠️ Production deployment on AMD64 servers would work with current Korrel8r images
+- 🆕 **NO ARM64 images available** - confirmed AMD64 only on Quay.io
+- 🆕 **NO existing upstream issue** - opportunity to open feature request
+- 🆕 **Build difficulty: MEDIUM** - requires Containerfile + Makefile modifications + CGO cross-compilation
 
 **Deployment Status**:
 - Korrel8r manifests exist but are commented out: `components/02-observability/korrel8r/`
