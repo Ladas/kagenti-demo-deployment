@@ -309,8 +309,14 @@ class TestPlatformServices:
         assert deployment.status.ready_replicas >= 1, \
             "Kagenti UI has no ready replicas"
 
+    @pytest.mark.skip(reason="OAuth config job not used (OAuth secrets extracted via initContainers)")
     def test_kagenti_ui_oauth_config_completed(self, k8s_client, excluded_apps):
-        """Verify Kagenti UI OAuth configuration job completed."""
+        """Verify Kagenti UI OAuth configuration job completed.
+
+        SKIPPED: OAuth configuration is no longer done via a separate Job.
+        OAuth secrets are extracted from Keycloak using initContainers in
+        each service that needs OAuth (Grafana, Prometheus UI, Phoenix, Kiali).
+        """
         if 'platform' in excluded_apps or 'kagenti-ui' in excluded_apps:
             pytest.skip("Kagenti UI/platform excluded from testing")
 
@@ -468,8 +474,13 @@ class TestAgents:
         assert deployment.status.ready_replicas >= 1, \
             "orchestrator-agent has no ready replicas"
 
+    @pytest.mark.skip(reason="Agents managed in separate Claude Code instance")
     def test_agent_services_exist(self, k8s_client):
-        """Verify agent services are created."""
+        """Verify agent services are created.
+
+        SKIPPED: Agents are not deployed in this environment. They are managed
+        in a separate Claude Code instance per user requirements.
+        """
         services = ["research-agent", "code-agent", "orchestrator-agent"]
 
         for svc_name in services:
