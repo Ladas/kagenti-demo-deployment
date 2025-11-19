@@ -377,19 +377,6 @@ class TestPlatformServices:
 class TestObservability:
     """Test observability stack components."""
 
-    def test_jaeger_healthy(self, k8s_apps_client, excluded_apps):
-        """Verify Jaeger is running."""
-        if 'observability' in excluded_apps:
-            pytest.skip("Observability stack excluded from testing")
-
-        deployment = k8s_apps_client.read_namespaced_deployment(
-            name="jaeger",
-            namespace="observability"
-        )
-
-        assert deployment.status.ready_replicas >= 1, \
-            "Jaeger has no ready replicas"
-
     def test_tempo_healthy(self, k8s_apps_client, excluded_apps):
         """Verify Tempo is running."""
         if 'observability' in excluded_apps:

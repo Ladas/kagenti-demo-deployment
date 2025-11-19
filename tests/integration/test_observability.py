@@ -428,56 +428,6 @@ class TestOTELCollector:
 
 
 # ============================================================================
-# Test: Jaeger Distributed Tracing
-# ============================================================================
-
-class TestJaeger:
-    """Test Jaeger distributed tracing (legacy compatibility)."""
-
-    def test_jaeger_healthy(self, k8s_apps_client):
-        """Verify Jaeger deployment is healthy."""
-        deployment = k8s_apps_client.read_namespaced_deployment(
-            name="jaeger",
-            namespace="observability"
-        )
-
-        assert deployment.status.ready_replicas >= 1, \
-            "Jaeger has no ready replicas"
-
-    def test_jaeger_service_exists(self, k8s_client):
-        """Verify Jaeger service is created."""
-        service = k8s_client.read_namespaced_service(
-            name="jaeger",
-            namespace="observability"
-        )
-
-        assert service is not None, "Jaeger service not found"
-
-    @pytest.mark.slow
-    def test_jaeger_ui_accessible(self, k8s_client):
-        """Test Jaeger UI is accessible."""
-        proc = None
-        try:
-            proc = port_forward("observability", "jaeger", 16686, 16686, duration=30)
-            time.sleep(8)
-
-            response = requests.get(
-                "http://localhost:16686/",
-                timeout=10
-            )
-
-            assert response.status_code == 200, \
-                f"Jaeger UI failed: {response.status_code}"
-
-        except requests.exceptions.ConnectionError as e:
-            pytest.skip(f"Could not connect to Jaeger UI: {e}")
-        finally:
-            if proc:
-                proc.terminate()
-                proc.wait(timeout=5)
-
-
-# ============================================================================
 # Test: Grafana Dashboards
 # ============================================================================
 
