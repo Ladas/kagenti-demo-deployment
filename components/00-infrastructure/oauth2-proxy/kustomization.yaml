@@ -17,6 +17,7 @@ namespace: oauth2-proxy
 
 resources:
   - namespace.yaml
+  - rbac.yaml  # RBAC for initContainer secret checks
   - oauth2-proxy-secrets.yaml
   - phoenix-proxy.yaml
   - kiali-proxy.yaml

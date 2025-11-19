@@ -23,7 +23,7 @@ resources:
   # TODO: Replace KeycloakRealmImport CRs with Keycloak Admin API Jobs
   # - realm-import-kubernetes.yaml  # Disabled - requires Keycloak Operator
   # - realm-import-kagenti.yaml     # Disabled - requires Keycloak Operator
-  - copy-admin-secret-job.yaml     # Sync wave 1 (PostSync - copy admin secret to platform namespaces)
+  # NOTE: Removed copy-admin-secret-job.yaml - now using Reflector annotations on keycloak-admin-credentials.yaml
   - mtls-policy.yaml
   - httproute.yaml
 

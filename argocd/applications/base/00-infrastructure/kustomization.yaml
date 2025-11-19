@@ -8,9 +8,8 @@ resources:
   - tekton.yaml
   - istio-config.yaml
   - keycloak-operator.yaml
-  - keycloak-platform-rbac.yaml  # Cross-namespace RBAC for Keycloak secret access
 
-  # Wave 5 - Authentication (depends on keycloak-operator, keycloak-platform-rbac)
+  # Wave 5 - Authentication (depends on keycloak-operator)
   - keycloak.yaml
 
   # Wave 0 - OAuth2 Proxy (depends on Keycloak being ready)
