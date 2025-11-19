@@ -125,8 +125,13 @@ def wait_for_agent_ready(
 # Test: Agent Deployment (Existing Agents)
 # ============================================================================
 
+@pytest.mark.skip(reason="Agents managed in separate Claude Code instance")
 class TestAgentDeployment:
-    """Test existing agent deployments in team1 namespace."""
+    """Test existing agent deployments in team1 namespace.
+
+    SKIPPED: Agents are not deployed in this environment. They are managed
+    in a separate Claude Code instance per user requirements.
+    """
 
     def test_research_agent_healthy(self, k8s_apps_client):
         """Verify research-agent is running."""
