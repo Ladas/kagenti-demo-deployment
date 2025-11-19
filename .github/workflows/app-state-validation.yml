@@ -218,6 +218,23 @@ jobs:
           # - Smart failure logic (only fails on CRITICAL apps degraded)
           ./scripts/monitor-argocd-apps.sh 3600
 
+      - name: Deploy test agents for E2E validation
+        run: |
+          echo "🤖 Deploying test agents for E2E validation..."
+          echo ""
+          echo "Deploying weather agents using static manifests..."
+          kubectl apply -f components/03-applications/agents/weather-service.yaml
+          kubectl apply -f components/03-applications/agents/weather-mcp-tool.yaml
+
+          echo ""
+          echo "Waiting for agent pods to become ready..."
+          kubectl wait --for=condition=Ready pod -l app=weather-service -n team1 --timeout=120s || true
+          kubectl wait --for=condition=Ready pod -l app=weather-tool -n team1 --timeout=120s || true
+
+          echo ""
+          echo "Agent deployment status:"
+          kubectl get pods -n team1 -l 'app in (weather-service,weather-tool)'
+
       - name: Set test parameters
         id: test_params
         run: |
@@ -462,6 +479,10 @@ jobs:
         run: |
           kind delete cluster --name kagenti-demo || true
 
-      - name: Fail job if validation failed
-        if: steps.validation.outcome == 'failure'
-        run: exit 1
+      - name: Fail job if validation or E2E tests failed
+        if: steps.validation.outcome == 'failure' || steps.e2e_tests.outcome == 'failure'
+        run: |
+          echo "❌ Tests failed!"
+          echo "  App State Validation: ${{ steps.validation.outcome }}"
+          echo "  E2E Tests: ${{ steps.e2e_tests.outcome }}"
+          exit 1
