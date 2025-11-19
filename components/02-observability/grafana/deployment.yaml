@@ -115,6 +115,21 @@ spec:
         # Enable Istio sidecar for mTLS communication with Keycloak
         sidecar.istio.io/inject: "true"
     spec:
+      initContainers:
+      - name: wait-for-oauth-secret
+        image: bitnami/kubectl:latest
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for Grafana OAuth secret grafana-client-secret..."
+            until kubectl get secret grafana-client-secret -n observability > /dev/null 2>&1; do
+              echo "Secret grafana-client-secret not found, waiting 5s..."
+              sleep 5
+            done
+            echo "Secret grafana-client-secret found, proceeding with deployment"
+        securityContext:
+          runAsNonRoot: false
       containers:
       - name: grafana
         image: grafana/grafana:11.4.0
