@@ -509,7 +509,7 @@ class TestObservabilityDataFlow:
         )
 
         import yaml
-        config_data = yaml.safe_load(configmap.data["config.yaml"])
+        config_data = yaml.safe_load(configmap.data["otel-collector-config.yaml"])
 
         exporters = config_data.get("exporters", {})
 
@@ -532,7 +532,7 @@ class TestObservabilityDataFlow:
         )
 
         import yaml
-        config_data = yaml.safe_load(configmap.data["config.yaml"])
+        config_data = yaml.safe_load(configmap.data["otel-collector-config.yaml"])
 
         exporters = config_data.get("exporters", {})
 

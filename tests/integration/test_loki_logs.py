@@ -77,7 +77,7 @@ class TestLokiLogs:
         """Test that Grafana Alloy DaemonSet is running."""
         daemonsets = client.AppsV1Api().list_namespaced_daemon_set(
             namespace="observability",
-            label_selector="app.kubernetes.io/name=alloy"
+            label_selector="app=alloy"
         )
 
         assert len(daemonsets.items) > 0, "Grafana Alloy DaemonSet not found"
