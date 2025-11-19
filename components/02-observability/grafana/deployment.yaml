@@ -112,7 +112,8 @@ spec:
       labels:
         app: grafana
       annotations:
-        sidecar.istio.io/inject: "false"
+        # Enable Istio sidecar for mTLS communication with Keycloak
+        sidecar.istio.io/inject: "true"
     spec:
       containers:
       - name: grafana
