@@ -14,13 +14,14 @@ This document provides a comprehensive testing strategy and action plan for the 
 
 ### Current State
 
-- ✅ **Integration test suite exists** (`tests/integration/`) with 5 test modules (91 tests total)
+- ✅ **Integration test suite exists** (`tests/integration/`) with 6 test modules (108 tests total)
 - ✅ **App state validation created** (`tests/validation/test_app_state.py`)
 - ✅ **Log/trace error scanning created** (`tests/validation/test_log_trace_errors.py`)
 - ✅ **GitHub Actions workflow** for automated validation
 - ✅ **Test documentation** (`tests/README.md`, `docs/INTEGRATION_TESTS.md`)
 - ✅ **OTEL signal flow tests** (`test_otel_signal_flows.py`) - 19/19 passing
-- ⚠️ **Local tests mostly passing** (72/91 passing) - some expected failures in deprecated components
+- ✅ **Authentication tests** (`test_authentication.py`) - 17/17 passing (Keycloak OIDC, OAuth2-Proxy)
+- ⚠️ **Local tests mostly passing** (89/108 passing) - some expected failures in deprecated components
 - ⚠️ **CI tests deferred** until agent import functionality is fixed (work focuses on local testing)
 - ℹ️ **Agent tests deferred** (handled in separate repository/Claude Code instance)
 - 🔴 **No E2E workflow tests** for agent conversations
@@ -134,10 +135,11 @@ Direct Keycloak OIDC Integration:
    - Redirect validation (must go through /oauth2/ or Keycloak)
 
 4. **TestOAuth2ClientSecrets** - OAuth client credentials validation
-   - Phoenix OAuth secret exists (observability/phoenix-oauth-secret)
-   - Kiali OAuth secret exists (kiali-system/kiali-oauth-secret)
-   - Prometheus OAuth secret exists (observability/prometheus-oauth-secret)
+   - Phoenix OAuth secret exists (oauth2-proxy/phoenix-client-secret)
+   - Kiali OAuth secret exists (oauth2-proxy/kiali-client-secret)
+   - Prometheus OAuth secret exists (oauth2-proxy/prometheus-client-secret)
    - Client ID and secret non-empty validation
+   - Client ID correctness validation (phoenix, kiali, prometheus)
 
 5. **TestOAuth2ProxyHealth** - OAuth2-Proxy deployment health
    - Phoenix OAuth2-Proxy deployment (oauth2-proxy namespace)
@@ -154,10 +156,18 @@ Direct Keycloak OIDC Integration:
 - Validates complete authentication chain: Keycloak → OAuth2-Proxy → Service
 - Tests both OAuth2-Proxy pattern AND direct OIDC integration
 - Verifies correct realm usage (kagenti vs kubernetes vs master)
-- Validates JWT token structure and claims
+- Validates JWT token structure and claims (supports both 'sub' and 'azp' for client credentials)
 - Tests token refresh flows
-- Ensures OAuth client secrets are properly configured
+- Ensures OAuth client secrets are properly configured (all in oauth2-proxy namespace)
 - Validates deployment health of all auth components
+- Uses actual Kubernetes secrets (keycloak-initial-admin, *-client-secret)
+
+**Test Results:** ✅ **17/17 passing** (100% pass rate on Kind cluster)
+
+**Commits:**
+- `bf7fa29` - Initial authentication test suite
+- `621294d` - ArgoCD 404 handling fix
+- `6331dd1` - Fix secret names and locations to match actual deployment
 
 **Usage:**
 ```bash
