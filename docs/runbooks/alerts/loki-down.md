@@ -20,7 +20,7 @@ Loki has no available replicas. Log ingestion and querying are unavailable.
 ### Impact
 
 - **User Impact**: Cannot query logs in Grafana
-- **System Impact**: Log ingestion stopped, Promtail cannot forward logs, log data gap
+- **System Impact**: Log ingestion stopped, Grafana Alloy cannot forward logs, log data gap
 - **Blast Radius**: Log aggregation only (metrics unaffected)
 
 **Severity**: **WARNING** - Log collection impaired but not critical to operations
@@ -60,7 +60,7 @@ kubectl exec -n observability deployment/loki -- df -h /loki
 
 ### Related Information
 
-**Related Alerts**: `promtail-pods-down`, `pvc-high-usage`
+**Related Alerts**: `pvc-high-usage`
 **Upstream**: [Loki Runbook](https://runbooks.prometheus-operator.dev/runbooks/general/deployment-down/)
 
 **Last Updated**: 2025-11-16

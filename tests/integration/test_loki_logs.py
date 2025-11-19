@@ -2,7 +2,7 @@
 Test Loki log ingestion and Grafana datasource configuration.
 
 This validates that:
-- Promtail is collecting logs from pods
+- Grafana Alloy is collecting logs from pods
 - Loki is ingesting and storing logs
 - Grafana can query logs from Loki
 """
@@ -73,17 +73,17 @@ class TestLokiLogs:
         for container in pod.status.container_statuses:
             assert container.ready, f"Container {container.name} is not ready"
 
-    def test_promtail_is_running(self, k8s_client):
-        """Test that Promtail DaemonSet is running."""
+    def test_grafana_alloy_is_running(self, k8s_client):
+        """Test that Grafana Alloy DaemonSet is running."""
         daemonsets = client.AppsV1Api().list_namespaced_daemon_set(
             namespace="observability",
-            label_selector="app=promtail"
+            label_selector="app.kubernetes.io/name=alloy"
         )
 
-        assert len(daemonsets.items) > 0, "Promtail DaemonSet not found"
+        assert len(daemonsets.items) > 0, "Grafana Alloy DaemonSet not found"
 
         ds = daemonsets.items[0]
-        assert ds.status.number_ready > 0, "No Promtail pods are ready"
+        assert ds.status.number_ready > 0, "No Grafana Alloy pods are ready"
 
     def test_loki_ready_endpoint(self):
         """Test that Loki /ready endpoint returns 200."""
@@ -100,7 +100,7 @@ class TestLokiLogs:
         assert result.stdout == "200", f"Loki /ready returned {result.stdout}"
 
     def test_loki_has_log_streams(self):
-        """Test that Loki has log streams (Promtail is sending logs)."""
+        """Test that Loki has log streams (Grafana Alloy is sending logs)."""
         cmd = [
             "kubectl", "exec", "-n", "observability",
             "deployment/grafana", "--",
@@ -177,7 +177,7 @@ class TestLokiLogs:
 
     def test_grafana_can_query_loki(self):
         """Test that Grafana can successfully query Loki."""
-        # This tests the full integration: Grafana -> Loki -> Promtail
+        # This tests the full integration: Grafana -> Loki -> Grafana Alloy
         # Use datasource ID instead of UID (more reliable)
         cmd = [
             "kubectl", "exec", "-n", "observability",
