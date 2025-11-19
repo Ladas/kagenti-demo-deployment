@@ -936,12 +936,29 @@ Kagenti requires **100% compliance** with [OpenTelemetry GenAI Semantic Conventi
 > "With OpenLLMetry, we aim at defining an extension of the standard OpenTelemetry Semantic Conventions for gen AI applications."
 > **Source**: [Traceloop GenAI Semantic Conventions](https://www.traceloop.com/docs/openllmetry/contributing/semantic-conventions)
 
+> "The semantic conventions are now part of OpenTelemetry!"
+> **Source**: [OpenLLMetry GitHub README](https://github.com/traceloop/openllmetry)
+
+**OpenLLMetry's Contribution**:
+- Helped define early GenAI semantic conventions
+- Conventions migrated to official OpenTelemetry spec
+- Now uses `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai` to enable latest version
+
 **³ Span Naming Convention Compliance**:
 - **Pattern**: `"{gen_ai.operation.name} {gen_ai.request.model}"`
 - **Example**: `"chat gpt-4"`, `"embeddings text-embedding-ada-002"`
 - **Verification**: https://github.com/open-telemetry/semantic-conventions/blob/main/docs/gen-ai/gen-ai-spans.md (Section: "Span Name")
 
-OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the reference implementation.
+**⚠️ Important Note on Attribute Evolution**:
+The OTEL GenAI semantic conventions have evolved. Older versions used:
+- `gen_ai.system` → Now **DEPRECATED**, replaced by `gen_ai.provider.name` (Required)
+- `gen_ai.usage.prompt_tokens` → Now `gen_ai.usage.input_tokens` (Recommended)
+- `gen_ai.usage.completion_tokens` → Now `gen_ai.usage.output_tokens` (Recommended)
+- `llm.request.type` → Now `gen_ai.operation.name` (Required)
+
+**Migration**: Users must set `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai` environment variable to use latest conventions (per OTEL spec).
+
+OpenLLMetry **contributed these conventions to OpenTelemetry** and maintains compatibility with the evolving standard.
 
 **For Kagenti**: **RECOMMENDED** ✅
 - Use OpenLLMetry SDK for automatic OTEL GenAI compliance
@@ -1073,16 +1090,27 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the refere
 - **OpenInference**: Custom semantic conventions by Arize
 - **OTEL GenAI**: Official OpenTelemetry standard
 
-**OpenInference vs OTEL GenAI** (Verified Comparison):
+**OpenInference vs OTEL GenAI** (Comprehensive Verified Comparison):
 
-| Attribute Category | OpenInference⁴ | OTEL GenAI¹ |
-|--------------------|----------------|-------------|
-| **Operation Type** | Span kinds: `LLM`, `CHAIN`, `AGENT` | `gen_ai.operation.name` = `"chat"`, `"invoke_agent"` |
-| **Model Name** | `llm.model_name` | `gen_ai.request.model` |
-| **Input Tokens** | `llm.token_count.prompt` | `gen_ai.usage.input_tokens` |
-| **Output Tokens** | `llm.token_count.completion` | `gen_ai.usage.output_tokens` |
-| **Provider** | `llm.provider` | `gen_ai.provider.name` |
-| **Invocation Parameters** | `llm.invocation_parameters` | `gen_ai.request.temperature`, etc. |
+| Attribute Category | OpenInference⁴ | OTEL GenAI¹ | Compatibility |
+|--------------------|----------------|-------------|---------------|
+| **Operation Type** | Span kinds: `LLM`, `CHAIN`, `AGENT`, `TOOL`, `RETRIEVER`, `RERANKER`, `GUARDRAIL`, `EVALUATOR` | `gen_ai.operation.name` = `"chat"`, `"invoke_agent"`, `"execute_tool"`, `"embeddings"` | ❌ Different approach |
+| **Model Name** | `llm.model_name` (string) | `gen_ai.request.model` (string, Conditionally Required) | ❌ Different attribute |
+| **Input Tokens** | `llm.token_count.prompt` (int) | `gen_ai.usage.input_tokens` (int, Recommended) | ❌ Different attribute |
+| **Output Tokens** | `llm.token_count.completion` (int) | `gen_ai.usage.output_tokens` (int, Recommended) | ❌ Different attribute |
+| **Total Tokens** | `llm.token_count.total` (int) | No direct equivalent (sum of input+output) | ⚠️ Semantic difference |
+| **Provider** | No direct equivalent | `gen_ai.provider.name` (string, **Required**) | ❌ Missing in OpenInference |
+| **Prompts** | `llm.prompts` (array of JSON) | `gen_ai.prompt` (string, Opt-In only) | ⚠️ Different structure |
+| **Completions** | `llm.choices` (array of JSON) | `gen_ai.completion` (string, Opt-In only) | ⚠️ Different structure |
+| **Input Messages** | `llm.input_messages` (JSON array) | No direct equivalent | ➕ OpenInference only |
+| **Output Messages** | `llm.output_messages` (JSON array) | No direct equivalent | ➕ OpenInference only |
+| **Invocation Parameters** | `llm.invocation_parameters` (JSON) | `gen_ai.request.temperature`, `gen_ai.request.top_p`, etc. (individual attributes) | ⚠️ Structured vs flat |
+| **Cost Tracking** | `llm.cost.prompt`, `llm.cost.completion`, `llm.cost.total` | No direct equivalent | ➕ OpenInference only |
+| **Conversation ID** | No direct equivalent | `gen_ai.conversation.id` (string, Conditionally Required) | ➖ OTEL GenAI only |
+| **Agent Attributes** | `agent.name`, `graph.node.id`, `graph.node.name` | `gen_ai.agent.id`, `gen_ai.agent.name` | ⚠️ Different namespace |
+| **Tool Attributes** | `tool.name`, `tool.description`, `tool.json_schema`, `tool_call.function.name` | `gen_ai.tool.name` | ⚠️ Different granularity |
+| **Retriever Attributes** | `retrieval.documents`, `document.content`, `document.id`, `document.score` | No direct equivalent | ➕ OpenInference only |
+| **Embedding Attributes** | `embedding.model_name`, `embedding.text`, `embedding.vector` | `gen_ai.operation.name = "embeddings"`, `gen_ai.request.model` | ⚠️ Different approach |
 
 **Source Verification**:
 
@@ -1099,10 +1127,68 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the refere
 > "OpenInference semantic conventions include standardized attributes for: Span Kinds: LLM, Chain, Tool, Agent, Retriever, Embedding, Reranker, Guardrail, Evaluator"
 > **Direct Quote from Specification**: https://arize-ai.github.io/openinference/spec/semantic_conventions.html
 
-**Critical Difference - Attribute Namespaces**:
-- **OpenInference**: Uses `llm.*`, `embedding.*`, `tool.*`, `retriever.*` prefixes
-- **OTEL GenAI**: Uses `gen_ai.*` prefix exclusively
-- **These are DIFFERENT conventions** - not compatible for compliance validation
+**Critical Differences Explained**:
+
+**1. Philosophical Approach**:
+- **OpenInference**: AI-first design with rich, structured metadata for LLM operations
+  - Created by Arize specifically for Phoenix observability platform
+  - Optimized for AI/ML evaluation workflows (hallucination detection, prompt engineering)
+  - Emphasizes detailed capture of prompts, completions, and cost tracking
+  - Span kinds (LLM, RETRIEVER, RERANKER) provide semantic meaning
+
+- **OTEL GenAI**: Observability-first design aligned with general OpenTelemetry patterns
+  - Designed by OpenTelemetry community for broad ecosystem compatibility
+  - Optimized for multi-backend observability (works with ANY OTLP receiver)
+  - Emphasizes standardization across vendors (OpenAI, Anthropic, Bedrock, etc.)
+  - Uses attributes (`gen_ai.operation.name`) instead of span kinds for operation type
+
+**2. Attribute Namespace Incompatibility**:
+- **OpenInference**: Uses domain-specific prefixes (`llm.*`, `embedding.*`, `tool.*`, `retriever.*`, `agent.*`)
+- **OTEL GenAI**: Uses unified `gen_ai.*` prefix for ALL generative AI operations
+- **Result**: Tools expecting `gen_ai.request.model` will NOT find `llm.model_name`
+
+**3. Data Structure Philosophy**:
+- **OpenInference**: Prefers structured JSON attributes
+  - `llm.invocation_parameters` = `{"temperature": 0.7, "top_p": 0.9}` (single attribute)
+  - `llm.input_messages` = `[{"role": "user", "content": "..."}]` (array)
+
+- **OTEL GenAI**: Prefers flat attributes
+  - `gen_ai.request.temperature` = `0.7` (separate attribute)
+  - `gen_ai.request.top_p` = `0.9` (separate attribute)
+  - Prompts/completions are Opt-In only (privacy-preserving by default)
+
+**4. Feature Coverage Differences**:
+- **OpenInference Advantages**:
+  - ✅ Built-in cost tracking (`llm.cost.*`)
+  - ✅ Rich retrieval metadata (`retrieval.documents`, `document.score`)
+  - ✅ Comprehensive embeddings support (`embedding.vector`)
+  - ✅ Detailed tool schema tracking (`tool.json_schema`)
+
+- **OTEL GenAI Advantages**:
+  - ✅ Standard conversation tracking (`gen_ai.conversation.id`)
+  - ✅ Required provider identification (`gen_ai.provider.name`)
+  - ✅ Universal backend compatibility (works with Tempo, Jaeger, Datadog, etc.)
+  - ✅ Official OpenTelemetry backing (long-term ecosystem support)
+
+**5. Compliance Validation**:
+- **Phoenix** validates against OpenInference spec → Expects `llm.*` attributes
+- **Kagenti** validates against OTEL GenAI spec → Expects `gen_ai.*` attributes
+- **These are INCOMPATIBLE** - a span cannot be valid for both simultaneously
+
+**6. Why This Matters for Kagenti**:
+Per `docs/04-observability/genai-semantic-conventions.md`, Kagenti's compliance agent validates:
+```python
+REQUIRED_ATTRIBUTES = {
+    "chat": [
+        "gen_ai.operation.name",     # NOT llm.* equivalent
+        "gen_ai.provider.name",       # Missing in OpenInference
+        "gen_ai.request.model",       # NOT llm.model_name
+        "gen_ai.usage.input_tokens",  # NOT llm.token_count.prompt
+        "gen_ai.usage.output_tokens"  # NOT llm.token_count.completion
+    ]
+}
+```
+Phoenix's OpenInference spans would **FAIL** all 5 required attribute checks.
 
 **For Kagenti**: **NOT FULLY COMPLIANT** ❌
 - Phoenix uses OpenInference, NOT OTEL GenAI conventions
