@@ -169,6 +169,7 @@ class TestArgoCD:
         # Updated to match app-of-apps architecture
         # Root app: kagenti-platform-kind
         # Child apps are individual components
+        # NOTE: 'agents' excluded - handled in separate Claude Code instance
         expected_apps = [
             "gateway-api",
             "cert-manager",
@@ -182,7 +183,6 @@ class TestArgoCD:
             "kagenti-platform-operator",  # Updated name
             "platform",
             "observability",
-            "agents",
         ]
 
         exit_code, stdout, stderr = run_command([

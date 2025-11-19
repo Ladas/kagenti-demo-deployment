@@ -265,12 +265,12 @@ class TestPhoenix:
                 proc.terminate()
                 proc.wait(timeout=5)
 
-    def test_phoenix_postgres_backend_running(self, k8s_apps_client):
+    def test_phoenix_postgres_backend_running(self, k8s_client):
         """Verify Phoenix PostgreSQL backend is running."""
         # Phoenix uses PostgreSQL for trace storage
         # Check if postgres pod exists (deployment name may vary)
         try:
-            pods = k8s_apps_client.list_namespaced_pod(
+            pods = k8s_client.list_namespaced_pod(
                 namespace="observability",
                 label_selector="app=postgres"
             )
@@ -380,12 +380,12 @@ class TestOTELCollector:
         )
 
         assert configmap is not None, "OTEL Collector config not found"
-        assert "config.yaml" in configmap.data, \
-            "OTEL Collector config.yaml not found in ConfigMap"
+        assert "otel-collector-config.yaml" in configmap.data, \
+            "OTEL Collector otel-collector-config.yaml not found in ConfigMap"
 
         # Parse config to check exporters
         import yaml
-        config_data = yaml.safe_load(configmap.data["config.yaml"])
+        config_data = yaml.safe_load(configmap.data["otel-collector-config.yaml"])
 
         assert "exporters" in config_data, \
             "OTEL Collector config missing exporters"
