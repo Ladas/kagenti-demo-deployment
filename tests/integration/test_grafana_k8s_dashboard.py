@@ -1,12 +1,15 @@
 """
 Test Kubernetes Cluster Dashboard Panels
 Tests that all Grafana dashboard panels return valid data from Prometheus.
+
+Uses kubectl exec pattern to query services from inside the cluster,
+allowing tests to run both locally and in CI without port-forwarding.
 """
 
 import json
+import subprocess
 import pytest
-import requests
-from urllib.parse import urlencode
+from urllib.parse import quote
 
 
 @pytest.fixture(scope="module")
@@ -25,6 +28,45 @@ def prometheus_api():
 def grafana_auth():
     """Grafana admin credentials."""
     return ("admin", "admin123")
+
+
+def kubectl_exec_curl(url: str, auth: tuple = None, timeout: int = 10) -> dict:
+    """
+    Execute curl via kubectl exec from Grafana pod to query cluster services.
+
+    This pattern allows tests to work from local machine or CI without port-forwarding.
+    Similar to test_loki_logs.py approach.
+
+    Args:
+        url: Full URL to query (e.g., http://prometheus.observability.svc:9090/api/v1/query?...)
+        auth: Optional (username, password) tuple for basic auth
+        timeout: Request timeout in seconds
+
+    Returns:
+        Parsed JSON response
+    """
+    curl_cmd = ["curl", "-s", "-m", str(timeout)]
+
+    if auth:
+        curl_cmd.extend(["-u", f"{auth[0]}:{auth[1]}"])
+
+    curl_cmd.append(url)
+
+    cmd = [
+        "kubectl", "exec", "-n", "observability",
+        "deployment/grafana", "--",
+        *curl_cmd
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5)
+
+    if result.returncode != 0:
+        pytest.fail(f"kubectl exec curl failed: {result.stderr}")
+
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as e:
+        pytest.fail(f"Failed to parse JSON response: {e}\nOutput: {result.stdout}")
 
 
 @pytest.fixture(scope="module")
@@ -83,14 +125,12 @@ class TestPrometheusQueries:
     """Test that all Prometheus queries in dashboard panels return data."""
 
     def query_prometheus(self, prometheus_api, query):
-        """Execute Prometheus query and return result."""
-        url = f"{prometheus_api}/api/v1/query"
-        params = {"query": query}
+        """Execute Prometheus query via kubectl exec and return result."""
+        # URL-encode the query parameter
+        encoded_query = quote(query)
+        url = f"{prometheus_api}/api/v1/query?query={encoded_query}"
 
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-
-        data = response.json()
+        data = kubectl_exec_curl(url, auth=None, timeout=10)
         assert data.get('status') == 'success', f"Query failed: {data.get('error', 'unknown error')}"
 
         return data.get('data', {}).get('result', [])
@@ -230,36 +270,24 @@ class TestGrafanaDashboardAPI:
     """Test dashboard accessibility via Grafana API."""
 
     def test_grafana_api_accessible(self, grafana_api):
-        """Verify Grafana API is accessible."""
-        response = requests.get(f"{grafana_api}/api/health", timeout=5)
-        response.raise_for_status()
-
-        health = response.json()
+        """Verify Grafana API is accessible via kubectl exec."""
+        url = f"{grafana_api}/api/health"
+        health = kubectl_exec_curl(url, auth=None, timeout=5)
         assert health.get('database') == 'ok', "Grafana database not healthy"
 
     def test_dashboard_exists_in_grafana(self, grafana_api, grafana_auth):
-        """Verify Kubernetes dashboard exists in Grafana."""
-        response = requests.get(
-            f"{grafana_api}/api/dashboards/uid/kagenti-k8s-cluster",
-            auth=grafana_auth,
-            timeout=10
-        )
-        response.raise_for_status()
+        """Verify Kubernetes dashboard exists in Grafana via kubectl exec."""
+        url = f"{grafana_api}/api/dashboards/uid/kagenti-k8s-cluster"
+        data = kubectl_exec_curl(url, auth=grafana_auth, timeout=10)
 
-        data = response.json()
         assert data.get('dashboard', {}).get('uid') == 'kagenti-k8s-cluster'
         assert data.get('dashboard', {}).get('title') == 'Kubernetes Cluster Overview'
 
     def test_prometheus_datasource_exists(self, grafana_api, grafana_auth):
-        """Verify Prometheus datasource is configured."""
-        response = requests.get(
-            f"{grafana_api}/api/datasources",
-            auth=grafana_auth,
-            timeout=10
-        )
-        response.raise_for_status()
+        """Verify Prometheus datasource is configured via kubectl exec."""
+        url = f"{grafana_api}/api/datasources"
+        datasources = kubectl_exec_curl(url, auth=grafana_auth, timeout=10)
 
-        datasources = response.json()
         prometheus_ds = [ds for ds in datasources if ds.get('type') == 'prometheus']
 
         assert len(prometheus_ds) > 0, "No Prometheus datasource found"
