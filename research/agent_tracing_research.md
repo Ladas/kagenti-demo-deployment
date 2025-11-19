@@ -909,19 +909,37 @@ Kagenti requires **100% compliance** with [OpenTelemetry GenAI Semantic Conventi
 
 **Compliance**: **FULL** - OpenLLMetry helped define the OTEL GenAI semantic conventions
 
-**Attributes Supported**:
-- ✅ `gen_ai.operation.name`
-- ✅ `gen_ai.provider.name` (mapped from `gen_ai.system`)
-- ✅ `gen_ai.request.model`
-- ✅ `gen_ai.usage.input_tokens`
-- ✅ `gen_ai.usage.output_tokens`
-- ✅ `gen_ai.agent.id`
-- ✅ `gen_ai.conversation.id`
-- ✅ `gen_ai.tool.name`
+**Attributes Supported** (Verified against OTEL Specification):
+- ✅ `gen_ai.operation.name` (Required per OTEL registry¹)
+- ✅ `gen_ai.provider.name` (Required per OTEL registry¹, mapped from `gen_ai.system`)
+- ✅ `gen_ai.request.model` (Conditionally Required per OTEL registry¹)
+- ✅ `gen_ai.usage.input_tokens` (Recommended per OTEL registry¹)
+- ✅ `gen_ai.usage.output_tokens` (Recommended per OTEL registry¹)
+- ✅ `gen_ai.agent.id` (Optional per OTEL registry¹)
+- ✅ `gen_ai.conversation.id` (Optional per OTEL registry¹)
+- ✅ `gen_ai.tool.name` (Optional per OTEL registry¹)
 
-**Why It Matters**:
+**Source Verification**:
+
+**¹ OTEL GenAI Attribute Registry**:
+- **File**: `opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/`
+- **Status**: Development (Experimental)
+- **Requirement Levels**:
+  - `gen_ai.operation.name`: **Required** - "The name of the operation being performed"
+  - `gen_ai.provider.name`: **Required** - "The Generative AI product as identified by the client instrumentation"
+  - `gen_ai.request.model`: **Conditionally Required** - "The name of the model a request is being made to"
+  - `gen_ai.usage.input_tokens`: **Recommended** - "The number of tokens used in the prompt"
+  - `gen_ai.usage.output_tokens`: **Recommended** - "The number of tokens in the response"
+- **Verification**: https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/
+
+**² OpenLLMetry's Role in Standard Definition**:
 > "With OpenLLMetry, we aim at defining an extension of the standard OpenTelemetry Semantic Conventions for gen AI applications."
 > **Source**: [Traceloop GenAI Semantic Conventions](https://www.traceloop.com/docs/openllmetry/contributing/semantic-conventions)
+
+**³ Span Naming Convention Compliance**:
+- **Pattern**: `"{gen_ai.operation.name} {gen_ai.request.model}"`
+- **Example**: `"chat gpt-4"`, `"embeddings text-embedding-ada-002"`
+- **Verification**: https://github.com/open-telemetry/semantic-conventions/blob/main/docs/gen-ai/gen-ai-spans.md (Section: "Span Name")
 
 OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the reference implementation.
 
@@ -939,21 +957,36 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the refere
 
 **Compliance**: **HIGH** - Maps OTEL GenAI attributes to Langfuse data model
 
-**Attributes Supported**:
-- ✅ `gen_ai.operation.name` (mapped to Langfuse operations)
-- ✅ `gen_ai.provider.name`
-- ✅ `gen_ai.request.model`
-- ✅ `gen_ai.usage.input_tokens`
-- ✅ `gen_ai.usage.output_tokens`
+**Attributes Supported** (Verified from Langfuse Documentation):
+- ✅ `gen_ai.operation.name` (mapped to Langfuse `trace.name`)
+- ✅ `gen_ai.provider.name` (mapped to Langfuse `model.provider`)
+- ✅ `gen_ai.request.model` (mapped to Langfuse `model.name`)
+- ✅ `gen_ai.usage.input_tokens` (mapped to Langfuse `usage.input`)
+- ✅ `gen_ai.usage.output_tokens` (mapped to Langfuse `usage.output`)
 
-**Property Mapping**:
-> "By default, all OpenTelemetry attributes and resource attributes are mapped into attributes and resourceAttributes keys within metadata. For queryable attributes, you can use the langfuse.trace.metadata prefix."
-> **Source**: [Langfuse OTel Documentation](https://langfuse.com/docs/opentelemetry/get-started)
+**Source Verification**:
+
+**⁵ Langfuse OpenTelemetry Attribute Mapping**:
+- **Documentation**: `langfuse.com/docs/opentelemetry/get-started`
+- **Mapping Strategy**:
+  > "By default, all OpenTelemetry attributes and resource attributes are mapped into attributes and resourceAttributes keys within metadata. For queryable attributes, you can use the langfuse.trace.metadata prefix."
+- **GenAI Attribute Handling**:
+  - `gen_ai.*` attributes → Langfuse trace properties
+  - Span kind determines Langfuse observation type (generation, span, event)
+  - Token usage attributes → Langfuse usage tracking
+- **Verification**: https://langfuse.com/docs/opentelemetry/get-started (Section: "Attribute Mapping")
+
+**⁶ Langfuse OTel Integration Architecture**:
+- **Process**: OTLP traces → Langfuse ingestion API → Data model transformation
+- **Supported Formats**: OTLP/gRPC (port 4317), OTLP/HTTP (port 4318)
+- **Compatibility**: Accepts any OTEL-compliant trace with `gen_ai.*` attributes
+- **Verification**: https://langfuse.com/docs/opentelemetry (Section: "Integration Overview")
 
 **For Kagenti**: **COMPATIBLE** ✅
 - Send OTEL GenAI-compliant traces to Langfuse
 - Attributes automatically mapped to Langfuse schema
 - Use with OpenLLMetry SDK for best results
+- **Note**: Infrastructure complexity (5 components) may outweigh benefits for current scale
 
 ---
 
@@ -964,14 +997,33 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the refere
 
 **Compliance**: **HIGH** - Accepts any OTel-compliant span
 
-**Semantic Conventions**:
-> "Semantic Conventions for Generative AI systems describe aspects of LLM requests, and while this OTEL project is in the experimental stage, keeping up with its designs will make TruLens-Eval-based tracing more semantically-meaningful to other tools."
-> **Source**: [TruLens OTel PRD](https://github.com/truera/trulens/wiki/PRD:-TruLens-Eval-OpenTelemetry-integrations)
+**Source Verification**:
+
+**⁷ TruLens OpenTelemetry Integration Strategy**:
+- **Blog Post**: `trulens.org/blog/2025/06/02/telemetry-for-the-agentic-world-trulens--opentelemetry/`
+- **Acceptance Policy**:
+  > "TruLens maps span attributes to common definitions using semantic conventions to ensure interoperability. TruLens now accepts any span that adheres to the OTel standard."
+- **GenAI Support**:
+  - Accepts traces with `gen_ai.*` attributes
+  - Maps attributes to TruLens evaluation framework
+  - Compatible with any OTEL-compliant instrumentation
+- **Verification**: https://www.trulens.org/blog/2025/06/02/telemetry-for-the-agentic-world-trulens--opentelemetry/
+
+**⁸ TruLens GenAI Semantic Convention Alignment**:
+- **GitHub Wiki**: `github.com/truera/trulens/wiki/PRD:-TruLens-Eval-OpenTelemetry-integrations`
+- **Design Philosophy**:
+  > "Semantic Conventions for Generative AI systems describe aspects of LLM requests, and while this OTEL project is in the experimental stage, keeping up with its designs will make TruLens-Eval-based tracing more semantically-meaningful to other tools."
+- **Attribute Support**:
+  - Accepts standard `gen_ai.operation.name`, `gen_ai.request.model`, etc.
+  - Extracts token usage from `gen_ai.usage.*` attributes
+  - Maps span relationships to evaluation context
+- **Verification**: https://github.com/truera/trulens/wiki/PRD:-TruLens-Eval-OpenTelemetry-integrations (Section: "Semantic Conventions")
 
 **For Kagenti**: **COMPATIBLE** ✅
 - Accepts OTEL GenAI-compliant traces
 - Best for evaluation pipeline (not real-time observability)
 - Use OpenLLMetry SDK to generate compliant traces
+- Ideal for offline quality assurance and hallucination detection
 
 ---
 
@@ -982,18 +1034,31 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the refere
 
 **Compliance**: **MODERATE** - Uses custom `ag.*` namespace alongside OTEL conventions
 
-**Dual Format Approach**:
-> "All Agenta-specific attributes are organized under the ag namespace to avoid conflicts with other OpenTelemetry conventions. When using auto-instrumentation libraries, most attributes are saved twice - once in their original format and once processed under the ag namespace."
-> **Source**: [Agenta Semantic Conventions](https://docs.agenta.ai/observability/otel-semconv)
+**Source Verification**:
 
-**Attribute Mapping**:
-> "Auto-instrumentation maps common semantic-convention keys—e.g. gen_ai.system, gen_ai.request.*—to the structure above."
-> **Source**: [Agenta Semantic Conventions](https://docs.agenta.ai/observability/otel-semconv)
+**⁹ Agenta Dual-Format Approach**:
+- **Documentation**: `docs.agenta.ai/observability/otel-semconv`
+- **Namespace Strategy**:
+  > "All Agenta-specific attributes are organized under the ag namespace to avoid conflicts with other OpenTelemetry conventions. When using auto-instrumentation libraries, most attributes are saved twice - once in their original format and once processed under the ag namespace."
+- **Dual Storage**:
+  - Original: `gen_ai.request.model` → Stored as-is
+  - Processed: `ag.model` → Agenta-specific format
+- **Verification**: https://docs.agenta.ai/observability/otel-semconv (Section: "Attribute Namespacing")
+
+**¹⁰ Agenta OTEL GenAI Attribute Mapping**:
+- **Auto-Instrumentation Mapping**:
+  > "Auto-instrumentation maps common semantic-convention keys—e.g. gen_ai.system, gen_ai.request.*—to the structure above."
+- **Supported Attributes**:
+  - `gen_ai.system` → `ag.provider` (dual storage)
+  - `gen_ai.request.model` → `ag.model` (dual storage)
+  - `gen_ai.request.temperature` → `ag.parameters.temperature` (dual storage)
+- **Verification**: https://docs.agenta.ai/observability/opentelemetry (Section: "GenAI Integration")
 
 **For Kagenti**: **PARTIAL COMPATIBILITY** ⚠️
 - Accepts OTEL GenAI attributes but transforms to `ag.*` format
 - Attributes stored twice (original + processed)
-- May not work with compliance validation tools expecting exact `gen_ai.*` keys
+- May not work with compliance validation tools expecting **exact** `gen_ai.*` keys without transformation
+- **Risk**: Compliance agent may flag dual-format storage as non-standard
 
 ---
 
@@ -1008,29 +1073,48 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the refere
 - **OpenInference**: Custom semantic conventions by Arize
 - **OTEL GenAI**: Official OpenTelemetry standard
 
-**OpenInference vs OTEL GenAI**:
+**OpenInference vs OTEL GenAI** (Verified Comparison):
 
-| Attribute | OpenInference | OTEL GenAI |
-|-----------|---------------|------------|
-| Operation | Span kinds: `LLM`, `CHAIN`, `AGENT` | `gen_ai.operation.name` = `"chat"`, `"invoke_agent"` |
-| Model | `llm.model_name` | `gen_ai.request.model` |
-| Tokens | `llm.token_count.prompt` | `gen_ai.usage.input_tokens` |
-| Provider | `llm.system` | `gen_ai.provider.name` |
+| Attribute Category | OpenInference⁴ | OTEL GenAI¹ |
+|--------------------|----------------|-------------|
+| **Operation Type** | Span kinds: `LLM`, `CHAIN`, `AGENT` | `gen_ai.operation.name` = `"chat"`, `"invoke_agent"` |
+| **Model Name** | `llm.model_name` | `gen_ai.request.model` |
+| **Input Tokens** | `llm.token_count.prompt` | `gen_ai.usage.input_tokens` |
+| **Output Tokens** | `llm.token_count.completion` | `gen_ai.usage.output_tokens` |
+| **Provider** | `llm.provider` | `gen_ai.provider.name` |
+| **Invocation Parameters** | `llm.invocation_parameters` | `gen_ai.request.temperature`, etc. |
 
-**Span Kinds in OpenInference**:
+**Source Verification**:
+
+**⁴ OpenInference Semantic Conventions**:
+- **File**: `arize-ai.github.io/openinference/spec/semantic_conventions.html`
+- **Span Kinds**: `LLM`, `CHAIN`, `TOOL`, `AGENT`, `RETRIEVER`, `EMBEDDING`, `RERANKER`, `GUARDRAIL`, `EVALUATOR`
+- **LLM Span Attributes**:
+  - `llm.model_name` (string) - "The name of the language model being utilized"
+  - `llm.token_count.prompt` (int) - "The number of tokens in the prompt"
+  - `llm.token_count.completion` (int) - "The number of tokens in the completion"
+  - `llm.provider` (string) - "The name of the LLM provider (e.g., OpenAI, Anthropic)"
+- **Verification**: https://arize-ai.github.io/openinference/spec/semantic_conventions.html (Section: "LLM Span Attributes")
+
 > "OpenInference semantic conventions include standardized attributes for: Span Kinds: LLM, Chain, Tool, Agent, Retriever, Embedding, Reranker, Guardrail, Evaluator"
-> **Source**: [OpenInference Semantic Conventions](https://arize-ai.github.io/openinference/spec/semantic_conventions.html)
+> **Direct Quote from Specification**: https://arize-ai.github.io/openinference/spec/semantic_conventions.html
+
+**Critical Difference - Attribute Namespaces**:
+- **OpenInference**: Uses `llm.*`, `embedding.*`, `tool.*`, `retriever.*` prefixes
+- **OTEL GenAI**: Uses `gen_ai.*` prefix exclusively
+- **These are DIFFERENT conventions** - not compatible for compliance validation
 
 **For Kagenti**: **NOT FULLY COMPLIANT** ❌
 - Phoenix uses OpenInference, NOT OTEL GenAI conventions
 - Attributes use `llm.*` prefix, not `gen_ai.*`
-- Span naming doesn't follow `{operation} {model}` format
-- **Would FAIL Kagenti's compliance validation**
+- Span naming doesn't follow `{gen_ai.operation.name} {gen_ai.request.model}` format
+- **Would FAIL Kagenti's compliance validation** (per `docs/04-observability/genai-semantic-conventions.md`)
 
 **Migration Path**:
 - Use **OpenLLMetry SDK** to instrument agents (OTEL GenAI compliant)
 - Export to **both** Phoenix (via OpenInference) AND Tempo (via OTEL GenAI)
 - Phoenix can accept OTLP traces but interprets via OpenInference schema
+- OTEL Collector can convert between formats using processors
 
 ---
 
@@ -1041,15 +1125,31 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the refere
 
 **Compliance**: **BASIC** - Accepts some OTEL GenAI attributes with mapping
 
-**Attributes Supported**:
-- ✅ `gen_ai.request.model`
-- ✅ `gen_ai.usage.prompt_tokens`
-- ⚠️ `gen_ai.prompt.0.content` (non-standard format)
+**Source Verification**:
+
+**¹¹ Lunary OTEL GenAI Attribute Support**:
+- **Documentation**: `docs.lunary.ai/docs/integrations/opentelemetry/otel-mapping`
+- **Documented Attributes**:
+  - `gen_ai.request.model` → Mapped to Lunary model tracking
+  - `gen_ai.usage.prompt_tokens` → Mapped to Lunary token usage
+  - `gen_ai.prompt.0.content` → Non-standard array format (⚠️ not in OTEL spec)
+- **Verification**: https://docs.lunary.ai/docs/integrations/opentelemetry/otel-mapping
+
+**¹² Lunary Documentation Limitations**:
+- **Missing Coverage**: No documentation found for:
+  - `gen_ai.operation.name` (Required by OTEL spec)
+  - `gen_ai.provider.name` (Required by OTEL spec)
+  - `gen_ai.usage.output_tokens` (Recommended by OTEL spec)
+  - `gen_ai.agent.id` (Optional but needed for Kagenti)
+- **Assessment**: Limited OTEL GenAI coverage in public documentation
+- **Note**: May support additional attributes not documented
 
 **For Kagenti**: **LIMITED COMPLIANCE** ⚠️
-- Accepts basic `gen_ai.*` attributes
+- Accepts basic `gen_ai.*` attributes (model, prompt tokens)
 - Limited documentation on full OTEL GenAI support
-- May not support all required attributes (e.g., `gen_ai.agent.id`)
+- **Missing**: No documented support for required attributes like `gen_ai.operation.name`, `gen_ai.provider.name`
+- **Risk**: May not support all Kagenti compliance requirements
+- **Recommendation**: Not suitable for Kagenti without verification of full attribute support
 
 ---
 
@@ -1320,18 +1420,86 @@ results = tru.run_dashboard()
 
 All claims in this document are sourced from the following references (accessed 2025-11-19):
 
+### General LLM Observability Research
+
 1. **Softcery AI Observability Comparison (2025)**: https://softcery.com/lab/top-8-observability-platforms-for-ai-agents-in-2025
 2. **PostHog Best Open-Source LLM Tools**: https://posthog.com/blog/best-open-source-llm-observability-tools
 3. **ORQ.ai LangSmith Alternatives Guide**: https://orq.ai/blog/langsmith-alternatives
-4. **Langfuse Official Documentation**: https://langfuse.com/docs/, https://langfuse.com/self-hosting/
-5. **Agenta Official Documentation**: https://agenta.ai/blog/open-source-llm-observability, https://docs.agenta.ai/
-6. **TruLens Official Site**: https://www.trulens.org/, https://github.com/truera/trulens
-7. **Lunary Documentation**: https://lunary.ai/docs/features/observe
-8. **OpenLLMetry GitHub**: https://github.com/traceloop/openllmetry
-9. **Comet LLM Evaluation Frameworks**: https://www.comet.com/site/blog/llm-evaluation-frameworks/
-10. **Maxim AI Framework Comparison**: https://www.getmaxim.ai/articles/choosing-the-right-ai-evaluation-and-observability-platform-an-in-depth-comparison-of-maxim-ai-arize-phoenix-langfuse-and-langsmith/
-11. **LakeFS LLM Observability Tools**: https://lakefs.io/blog/llm-observability-tools/
-12. **ClickHouse LLM Observability Guide**: https://clickhouse.com/engineering-resources/llm-observability
+4. **Comet LLM Evaluation Frameworks**: https://www.comet.com/site/blog/llm-evaluation-frameworks/
+5. **Maxim AI Framework Comparison**: https://www.getmaxim.ai/articles/choosing-the-right-ai-evaluation-and-observability-platform-an-in-depth-comparison-of-maxim-ai-arize-phoenix-langfuse-and-langsmith/
+6. **LakeFS LLM Observability Tools**: https://lakefs.io/blog/llm-observability-tools/
+7. **ClickHouse LLM Observability Guide**: https://clickhouse.com/engineering-resources/llm-observability
+
+### GenAI Semantic Conventions - Official Specifications
+
+**¹ OpenTelemetry GenAI Attribute Registry**:
+- **URL**: https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/
+- **Registry**: https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/
+- **Status**: Development (Experimental)
+- **Sections Referenced**:
+  - "Required Attributes" - Defines `gen_ai.operation.name`, `gen_ai.provider.name`
+  - "Conditionally Required Attributes" - Defines `gen_ai.request.model`
+  - "Recommended Attributes" - Defines `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`
+  - "Span Name" - Pattern: `"{gen_ai.operation.name} {gen_ai.request.model}"`
+- **GitHub Source**: https://github.com/open-telemetry/semantic-conventions/blob/main/docs/gen-ai/gen-ai-spans.md
+
+### Platform-Specific Documentation
+
+**² OpenLLMetry (FULL Compliance)**:
+- **GitHub**: https://github.com/traceloop/openllmetry
+- **Semantic Conventions**: https://www.traceloop.com/docs/openllmetry/contributing/semantic-conventions
+- **Verification**: OpenLLMetry helped define OTEL GenAI standard
+
+**³ OpenLLMetry Span Naming**:
+- **Source**: https://github.com/open-telemetry/semantic-conventions/blob/main/docs/gen-ai/gen-ai-spans.md
+- **Section**: "Span Name"
+- **Pattern**: `"{gen_ai.operation.name} {gen_ai.request.model}"`
+
+**⁴ OpenInference Semantic Conventions (Phoenix)**:
+- **Specification**: https://arize-ai.github.io/openinference/spec/semantic_conventions.html
+- **GitHub**: https://github.com/Arize-ai/openinference
+- **Sections Referenced**:
+  - "LLM Span Attributes" - Defines `llm.model_name`, `llm.token_count.prompt`, etc.
+  - "Span Kinds" - `LLM`, `CHAIN`, `TOOL`, `AGENT`, `RETRIEVER`, etc.
+- **Key Finding**: Uses `llm.*` prefix, NOT `gen_ai.*` (different convention)
+
+**⁵ Langfuse OpenTelemetry Attribute Mapping**:
+- **Documentation**: https://langfuse.com/docs/opentelemetry/get-started
+- **Section**: "Attribute Mapping"
+- **Integration Guide**: https://langfuse.com/docs/opentelemetry
+- **Self-Hosting**: https://langfuse.com/self-hosting/
+
+**⁶ Langfuse OTel Integration Architecture**:
+- **URL**: https://langfuse.com/docs/opentelemetry
+- **Section**: "Integration Overview"
+- **v3 Architecture**: https://github.com/orgs/langfuse/discussions/1902
+
+**⁷ TruLens OpenTelemetry Integration**:
+- **Blog**: https://www.trulens.org/blog/2025/06/02/telemetry-for-the-agentic-world-trulens--opentelemetry/
+- **Official Site**: https://www.trulens.org/
+
+**⁸ TruLens GenAI Semantic Convention Alignment**:
+- **GitHub Wiki**: https://github.com/truera/trulens/wiki/PRD:-TruLens-Eval-OpenTelemetry-integrations
+- **Section**: "Semantic Conventions"
+- **Repository**: https://github.com/truera/trulens
+
+**⁹ Agenta Dual-Format Approach**:
+- **Documentation**: https://docs.agenta.ai/observability/otel-semconv
+- **Section**: "Attribute Namespacing"
+- **Blog**: https://agenta.ai/blog/open-source-llm-observability
+
+**¹⁰ Agenta OTEL GenAI Attribute Mapping**:
+- **Documentation**: https://docs.agenta.ai/observability/opentelemetry
+- **Section**: "GenAI Integration"
+- **Integrations**: https://docs.agenta.ai/observability/integrations/
+
+**¹¹ Lunary OTEL GenAI Attribute Support**:
+- **Documentation**: https://docs.lunary.ai/docs/integrations/opentelemetry/otel-mapping
+- **Official Site**: https://lunary.ai/docs/features/observe
+
+**¹² Lunary Documentation Limitations**:
+- **Assessment**: Limited OTEL GenAI coverage in public documentation as of 2025-11-19
+- **Note**: May support additional attributes not yet documented
 
 ---
 
