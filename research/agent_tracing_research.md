@@ -18,38 +18,49 @@ This research compares **6 major open-source LLM observability platforms** suita
 
 ### Quick Comparison Matrix
 
-| Platform | License | Self-Hosting Complexity | Multi-Agent Support | OpenTelemetry Native | Best For |
-|----------|---------|------------------------|---------------------|---------------------|----------|
-| **Arize Phoenix** | Apache 2.0 | **Low** (single container) | ✅ Yes | ✅ Built-in (OpenInference) | RAG, experimentation, dev |
-| **Langfuse** | MIT | **High** (Postgres + Clickhouse + Redis + S3) | ✅ Yes | ✅ Compatible | Production monitoring, teams |
-| **OpenLLMetry** | Apache 2.0 | **N/A** (instrumentation library) | ✅ Yes | ✅ Native extensions | Vendor-neutral tracing |
-| **Agenta** | MIT | **Medium** (Docker Compose) | ✅ Yes | ✅ Compliant | Prompt engineering + observability |
-| **Lunary** | Apache 2.0 | **Medium** (Docker) | ⚠️ Partial (individual agents) | ❓ Not mentioned | Chatbot teams |
-| **TruLens** | MIT | **Medium** (Python app) | ✅ Yes | ✅ Emits OTel traces | LLM evaluation focus |
+| Platform | License | Self-Hosting Complexity | Multi-Agent Support | OpenTelemetry Native | **GenAI Compliance** | Best For |
+|----------|---------|------------------------|---------------------|---------------------|---------------------|----------|
+| **OpenLLMetry** | Apache 2.0 | **N/A** (instrumentation library) | ✅ Yes | ✅ Native extensions | ✅ **FULL** | **Vendor-neutral tracing** |
+| **Langfuse** | MIT | **High** (Postgres + Clickhouse + Redis + S3) | ✅ Yes | ✅ Compatible | ✅ **HIGH** | Production monitoring, teams |
+| **TruLens** | MIT | **Medium** (Python app) | ✅ Yes | ✅ Emits OTel traces | ✅ **HIGH** | LLM evaluation focus |
+| **Arize Phoenix** | Apache 2.0 | **Low** (single container) | ✅ Yes | ⚠️ OpenInference | ⚠️ **PARTIAL** | RAG, experimentation, dev |
+| **Agenta** | MIT | **Medium** (Docker Compose) | ✅ Yes | ✅ Compliant | ⚠️ **MODERATE** | Prompt engineering + observability |
+| **Lunary** | Apache 2.0 | **Medium** (Docker) | ⚠️ Partial (individual agents) | ⚠️ Limited | ⚠️ **BASIC** | Chatbot teams |
+
+**Note**: GenAI Compliance refers to [OpenTelemetry GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/) - required by Kagenti platform (`docs/04-observability/genai-semantic-conventions.md`).
 
 ### Key Recommendations
 
-**For Kagenti Platform**:
+**For Kagenti Platform** (Updated with GenAI Compliance Analysis):
 
-1. **Primary: Arize Phoenix** (Already deployed ✅)
-   - **Why**: Easiest self-hosting (single Docker container), Apache 2.0 license, built-in OpenInference instrumentation
-   - **Use Case**: LLM-specific traces for agent/LLM interactions
+1. **CRITICAL: Adopt OpenLLMetry** 🆕 (**FULL GenAI Compliance** ✅)
+   - **Why**: **Only platform with FULL OTEL GenAI semantic conventions compliance**
+   - **Compliance**: Helped define the standard - reference implementation
+   - **Use Case**: **Required** for Kagenti GenAI compliance (`docs/04-observability/genai-semantic-conventions.md`)
+   - **Benefit**: Automatic `gen_ai.*` attributes, works with Tempo + Phoenix simultaneously
+
+2. **Keep: Arize Phoenix** (Already deployed ✅, **PARTIAL Compliance** ⚠️)
+   - **Why**: Easiest self-hosting (single Docker container), Apache 2.0 license
+   - **Use Case**: LLM-specific UI and evaluation
    - **Deployment**: `components/02-observability/phoenix/`
+   - **⚠️ Important**: Phoenix uses OpenInference (NOT OTEL GenAI) - must use OpenLLMetry for compliance
 
-2. **Complement: OpenLLMetry** (Instrumentation standard)
-   - **Why**: Vendor-neutral OpenTelemetry extensions, works with existing Tempo/Grafana stack
-   - **Use Case**: Standardized LLM tracing to ALL backends (Tempo + Phoenix simultaneously)
-   - **Benefit**: No vendor lock-in, 20+ backend support
-
-3. **Consider for Evaluation: TruLens**
+3. **Consider for Evaluation: TruLens** (**HIGH Compliance** ✅)
    - **Why**: Strong LLM evaluation capabilities (hallucination detection, Q&A accuracy)
+   - **Compliance**: Accepts OTEL GenAI-compliant traces
    - **Use Case**: Offline evaluation pipeline for agent quality assurance
    - **Limitation**: Focused on evaluation, not real-time observability
 
-4. **NOT Recommended: Langfuse**
+4. **Avoid for Now: Langfuse** (**HIGH Compliance** ✅ but **Complex Infrastructure**)
    - **Why**: Complex self-hosting (requires Postgres + Clickhouse + Redis + S3 + Valkey)
-   - **Tradeoff**: More features (prompt management, collaboration) vs infrastructure overhead
-   - **Better For**: Large teams needing prompt management workflows
+   - **Compliance**: Good OTEL GenAI support with attribute mapping
+   - **Tradeoff**: More features (prompt management, collaboration) vs 5-component infrastructure
+   - **Better For**: Large teams (10+ engineers) needing prompt management workflows
+
+5. **Avoid: Agenta & Lunary** (**MODERATE/BASIC Compliance** ⚠️)
+   - **Agenta**: Uses custom `ag.*` namespace alongside OTEL (dual format)
+   - **Lunary**: Limited GenAI attribute support, chatbot-focused
+   - **Issue**: May not pass Kagenti compliance validation
 
 ---
 
@@ -860,6 +871,280 @@ docker compose -f hosting/docker-compose/oss/docker-compose.gh.yml \
 | **TruLens** | MIT | ✅ Yes | ✅ Yes | Optional |
 
 **All platforms are fully open-source with permissive licenses suitable for commercial use.**
+
+---
+
+## OpenTelemetry GenAI Semantic Conventions Compliance
+
+### Overview
+
+Kagenti requires **100% compliance** with [OpenTelemetry GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/) as documented in `docs/04-observability/genai-semantic-conventions.md`.
+
+**Key Requirements**:
+- Span naming: `{gen_ai.operation.name} {gen_ai.request.model}`
+- Required attributes: `gen_ai.operation.name`, `gen_ai.provider.name`, `gen_ai.request.model`
+- Token tracking: `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`
+- Agent attributes: `gen_ai.agent.id`, `gen_ai.agent.name`, `gen_ai.conversation.id`
+- Operation types: `chat`, `embeddings`, `text_completion`, `invoke_agent`, `execute_tool`
+
+### Compliance Matrix
+
+| Platform | Compliance Level | Conventions Used | Notes |
+|----------|-----------------|------------------|-------|
+| **OpenLLMetry** | ✅ **FULL** | OTEL GenAI (native) | Helped define the standard |
+| **Langfuse** | ✅ **HIGH** | OTEL GenAI (mapped) | Maps to Langfuse data model |
+| **TruLens** | ✅ **HIGH** | OTEL GenAI (native) | Accepts any OTel-compliant span |
+| **Agenta** | ⚠️ **MODERATE** | OTEL GenAI + ag.* | Dual format (OTEL + custom) |
+| **Phoenix** | ⚠️ **PARTIAL** | OpenInference (similar) | Different convention |
+| **Lunary** | ⚠️ **BASIC** | OTEL GenAI (mapped) | Limited documentation |
+
+---
+
+### Platform-Specific Analysis
+
+#### 1. OpenLLMetry: FULL Compliance ✅
+
+> "The semantic conventions are now part of OpenTelemetry!"
+> **Source**: [OpenLLMetry GitHub](https://github.com/traceloop/openllmetry)
+
+**Compliance**: **FULL** - OpenLLMetry helped define the OTEL GenAI semantic conventions
+
+**Attributes Supported**:
+- ✅ `gen_ai.operation.name`
+- ✅ `gen_ai.provider.name` (mapped from `gen_ai.system`)
+- ✅ `gen_ai.request.model`
+- ✅ `gen_ai.usage.input_tokens`
+- ✅ `gen_ai.usage.output_tokens`
+- ✅ `gen_ai.agent.id`
+- ✅ `gen_ai.conversation.id`
+- ✅ `gen_ai.tool.name`
+
+**Why It Matters**:
+> "With OpenLLMetry, we aim at defining an extension of the standard OpenTelemetry Semantic Conventions for gen AI applications."
+> **Source**: [Traceloop GenAI Semantic Conventions](https://www.traceloop.com/docs/openllmetry/contributing/semantic-conventions)
+
+OpenLLMetry **contributed these conventions to OpenTelemetry** - it's the reference implementation.
+
+**For Kagenti**: **RECOMMENDED** ✅
+- Use OpenLLMetry SDK for automatic OTEL GenAI compliance
+- All required attributes automatically captured
+- Works with both Tempo and Phoenix backends
+
+---
+
+#### 2. Langfuse: HIGH Compliance ✅
+
+> "Langfuse maps received OTel traces to the Langfuse data model and supports additional attributes that are popular in the OTel GenAI ecosystem, aiming to be compliant with the OpenTelemetry GenAI semantic conventions."
+> **Source**: [Langfuse OpenTelemetry Documentation](https://langfuse.com/docs/opentelemetry/get-started)
+
+**Compliance**: **HIGH** - Maps OTEL GenAI attributes to Langfuse data model
+
+**Attributes Supported**:
+- ✅ `gen_ai.operation.name` (mapped to Langfuse operations)
+- ✅ `gen_ai.provider.name`
+- ✅ `gen_ai.request.model`
+- ✅ `gen_ai.usage.input_tokens`
+- ✅ `gen_ai.usage.output_tokens`
+
+**Property Mapping**:
+> "By default, all OpenTelemetry attributes and resource attributes are mapped into attributes and resourceAttributes keys within metadata. For queryable attributes, you can use the langfuse.trace.metadata prefix."
+> **Source**: [Langfuse OTel Documentation](https://langfuse.com/docs/opentelemetry/get-started)
+
+**For Kagenti**: **COMPATIBLE** ✅
+- Send OTEL GenAI-compliant traces to Langfuse
+- Attributes automatically mapped to Langfuse schema
+- Use with OpenLLMetry SDK for best results
+
+---
+
+#### 3. TruLens: HIGH Compliance ✅
+
+> "TruLens maps span attributes to common definitions using semantic conventions to ensure interoperability. TruLens now accepts any span that adheres to the OTel standard."
+> **Source**: [TruLens OpenTelemetry Integration](https://www.trulens.org/blog/2025/06/02/telemetry-for-the-agentic-world-trulens--opentelemetry/)
+
+**Compliance**: **HIGH** - Accepts any OTel-compliant span
+
+**Semantic Conventions**:
+> "Semantic Conventions for Generative AI systems describe aspects of LLM requests, and while this OTEL project is in the experimental stage, keeping up with its designs will make TruLens-Eval-based tracing more semantically-meaningful to other tools."
+> **Source**: [TruLens OTel PRD](https://github.com/truera/trulens/wiki/PRD:-TruLens-Eval-OpenTelemetry-integrations)
+
+**For Kagenti**: **COMPATIBLE** ✅
+- Accepts OTEL GenAI-compliant traces
+- Best for evaluation pipeline (not real-time observability)
+- Use OpenLLMetry SDK to generate compliant traces
+
+---
+
+#### 4. Agenta: MODERATE Compliance ⚠️
+
+> "The Observability SDK is compatible with OpenTelemetry (Otel) and gen-ai semantic conventions, which provides integrations right out of the box, like LangChain, OpenAI, and more."
+> **Source**: [Agenta OTel Documentation](https://docs.agenta.ai/observability/opentelemetry)
+
+**Compliance**: **MODERATE** - Uses custom `ag.*` namespace alongside OTEL conventions
+
+**Dual Format Approach**:
+> "All Agenta-specific attributes are organized under the ag namespace to avoid conflicts with other OpenTelemetry conventions. When using auto-instrumentation libraries, most attributes are saved twice - once in their original format and once processed under the ag namespace."
+> **Source**: [Agenta Semantic Conventions](https://docs.agenta.ai/observability/otel-semconv)
+
+**Attribute Mapping**:
+> "Auto-instrumentation maps common semantic-convention keys—e.g. gen_ai.system, gen_ai.request.*—to the structure above."
+> **Source**: [Agenta Semantic Conventions](https://docs.agenta.ai/observability/otel-semconv)
+
+**For Kagenti**: **PARTIAL COMPATIBILITY** ⚠️
+- Accepts OTEL GenAI attributes but transforms to `ag.*` format
+- Attributes stored twice (original + processed)
+- May not work with compliance validation tools expecting exact `gen_ai.*` keys
+
+---
+
+#### 5. Phoenix / OpenInference: PARTIAL Compliance ⚠️
+
+> "OpenInference is a set of conventions and plugins that is complimentary to OpenTelemetry to enable tracing of AI applications."
+> **Source**: [OpenInference GitHub](https://github.com/Arize-ai/openinference)
+
+**Compliance**: **PARTIAL** - Uses OpenInference conventions (NOT OTEL GenAI)
+
+**Key Difference**:
+- **OpenInference**: Custom semantic conventions by Arize
+- **OTEL GenAI**: Official OpenTelemetry standard
+
+**OpenInference vs OTEL GenAI**:
+
+| Attribute | OpenInference | OTEL GenAI |
+|-----------|---------------|------------|
+| Operation | Span kinds: `LLM`, `CHAIN`, `AGENT` | `gen_ai.operation.name` = `"chat"`, `"invoke_agent"` |
+| Model | `llm.model_name` | `gen_ai.request.model` |
+| Tokens | `llm.token_count.prompt` | `gen_ai.usage.input_tokens` |
+| Provider | `llm.system` | `gen_ai.provider.name` |
+
+**Span Kinds in OpenInference**:
+> "OpenInference semantic conventions include standardized attributes for: Span Kinds: LLM, Chain, Tool, Agent, Retriever, Embedding, Reranker, Guardrail, Evaluator"
+> **Source**: [OpenInference Semantic Conventions](https://arize-ai.github.io/openinference/spec/semantic_conventions.html)
+
+**For Kagenti**: **NOT FULLY COMPLIANT** ❌
+- Phoenix uses OpenInference, NOT OTEL GenAI conventions
+- Attributes use `llm.*` prefix, not `gen_ai.*`
+- Span naming doesn't follow `{operation} {model}` format
+- **Would FAIL Kagenti's compliance validation**
+
+**Migration Path**:
+- Use **OpenLLMetry SDK** to instrument agents (OTEL GenAI compliant)
+- Export to **both** Phoenix (via OpenInference) AND Tempo (via OTEL GenAI)
+- Phoenix can accept OTLP traces but interprets via OpenInference schema
+
+---
+
+#### 6. Lunary: BASIC Compliance ⚠️
+
+> "Lunary accepts gen_ai-related attributes in OpenTelemetry traces, including attributes like gen_ai.request.model, gen_ai.prompt.0.content, and gen_ai.usage.prompt_tokens."
+> **Source**: [Lunary OTel Mapping](https://docs.lunary.ai/docs/integrations/opentelemetry/otel-mapping)
+
+**Compliance**: **BASIC** - Accepts some OTEL GenAI attributes with mapping
+
+**Attributes Supported**:
+- ✅ `gen_ai.request.model`
+- ✅ `gen_ai.usage.prompt_tokens`
+- ⚠️ `gen_ai.prompt.0.content` (non-standard format)
+
+**For Kagenti**: **LIMITED COMPLIANCE** ⚠️
+- Accepts basic `gen_ai.*` attributes
+- Limited documentation on full OTEL GenAI support
+- May not support all required attributes (e.g., `gen_ai.agent.id`)
+
+---
+
+### Compliance Recommendations for Kagenti
+
+#### Compliance Requirement
+
+Per `docs/04-observability/genai-semantic-conventions.md`:
+
+> "**All Kagenti agents MUST comply 100% with these conventions.**"
+> **Mandatory Requirements**:
+> 1. ✅ Use standardized span names: `{gen_ai.operation.name} {gen_ai.request.model}`
+> 2. ✅ Include required attributes
+> 3. ✅ Record token usage metrics
+> 4. ✅ Record operation duration
+> 5. ✅ Include agent identification
+
+#### Platform Choices for Full Compliance
+
+**Option 1: OpenLLMetry + Tempo + Phoenix (RECOMMENDED)** ✅
+
+```python
+# agents/requirements.txt
+openinference-instrumentation-openai
+traceloop.sdk  # OpenLLMetry
+
+# agents/instrumentation.py
+from traceloop.sdk import Traceloop
+
+# Initialize OpenLLMetry (OTEL GenAI compliant)
+Traceloop.init(
+    api_endpoint="http://otel-collector.observability.svc:4317"
+)
+
+# All traces are OTEL GenAI compliant
+# OTEL Collector routes to:
+#   - Tempo (infrastructure, OTEL format) ✅
+#   - Phoenix (LLM-specific, converted to OpenInference) ✅
+```
+
+**Why This Works**:
+- ✅ **Full OTEL GenAI compliance** via OpenLLMetry
+- ✅ **Passes Kagenti validation** (all `gen_ai.*` attributes present)
+- ✅ **Works with Phoenix** (OTEL Collector converts to OpenInference)
+- ✅ **Works with Tempo** (native OTEL format)
+- ✅ **No vendor lock-in** (standard OTEL)
+
+**Option 2: Phoenix Native + Manual Compliance** ⚠️
+
+```python
+# Use OpenInference SDK directly (Phoenix native)
+# Manually add gen_ai.* attributes for compliance
+
+from opentelemetry import trace
+
+with tracer.start_as_current_span(
+    name="chat gpt-4",  # Correct format
+    kind=trace.SpanKind.CLIENT
+) as span:
+    # Add REQUIRED gen_ai.* attributes manually
+    span.set_attribute("gen_ai.operation.name", "chat")
+    span.set_attribute("gen_ai.provider.name", "openai")
+    span.set_attribute("gen_ai.request.model", "gpt-4")
+    # ... etc
+```
+
+**Why This is Harder**:
+- ❌ **Manual compliance** (must add all attributes by hand)
+- ❌ **Risk of missing required attributes**
+- ⚠️ **Phoenix expects OpenInference format** (dual schema)
+- ⚠️ **Compliance validation will be complex**
+
+#### Recommended Approach
+
+**For Kagenti Platform**:
+
+1. **Adopt OpenLLMetry** as standard instrumentation library
+   - Automatic OTEL GenAI compliance
+   - All required attributes automatically captured
+   - Works with both Tempo and Phoenix
+
+2. **Keep Phoenix** for LLM-specific UI/evaluation
+   - OTEL Collector converts OTEL GenAI → OpenInference
+   - Phoenix receives via OpenInference format
+   - No changes needed to Phoenix deployment
+
+3. **Validate via OTEL Collector**
+   - Real-time attribute validation (see `docs/04-observability/genai-semantic-conventions.md`)
+   - Drop non-compliant spans
+   - Report compliance metrics
+
+4. **Deploy Compliance Agent**
+   - Hourly validation scan
+   - Alert if compliance < 95%
+   - Generate compliance reports
 
 ---
 
