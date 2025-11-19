@@ -127,6 +127,18 @@ ACCEPTABLE_ERRORS = [
     # OTel Collector errors (expected - no Docker daemon in Kubernetes pods)
     r"failed to fetch Docker OS type.*Cannot connect to the Docker daemon",
     r"failed to detect resource.*failed getting OS type",
+
+    # Grafana ngalert INFO logs containing "Error" in mode descriptions
+    r"logger=ngalert.*level=info.*Error/NoData mode",
+
+    # Grafana Loki datasource INFO logs with queries searching for errors (query contains error/ERROR)
+    r"logger=tsdb\.loki.*level=info.*query=.*error",
+
+    # Grafana rule store errors (local store limitation - expected)
+    r"GetRuleGroup unsupported in rule local store",
+
+    # Grafana database locked INFO logs (SQLite retry mechanism - expected)
+    r"logger=sqlstore\.transactions.*level=info.*Database locked.*sleeping then retrying",
 ]
 
 ACCEPTABLE_WARNINGS = [
@@ -161,6 +173,9 @@ ACCEPTABLE_WARNINGS = [
     # Tempo security warnings (0.0.0.0 binding)
     r"Using the 0\.0\.0\.0 address exposes this server",
     r"UseLocalHostAsDefaultHost",
+
+    # Istio proxy INFO logs containing "warning" in config flags
+    r"info\s+FLAG:.*--proxyLogLevel.*warning",
 ]
 
 
