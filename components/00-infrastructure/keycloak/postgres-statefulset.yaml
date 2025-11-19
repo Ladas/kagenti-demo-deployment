@@ -42,12 +42,12 @@ spec:
       labels:
         app: postgres
       annotations:
-        # Enable Istio sidecar for mTLS encryption
-        sidecar.istio.io/inject: "true"
+        # Disable Istio sidecar - PostgreSQL uses wire protocol, not HTTP/gRPC
+        sidecar.istio.io/inject: "false"
     spec:
-      # NOTE: Encryption provided by Istio mTLS (both pods have sidecars)
-      # No application-level SSL needed - avoids Istio/PostgreSQL SSL conflicts
-      # This is the recommended architecture for service mesh deployments
+      # NOTE: PostgreSQL does NOT have Istio sidecar (database uses PostgreSQL wire protocol)
+      # Keycloak connects via plain TCP (DestinationRule disables mTLS for this service)
+      # This is correct for dev environments. Production uses managed DB (RDS/CloudSQL)
       containers:
         - name: postgres
           image: mirror.gcr.io/postgres:17
