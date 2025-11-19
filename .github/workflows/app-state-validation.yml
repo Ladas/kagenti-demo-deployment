@@ -222,6 +222,10 @@ jobs:
         run: |
           echo "🤖 Deploying test agents for E2E validation..."
           echo ""
+          echo "Creating team1 namespace..."
+          kubectl apply -f components/03-applications/agents/namespace.yaml
+
+          echo ""
           echo "Deploying weather agents using static manifests..."
           kubectl apply -f components/03-applications/agents/weather-service.yaml
           kubectl apply -f components/03-applications/agents/weather-mcp-tool.yaml
