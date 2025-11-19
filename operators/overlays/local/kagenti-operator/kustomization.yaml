@@ -32,6 +32,13 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "false"
+      - op: add
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
   # Ensure istio-injection label is always present on namespace (strategic merge)
   - target:
       kind: Namespace
