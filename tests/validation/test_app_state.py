@@ -98,10 +98,17 @@ class AppHealthStatus:
         )
 
     def has_errors(self) -> bool:
-        """Check if application has error conditions."""
+        """Check if application has error conditions.
+
+        Note: SyncError is NOT considered a blocking error condition because:
+        - Apps can be OutOfSync but Healthy (common for Helm-based apps)
+        - ArgoCD renders Helm charts server-side, causing drift between Git and cluster
+        - SyncError often occurs during normal resyncs and doesn't indicate app unhealthiness
+        - Only ComparisonError and InvalidSpecError are blocking errors
+        """
         error_conditions = [
             "ComparisonError",
-            "SyncError",
+            # "SyncError",  # Removed - not a blocking error for Healthy apps
             "InvalidSpecError",
         ]
         return any(
