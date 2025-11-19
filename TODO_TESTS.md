@@ -62,7 +62,8 @@ This document provides a comprehensive testing strategy and action plan for the 
 |-------------|---------|--------|----------|
 | `test_infrastructure.py` | ArgoCD, Istio, cert-manager, Gateway API, Tekton | ✅ Implemented | ~70% |
 | `test_platform.py` | Keycloak, Kagenti UI, operators, gateway | ✅ Implemented | ~60% |
-| `test_observability.py` | Grafana, Tempo, Phoenix, Jaeger, OTEL | ✅ Implemented | ~50% |
+| `test_observability.py` | Grafana, Tempo, Phoenix, OTEL Collector | ✅ Implemented | ~50% |
+| `test_authentication.py` | **Keycloak OIDC, OAuth2-Proxy, service authentication** | ✅ **NEW** | **~80%** |
 | `test_agents.py` | Agent deployment, API endpoints, telemetry | ✅ Implemented | ~40% |
 | `test_otel_signal_flows.py` | **OTEL signals (metrics, logs, traces) end-to-end** | ✅ **NEW** | **100%** (19/19 passing) |
 
@@ -94,6 +95,81 @@ This document provides a comprehensive testing strategy and action plan for the 
 - Configurable ignore list for acceptable errors/warnings
 - Target: Zero unexpected errors/warnings
 - Generates comprehensive error summary reports
+
+#### Authentication & Authorization Tests (`tests/integration/test_authentication.py`) **NEW**
+
+**Purpose:** End-to-end testing of Keycloak OIDC authentication and service access control.
+
+**Authentication Architecture Coverage:**
+
+```
+OAuth2-Proxy Protected Services:
+  - Phoenix (observability UI) → kagenti realm
+  - Kiali (service mesh dashboard) → kubernetes realm
+  - Prometheus (metrics) → kubernetes realm
+
+Direct Keycloak OIDC Integration:
+  - Grafana (dashboards) → native OIDC support
+  - ArgoCD (CD platform) → Dex + Keycloak integration
+  - Keycloak Admin Console → master realm
+```
+
+**Test Classes:**
+
+1. **TestKeycloakTokens** - Token acquisition and validation
+   - Keycloak token endpoint accessibility
+   - Access token acquisition using admin credentials
+   - JWT format and claims validation
+   - Token refresh flows
+
+2. **TestKeycloakAdminAuth** - Admin console authentication
+   - Admin console redirect to login
+   - Admin API bearer token authentication
+   - Realm verification (master, kagenti, kubernetes)
+
+3. **TestOAuth2ProxyProtection** - OAuth2-Proxy protected service access
+   - Phoenix authentication redirect (kagenti realm)
+   - Kiali authentication redirect (kubernetes realm)
+   - Prometheus authentication redirect (kubernetes realm)
+   - Redirect validation (must go through /oauth2/ or Keycloak)
+
+4. **TestOAuth2ClientSecrets** - OAuth client credentials validation
+   - Phoenix OAuth secret exists (observability/phoenix-oauth-secret)
+   - Kiali OAuth secret exists (kiali-system/kiali-oauth-secret)
+   - Prometheus OAuth secret exists (observability/prometheus-oauth-secret)
+   - Client ID and secret non-empty validation
+
+5. **TestOAuth2ProxyHealth** - OAuth2-Proxy deployment health
+   - Phoenix OAuth2-Proxy deployment (oauth2-proxy namespace)
+   - Kiali OAuth2-Proxy deployment (oauth2-proxy namespace)
+   - Prometheus OAuth2-Proxy deployment (oauth2-proxy namespace)
+   - Ready replicas validation
+
+6. **TestDirectKeycloakOIDC** - Services with direct OIDC integration
+   - Grafana OIDC configuration (NOT via OAuth2-Proxy)
+   - ArgoCD authentication configured (Dex + Keycloak)
+   - Direct Keycloak redirect validation (not /oauth2/)
+
+**Key Features:**
+- Validates complete authentication chain: Keycloak → OAuth2-Proxy → Service
+- Tests both OAuth2-Proxy pattern AND direct OIDC integration
+- Verifies correct realm usage (kagenti vs kubernetes vs master)
+- Validates JWT token structure and claims
+- Tests token refresh flows
+- Ensures OAuth client secrets are properly configured
+- Validates deployment health of all auth components
+
+**Usage:**
+```bash
+# Run all authentication tests
+pytest tests/integration/test_authentication.py -v
+
+# Run only critical auth tests
+pytest tests/integration/test_authentication.py -v -m critical
+
+# Skip slow OAuth flow tests
+pytest tests/integration/test_authentication.py -v -m "not slow"
+```
 
 #### GitHub Actions
 
