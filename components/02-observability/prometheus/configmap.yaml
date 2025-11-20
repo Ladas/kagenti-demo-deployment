@@ -113,3 +113,31 @@ data:
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+
+      # Tekton Pipelines controller metrics
+      - job_name: 'tekton-pipelines-controller'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - tekton-pipelines
+        relabel_configs:
+          # Keep only tekton-pipelines-controller pods
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: tekton-pipelines-controller
+          # Keep only the metrics port
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            action: keep
+            regex: metrics
+          # Add namespace label
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          # Add pod name label
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+          # Add app labels
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
