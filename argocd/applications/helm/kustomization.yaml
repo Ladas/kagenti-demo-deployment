@@ -18,7 +18,12 @@ resources:
   # See TODO_TRACING.md Issue 1 for details
   # - korrel8r-operator.yaml
 
+  # Wave 5 - Toolhive (MCP Server management)
+  # Required by kagenti-operator (GitHub Issue #78)
+  - toolhive-operator-crds.yaml
+
   # Wave 10 - Kagenti Operators
   # NOTE: kagenti-operator replaces platform-operator (Issue #78)
-  # Helm chart includes all Tekton ConfigMaps (14 pipeline steps)
+  # Helm chart includes all Tekton ConfigMaps (7 pipeline steps)
   - kagenti-operator.yaml
+  - toolhive-operator.yaml

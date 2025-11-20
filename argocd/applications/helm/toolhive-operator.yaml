@@ -1,0 +1,31 @@
+# Toolhive Operator
+# StackLok Toolhive for managing MCP Servers
+# Required by kagenti-operator (GitHub Issue #78)
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: toolhive-operator
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: toolhive-operator
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: operators
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"  # Wave 10 - Operators (same as kagenti-operator)
+spec:
+  project: default
+  source:
+    # OCI Helm chart from StackLok GitHub Container Registry
+    repoURL: ghcr.io/stacklok/toolhive
+    chart: toolhive-operator
+    targetRevision: "*"  # Latest version
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagenti-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
