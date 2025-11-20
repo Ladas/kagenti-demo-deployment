@@ -1,0 +1,115 @@
+# Tekton Pipeline Steps for kagenti-operator
+# These ConfigMaps define the build pipeline steps used by AgentBuild CRDs
+# The operator loads these dynamically when creating Tekton PipelineRuns
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: github-clone-step
+  namespace: kagenti-system
+  labels:
+    kagenti.operator.dev/tekton: step
+data:
+  task-spec.yaml: |
+    params:
+      - name: GITHUB_TOKEN
+        type: string
+        description: The Git repository URL with the token
+        default: ""  # Token will be injected from component or externally
+      - name: repo-url
+        type: string
+        description: The Git repository URL without the token
+      - name: revision
+        type: string
+        description: The Git revision to checkout
+        default: "main"
+    steps:
+      - name: git-clone
+        image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:latest
+        command:
+          - /ko-app/git-init
+        args:
+          - -url
+          - https://$(params.repo-url)
+          - -revision
+          - $(params.revision)
+          - -path
+          - /workspace/source
+      - name: list-dir
+        image: public.ecr.aws/docker/library/alpine:latest
+        workingDir: $(workspaces.source.path)
+        Script: |
+            echo "Listing contents of workspace root ($(workspaces.source.path)): "
+            ls -la
+
+    workspaces:
+      - name: source
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: check-subfolder-step
+  namespace: kagenti-system
+  labels:
+    kagenti.operator.dev/tekton: step
+data:
+  task-spec.yaml: |
+    params:
+      - name: subfolder-path
+        type: string
+        description: Path to the subfolder to verify
+        default: ""
+    steps:
+      - name: check-dir
+        image: public.ecr.aws/docker/library/alpine:latest
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            if [ ! -d "$(workspaces.source.path)/$(params.subfolder-path)" ]; then
+              echo "Subfolder $(params.subfolder-path) not found"
+              exit 1
+            else
+              echo "Subfolder $(params.subfolder-path) exists"
+            fi
+    workspaces:
+      - name: source
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kaniko-docker-build-step-local
+  namespace: kagenti-system
+  labels:
+    kagenti.operator.dev/tekton: step
+data:
+  task-spec.yaml: |
+    params:
+      - name: DOCKERFILE
+        type: string
+        description: Path to the Dockerfile relative to context
+        default: "Dockerfile"
+      - name: image
+        type: string
+        description: Destination image reference
+      - name: SKIP_TLS_VERIFY
+        type: string
+        description: Skip TLS verification when pushing to registry
+        default: "false"
+      - name: subfolder-path
+        type: string
+        description: Path to the subfolder to use as build context
+    steps:
+      - name: docker-build
+        image: quay.io/strimzi/kaniko-executor:0.48.0
+        args:
+          - --dockerfile=$(params.DOCKERFILE)
+          - --context=$(workspaces.source.path)/$(params.subfolder-path)
+          - --destination=$(params.image)
+          - --skip-tls-verify=$(params.SKIP_TLS_VERIFY)
+          - --verbosity=trace
+        # No volumeMounts or DOCKER_CONFIG for local registry
+    # No volumes section for local registry
+    workspaces:
+      - name: source

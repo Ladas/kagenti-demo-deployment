@@ -1,24 +1,22 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Reference remote operator configuration
-# NOTE: ArgoCD doesn't support remote HTTPS resources, so we use the GitHub repo directly in Application spec
+# Use upstream kagenti-operator Kustomize config
 resources:
-  - https://github.com/Ladas/kagenti-operator/kagenti-operator/config/default?ref=fix/webhook-certificate-validation
+  - https://github.com/kagenti/kagenti-operator//kagenti-operator/config/default?ref=v0.2.0-alpha.17
 
 namespace: kagenti-system
 
-# Substitute image for local development
-# NOTE: The base kustomization already transforms 'controller' -> 'kagenti-operator:v0.0.1'
-# So we need to override 'kagenti-operator' (the output of base transformation)
+# Use pre-built upstream images by default
+# Override with localhost:5001/kagenti-operator:dev for local development
 images:
   - name: kagenti-operator
-    newName: localhost:5001/kagenti-operator
-    newTag: dev
+    newName: ghcr.io/kagenti/kagenti-operator/kagenti-operator
+    newTag: v0.2.0-alpha.17
 
-# Patch deployment to use correct command path
-# Patch namespace to ensure istio-injection label is present
+# Apply local customizations
 patches:
+  # Fix command path and add necessary configurations
   - target:
       kind: Deployment
       name: controller-manager
@@ -26,12 +24,15 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/command/0
         value: /manager
+      # Add webhook cert path argument
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: "--webhook-cert-path=/tmp/k8s-webhook-server/serving-certs"
+      # Disable Istio sidecar injection for webhook pod
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "false"
+      # Add POD_NAMESPACE environment variable
       - op: add
         path: /spec/template/spec/containers/0/env
         value:
@@ -39,7 +40,8 @@ patches:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-  # Ensure istio-injection label is always present on namespace (strategic merge)
+
+  # Ensure istio-injection label on namespace
   - target:
       kind: Namespace
       name: kagenti-system
