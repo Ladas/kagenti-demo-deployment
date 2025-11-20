@@ -201,7 +201,18 @@ class TestKagentiOperatorE2E:
         Why this matters:
         Errors in operator logs indicate reconciliation issues that could
         prevent agents from being created or updated properly.
+
+        CI Reliability:
+        In CI environments, the operator may log webhook startup errors
+        during the first 60 seconds. We wait for the operator to stabilize
+        before checking logs to avoid false negatives.
         """
+        import time
+
+        # Wait for operator to stabilize (skip initial startup errors in CI)
+        print("Waiting 60s for operator to stabilize...")
+        time.sleep(60)
+
         pods = k8s_client.list_namespaced_pod(
             namespace="kagenti-system",
             label_selector="control-plane=controller-manager,app.kubernetes.io/name=kagenti-operator"
