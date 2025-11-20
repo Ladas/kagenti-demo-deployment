@@ -650,3 +650,153 @@
 - Discovered from upstream CI that Component CRD is the preferred pattern
 - kagenti-operator is the unified operator replacing platform-operator
 - Need to migrate from AgentBuild-only pattern to full Component CRD pattern
+
+---
+
+## Known Issues
+
+### AgentBuild Repository URL Issues
+
+**Issue**: Multiple issues with repository URLs in AgentBuild CRDs causing git clone failures
+
+**Problems discovered** (2025-11-20):
+
+1. **Wrong repository URL**
+   - AgentBuild had: `github.com/redhat-et/agent-examples.git`
+   - Should be: `github.com/kagenti/agent-examples.git` (or `github.com/Ladas/agent-examples-local.git`)
+   - **Impact**: `fatal: could not read Username for 'https://github.com'` - repo doesn't exist or is private
+
+2. **Missing PersistentVolumeClaim**
+   - PipelineRun expects PVC: `weather-service-build-workspace`
+   - PVC not automatically created by operator
+   - **Impact**: Pipeline pods stuck in `Pending` state with message "persistentvolumeclaim not found"
+
+3. **URL prefix handling**
+   - `github-clone-step` ConfigMap automatically adds `https://` prefix
+   - AgentBuild should use: `github.com/kagenti/agent-examples.git` (NO https://)
+   - ConfigMap does: `https://$(params.repo-url)` → final URL: `https://github.com/kagenti/agent-examples.git`
+
+**Correct repository URLs**:
+- Kagenti examples: `github.com/kagenti/agent-examples.git`
+- Local examples: `github.com/Ladas/agent-examples-local.git`
+- ❌ **WRONG**: `github.com/redhat-et/agent-examples.git`
+
+**Fix required**:
+```bash
+# 1. Fix AgentBuild repository URL
+kubectl patch agentbuild weather-service-build -n team1 --type=merge \
+  -p '{"spec":{"source":{"sourceRepository":"github.com/kagenti/agent-examples.git"}}}'
+
+# 2. Create PVC manually (or fix operator to create it)
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: weather-service-build-workspace
+  namespace: team1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+EOF
+
+# 3. Delete failed PipelineRuns to trigger retry
+kubectl delete pipelinerun --all -n team1
+```
+
+**Verification**:
+```bash
+# Check PipelineRun succeeds
+kubectl get pipelinerun -n team1 -w
+
+# Check git clone step logs
+kubectl logs -n team1 -l tekton.dev/task=github-clone -c step-git-clone
+
+# Verify image built and pushed
+kubectl logs -n team1 -l tekton.dev/task=buildah-build -c step-buildah-build
+```
+
+**Priority**: High (blocks agent builds from completing)
+
+**Note**: This is being fixed in the agent-examples session, not here. Documented for reference.
+---
+
+### kagenti-ui External Access Timeout (Istio Ambient Routing) - RESOLVED
+
+**Issue**: kagenti-ui not accessible externally at https://kagenti.localtest.me:9443 - connection times out with HTTP 503
+
+**Investigation findings** (2025-11-20):
+- ✅ **kagenti-ui pod is Running** (1/1 Ready in kagenti-system namespace)
+- ✅ **Internal access works** (curl from inside cluster to kagenti-ui.kagenti-system.svc.cluster.local:8501 returns HTTP 200)
+- ✅ **HTTPRoute configured** (kagenti-ui HTTPRoute exists and is Accepted by external-gateway)
+- ❌ **External access times out** (curl to https://kagenti.localtest.me:9443/ gets HTTP 503 "upstream connect error or disconnect/reset before headers")
+- ❌ **Missing `istio.io/dataplane-mode: ambient` label** (kagenti-system namespace was missing label - FIXED)
+- ❌ **Missing `istio-injection: enabled` label** (kagenti-system namespace was missing label - FIXED)
+- ❌ **No Istio sidecar** (pod was 1/1 instead of 2/2 - FIXED by adding labels)
+
+**Root cause**: kagenti-system namespace was missing BOTH Istio labels that are present in working namespaces (observability):
+- `istio-injection: enabled` - Enables Istio sidecar injection
+- `istio.io/dataplane-mode: ambient` - Enables Istio Ambient mode (ztunnel)
+
+**Fix applied** (2025-11-20):
+```bash
+kubectl label namespace kagenti-system istio.io/dataplane-mode=ambient --overwrite
+kubectl label namespace kagenti-system istio-injection=enabled --overwrite
+kubectl rollout restart deployment/kagenti-ui -n kagenti-system
+```
+
+**Verification**:
+- Pod now shows 2/2 Running (kagenti-ui + istio-proxy sidecar)
+- External access works: `curl -k https://kagenti.localtest.me:9443/` returns HTTP 200 with Streamlit HTML
+- Browser access successful at https://kagenti.localtest.me:9443
+
+**Status**: ✅ RESOLVED - External access working
+
+**Note**: VirtualService is configured correctly for INTERNAL routing only (_stcore URL rewriting), not for external Gateway routing (which uses HTTPRoute)
+
+---
+
+### Tekton git-clone ConfigMap Changes Not Picked Up by kagenti-operator - EXPLAINED
+
+**Issue**: Patching `github-clone-step` ConfigMap doesn't affect new PipelineRuns - operator continues using old git-init task
+
+**Investigation findings** (2025-11-20):
+- ✅ **ConfigMap successfully patched** (kubectl patch succeeded, shows updated content)
+- ❌ **New PipelineRuns still use old task** (deleted/recreated AgentBuild still fails with old git-init errors)
+- ❌ **Operator not picking up changes** (kagenti-controller-manager restarted but no effect)
+- ✅ **Found Helm chart templates** (kagenti-operator Helm chart at `/Users/ladas/Projects/OCTO/research/ladas-kagenti-operator/charts/kagenti-operator/templates/tekton/`)
+
+**Root cause confirmed**: kagenti-operator Helm chart contains hardcoded Tekton ConfigMap templates:
+```
+charts/kagenti-operator/templates/tekton/
+├── github-clone-step.yaml          ← Uses ghcr.io/tektoncd/git-init (requires auth)
+├── buildah-build-step.yaml
+├── buildpack-step.yaml
+├── folder-check-step.yaml
+├── kaniko-build-step-local.yaml
+├── pipeline-template-dev.yaml
+└── ... (13 total Tekton templates)
+```
+
+**How it works**:
+1. ArgoCD renders Helm chart client-side using values from `argocd/applications/helm/kagenti-operator.yaml`
+2. Helm templates create ConfigMaps in `kagenti-system` namespace
+3. kagenti-operator reads these ConfigMaps at runtime when creating PipelineRuns
+4. Manually patching ConfigMaps is overwritten by ArgoCD's selfHeal policy
+
+**To modify Tekton tasks**:
+1. Edit Helm chart template in kagenti-operator repo
+2. Push to GitHub branch
+3. ArgoCD auto-syncs and updates ConfigMaps
+4. New PipelineRuns use updated tasks
+
+**Impact**: Patching ConfigMaps directly is NOT supported - must change Helm chart
+
+**Priority**: High (blocks AgentBuild for public GitHub repos without credentials - requires git-init with anonymous clone support)
+
+**Workaround**: Use GitHub token in AgentBuild spec or modify Helm chart github-clone-step.yaml to support anonymous cloning
+
+**Next steps**: Either (1) add GitHub token secret to AgentBuild or (2) update kagenti-operator Helm chart to support public repos
+

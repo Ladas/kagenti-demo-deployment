@@ -17,20 +17,15 @@ spec:
   # dev mode: uses dev pipeline template
   mode: dev
 
-  # Source repository configuration
+  # Source repository configuration (public repo - no credentials needed)
   source:
     sourceRepository: "github.com/redhat-et/agent-examples.git"
     sourceRevision: "main"
     sourceSubfolder: "a2a/weather_service"
-    sourceCredentials:
-      name: github-token-secret
 
   # Tekton pipeline configuration
   pipeline:
     namespace: kagenti-system
-    parameters:
-    - name: SOURCE_REPO_SECRET
-      value: github-token-secret
 
   # Build output configuration
   buildOutput:
