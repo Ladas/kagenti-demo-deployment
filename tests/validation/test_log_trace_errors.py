@@ -139,6 +139,39 @@ ACCEPTABLE_ERRORS = [
 
     # Grafana database locked INFO logs (SQLite retry mechanism - expected)
     r"logger=sqlstore\.transactions.*level=info.*Database locked.*sleeping then retrying",
+
+    # Grafana database locked ERROR logs (SQLite concurrent access - expected in dev)
+    r"logger=secrets\.kvstore.*level=error.*database is locked",
+    r"logger=ngalert\.scheduler.*level=error.*database is locked",
+    r"logger=ngalert\.state\.manager.*level=error.*database is locked",
+
+    # Loki single-replica coordination errors (expected in single-replica mode)
+    r"level=error.*error asking ring for who should run the compactor.*could only find 0",
+    r"level=error.*unable to get stream rates from ingester.*DeadlineExceeded",
+    r"level=error.*error getting addresses from ring.*could only find 0",
+    r"level=error.*failed to query the ring.*could only find 0",
+
+    # Loki log labels containing "error" (not actual errors - just label values)
+    r'level=info.*flushing stream.*level=\\"error\\"',
+
+    # Tempo structured logging (INFO logs with error field names, not actual errors)
+    r"level=info.*error=null",
+    r"level=info.*error=",
+
+    # OTel Collector gRPC startup connection warnings (tempo-collector not ready yet)
+    r"warn\s+zapgrpc.*grpc: addrConn\.createTransport failed.*connection refused",
+    r"warn\s+zapgrpc.*grpc: addrConn\.createTransport failed.*i/o timeout",
+    r"warn\s+zapgrpc.*grpc: addrConn\.createTransport failed.*operation was canceled",
+
+    # Istio proxy health check timeouts during pod startup
+    r"error\s+Request to probe app failed.*context deadline exceeded",
+
+    # Kagenti operator Tekton build INFO/DEBUG logs (reporting build status including failures)
+    r"INFO\s+tekton Pipeline Build.*Failed",
+    r"DEBUG\s+events\s+Build failed",
+
+    # Kagenti operator reconciliation errors (resource deleted, controller cleanup)
+    r"ERROR\s+Reconciler error.*not found",
 ]
 
 ACCEPTABLE_WARNINGS = [
