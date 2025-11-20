@@ -150,7 +150,7 @@ pytest tests/ -v --html=report.html --self-contained-html
 - ✅ Istio mTLS STRICT mode verification
 - ✅ Certificate readiness checks
 
-**Integration with Observability** (see [CLAUDE.md](./CLAUDE.md#-monitoring--access)):
+**Integration with Observability** (see [CLAUDE.md](./CLAUDE.md#monitoring--access)):
 - Real-time test results in Grafana dashboards
 - Alert testing via Grafana API
 - Trace validation in Tempo and Phoenix

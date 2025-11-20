@@ -102,9 +102,9 @@ spec:
 
 ---
 
-## ❌ Blocker: Webhook Certificate Issue
+## ✅ RESOLVED: Webhook Certificate Issue
 
-### Problem
+### Problem (RESOLVED 2025-11-18)
 
 **Error**:
 ```
@@ -114,9 +114,12 @@ tls: failed to verify certificate: x509: certificate is not valid for any names,
 but wanted to match kagenti-operator-webhook-service.kagenti-system.svc
 ```
 
-**Impact**: Cannot create AgentBuild CRDs, **blocking all agent imports**.
+**Impact**: ~~Cannot create AgentBuild CRDs, blocking all agent imports~~ → **FIXED - AgentBuild CRDs now working**
 
-**Root Cause**: kagenti-operator webhook certificates are not being properly generated/validated after platform redeployment.
+**Root Cause**: Three-layer issue:
+1. ✅ Operator code using GetCertificate callback pattern (fixed in previous session)
+2. ✅ Helm chart secret name mismatch (fixed this session)
+3. ✅ **Istio sidecar interference** - Istio proxy intercepting webhook TLS connections (fixed this session - ROOT CAUSE)
 
 ### Attempted Fixes
 
@@ -133,70 +136,76 @@ but wanted to match kagenti-operator-webhook-service.kagenti-system.svc
    ```
    - Result: Webhook recreated but certificate still invalid
 
-### Possible Solutions
+### Solution Applied ✅
 
-**Option 1: Fix Operator Deployment** (Recommended)
-- Investigate kagenti-operator Helm chart or deployment manifests
-- Check cert-manager integration for webhook certificate generation
-- Ensure proper DNS names in certificate SANs (SubjectAlternativeNames)
-- **File**: Likely in `operators/overlays/local/kagenti-operator/`
+**Root Cause**: Istio sidecar was intercepting webhook TLS connections and presenting Istio mTLS certificate instead of webhook's TLS certificate.
 
-**Option 2: Temporary Workaround**
-- Disable webhook validation temporarily for development
-- **NOT RECOMMENDED** for production
+**Fix**: Disabled Istio sidecar injection for kagenti-operator pod.
 
-**Option 3: Manual Certificate Fix**
-- Manually generate and inject webhook certificates
-- **NOT RECOMMENDED** - should be automated
+**Files Modified**:
+1. `charts/kagenti-operator/templates/manager/manager.yaml`:
+   - Line 30: Added `sidecar.istio.io/inject: "false"` label
+   - Lines 89, 94: Fixed secret names (webhook-server-cert, metrics-server-cert)
 
-### Next Steps for Fixing
+2. `operators/overlays/local/kagenti-operator/kustomization.yaml`:
+   - Line 7: Updated branch reference to `fix/webhook-certificate-validation`
+   - Lines 32-34: Added sidecar injection disable patch
 
-1. Check kagenti-operator deployment for cert-manager annotations
-2. Verify cert-manager is generating webhook certificates
-3. Check certificate status: `kubectl get certificate -A`
-4. Review operator logs for certificate generation errors
-5. Compare with working webhook configurations (e.g., tekton, istio)
+3. `argocd/applications/helm/kagenti-operator.yaml`:
+   - Line 18: Updated targetRevision to `fix/webhook-certificate-validation`
+
+**Documentation**: See `ISSUE_WEBHOOK_CERTIFICATE.md` for comprehensive 648-line resolution documentation including security analysis.
+
+**Why this is secure**: Webhook TLS and Istio mTLS are two different security layers. The webhook pod still uses TLS encryption for API server connections - it just doesn't use Istio mTLS, which is the standard Kubernetes pattern for admission webhooks.
 
 ---
 
-## ⏳ Pending Tasks
+## ✅ Additional Completed Tasks
 
-### 4. Document Webhook Certificate Issue ⏳
+### 4. Webhook Certificate Issue Fixed ✅
 
-**Status**: In Progress
-**This File**: Documents the issue comprehensively
+**Status**: Complete (2025-11-18)
+**Documentation**:
+- Complete resolution in `ISSUE_WEBHOOK_CERTIFICATE.md` (648 lines)
+- Updated this file with resolution summary
+- Security analysis documented (Webhook TLS vs Istio mTLS)
 
-**Next Step**: Add section to CLAUDE.md troubleshooting
+### 5. Weather Agents Deployed ✅
 
-### 5. Update quick-redeploy.sh 🔲
+**Status**: Complete (2025-11-18)
+**Method**: Static manifests (while webhook was being fixed)
 
-**Status**: Not Started
+**Deployed**:
+- ✅ weather-service (localhost:5000/weather-service:v0.0.1)
+- ✅ weather-mcp-tool (localhost:5000/weather-mcp-tool:v0.0.1)
+- ✅ E2E tests passing (4/4)
+
+**Files**: `components/03-applications/agents/weather-service.yaml`, `weather-mcp-tool.yaml`
+
+### 6. Research Agent Deployed ✅
+
+**Status**: Complete (2025-11-18)
+**Method**: Built from local agent-examples repo
+
+**Deployed**:
+- ✅ research-agent (localhost:5000/research-agent:v0.0.1)
+- ✅ Pod running (1/1)
+- ✅ Service accessible on port 8000
+
+**Files**: `components/03-applications/agents/research-agent.yaml`
+
+**Source**: `/Users/ladas/Projects/OCTO/research/agent-examples-local/a2a/research-agent`
+
+---
+
+## 🔲 Remaining Tasks
+
+### 7. Update quick-redeploy.sh 🔲
+
+**Status**: Not Started (NO LONGER BLOCKED)
 **File**: `scripts/quick-redeploy.sh`
 
-**Required Changes**:
-```bash
-# After platform deployment completes (after monitoring or agent import step)
-echo "🤖 Importing example agents..."
-
-# Wait for kagenti-ui to be ready
-kubectl wait --for=condition=Ready pod -l app=kagenti-ui -n kagenti-system --timeout=300s
-
-# Import weather-agent
-./scripts/import-agents-via-ui.sh \
-  "https://github.com/redhat-et/agent-examples.git" \
-  "a2a/weather_service" \
-  "weather-agent" \
-  "team1"
-
-# Import research-agent (if exists)
-# ./scripts/import-agents-via-ui.sh \
-#   "https://github.com/redhat-et/agent-examples-local.git" \
-#   "research-agent" \
-#   "research-agent" \
-#   "team1"
-```
-
-**Blocked By**: Webhook certificate issue must be fixed first
+**Note**: Now that webhook validation is working, this can be implemented to use AgentBuild CRDs for dynamic agent import during cluster setup.
 
 ### 6. Create E2E Tests 🔲
 

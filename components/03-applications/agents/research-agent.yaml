@@ -10,8 +10,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 8080
-    targetPort: 8080
+  - port: 8000
+    targetPort: 8000
     protocol: TCP
     name: a2a
   selector:
@@ -41,23 +41,40 @@ spec:
       serviceAccountName: default
       containers:
       - name: agent
-        image: localhost:5001/research-agent:v0.0.1
+        image: localhost:5000/research-agent:v0.0.1
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
+        - containerPort: 8000
           name: a2a
           protocol: TCP
         env:
-        - name: A2A_HOST
-          value: "0.0.0.0"
+        # Server configuration
         - name: A2A_PORT
-          value: "8080"
-        - name: llm_api_base
+          value: "8000"
+
+        # LLM configuration (Ollama)
+        - name: LLM_API_BASE
           value: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+        - name: LLM_MODEL
+          value: "qwen2.5:7b"
+        - name: OPENAI_API_KEY
+          value: "not-needed"
+
+        # Tavily Search API (required for research agent)
+        # NOTE: This will need to be configured with actual API key
+        - name: TAVILY_API_KEY
+          value: "REPLACE_WITH_ACTUAL_KEY"
+
+        # OpenTelemetry configuration
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://otel-collector.observability.svc.cluster.local:4317"
         - name: OTEL_SERVICE_NAME
           value: "research-agent"
+
+        # Phoenix project assignment (for multi-tenancy)
+        - name: PHOENIX_PROJECT_NAME
+          value: "team1-agents"
+
         resources:
           requests:
             cpu: 100m

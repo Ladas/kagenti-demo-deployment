@@ -41,7 +41,7 @@ spec:
       serviceAccountName: default
       containers:
       - name: agent
-        image: localhost:5001/weather-service:v0.0.1
+        image: localhost:5000/weather-service:v0.0.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000

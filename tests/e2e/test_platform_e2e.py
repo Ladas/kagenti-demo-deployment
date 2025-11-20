@@ -198,14 +198,32 @@ class TestServiceMesh:
             "istiod has no ready replicas"
 
     def test_keycloak_healthy(self, k8s_apps_client):
-        """Verify Keycloak identity provider is healthy."""
-        statefulset = k8s_apps_client.read_namespaced_stateful_set(
-            name="keycloak",
-            namespace="keycloak"
-        )
+        """Verify Keycloak identity provider is healthy.
 
+        Keycloak can take 2-5 minutes to start in CI, so we retry
+        with a 300s timeout to avoid false negatives.
+        """
+        import time
+        max_retries = 10
+        retry_delay = 30
+
+        for attempt in range(max_retries):
+            statefulset = k8s_apps_client.read_namespaced_stateful_set(
+                name="keycloak",
+                namespace="keycloak"
+            )
+
+            if statefulset.status.ready_replicas and statefulset.status.ready_replicas >= 1:
+                print(f"✓ Keycloak ready (attempt {attempt+1}/{max_retries})")
+                return  # Success
+
+            if attempt < max_retries - 1:
+                print(f"Keycloak not ready yet (attempt {attempt+1}/{max_retries}), waiting {retry_delay}s...")
+                time.sleep(retry_delay)
+
+        # Final assertion after all retries
         assert statefulset.status.ready_replicas >= 1, \
-            "Keycloak has no ready replicas"
+            f"Keycloak has no ready replicas after {max_retries * retry_delay}s"
 
     def test_container_registry_healthy(self, k8s_apps_client, excluded_apps):
         """Verify container registry is healthy."""
@@ -346,34 +364,59 @@ class TestPlatformServices:
             pytest.fail(f"External gateway not found: {e}")
 
     def test_tls_certificates_ready(self, k8s_custom_client):
-        """Verify TLS certificates are issued."""
+        """Verify TLS certificates are issued.
+
+        TLS certificate issuance can take time in CI, so we retry
+        with a 300s timeout to allow cert-manager to complete.
+        """
+        import time
         certificates = [
             ("default", "localtest-me-tls"),
             ("kagenti-system", "localtest-me-wildcard"),
         ]
 
+        max_retries = 10
+        retry_delay = 30
+
         for namespace, cert_name in certificates:
-            try:
-                cert = k8s_custom_client.get_namespaced_custom_object(
-                    group="cert-manager.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="certificates",
-                    name=cert_name
-                )
+            ready = False
 
-                # Check certificate status
-                status = cert.get("status", {})
-                conditions = status.get("conditions", [])
+            for attempt in range(max_retries):
+                try:
+                    cert = k8s_custom_client.get_namespaced_custom_object(
+                        group="cert-manager.io",
+                        version="v1",
+                        namespace=namespace,
+                        plural="certificates",
+                        name=cert_name
+                    )
 
-                ready = any(
-                    c.get("type") == "Ready" and c.get("status") == "True"
-                    for c in conditions
-                )
+                    # Check certificate status
+                    status = cert.get("status", {})
+                    conditions = status.get("conditions", [])
 
-                assert ready, f"Certificate {cert_name} not ready"
-            except ApiException as e:
-                pytest.fail(f"Certificate {cert_name} not found: {e}")
+                    ready = any(
+                        c.get("type") == "Ready" and c.get("status") == "True"
+                        for c in conditions
+                    )
+
+                    if ready:
+                        print(f"✓ Certificate {cert_name} ready (attempt {attempt+1}/{max_retries})")
+                        break  # Success
+
+                    if attempt < max_retries - 1:
+                        print(f"Certificate {cert_name} not ready (attempt {attempt+1}/{max_retries}), waiting {retry_delay}s...")
+                        time.sleep(retry_delay)
+
+                except ApiException as e:
+                    if attempt < max_retries - 1:
+                        print(f"Certificate {cert_name} not found (attempt {attempt+1}/{max_retries}), waiting {retry_delay}s...")
+                        time.sleep(retry_delay)
+                    else:
+                        pytest.fail(f"Certificate {cert_name} not found after {max_retries * retry_delay}s: {e}")
+
+            # Final assertion after all retries
+            assert ready, f"Certificate {cert_name} not ready after {max_retries * retry_delay}s"
 
 
 # ============================================================================

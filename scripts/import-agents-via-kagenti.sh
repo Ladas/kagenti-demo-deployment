@@ -73,18 +73,14 @@ metadata:
     app: ${AGENT_NAME}
     kagenti.io/type: agent
 spec:
-  mode: ${BUILD_MODE}
+  # Source configuration (REQUIRED field in new schema)
+  source:
+    sourceRepository: "${REPO_URL}"
+    sourceRevision: "main"
+    sourceSubfolder: "${CONTEXT_PATH}"
 
-  # Source configuration
-  pipeline:
-    namespace: kagenti-system
-    parameters:
-      - name: SOURCE_URL
-        value: "${REPO_URL}"
-      - name: SOURCE_REVISION
-        value: "main"
-      - name: SOURCE_CONTEXT_DIR
-        value: "${CONTEXT_PATH}"
+  # Build mode
+  mode: ${BUILD_MODE}
 
   # Build output configuration
   buildOutput:

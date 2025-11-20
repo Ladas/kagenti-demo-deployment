@@ -975,23 +975,32 @@ OpenLLMetry **contributed these conventions to OpenTelemetry** and maintains com
 **Compliance**: **HIGH** - Maps OTEL GenAI attributes to Langfuse data model
 
 **Attributes Supported** (Verified from Langfuse Documentation):
-- ✅ `gen_ai.operation.name` (mapped to Langfuse `trace.name`)
-- ✅ `gen_ai.provider.name` (mapped to Langfuse `model.provider`)
-- ✅ `gen_ai.request.model` (mapped to Langfuse `model.name`)
-- ✅ `gen_ai.usage.input_tokens` (mapped to Langfuse `usage.input`)
-- ✅ `gen_ai.usage.output_tokens` (mapped to Langfuse `usage.output`)
+- ✅ `gen_ai.operation.name` (used for trace categorization)
+- ✅ `gen_ai.provider.name` (stored in observation metadata)
+- ✅ `gen_ai.request.model` (mapped to `langfuse.observation.model.name`)
+- ✅ `gen_ai.response.model` (mapped to `langfuse.observation.model.name`)
+- ✅ `gen_ai.usage.*` (mapped to `langfuse.observation.usage_details`)
+- ✅ `gen_ai.prompt` (mapped to `langfuse.observation.input`)
+- ✅ `gen_ai.completion` (mapped to `langfuse.observation.output`)
+- ✅ `gen_ai.usage.cost` (mapped to `langfuse.observation.cost_details`)
 
 **Source Verification**:
 
-**⁵ Langfuse OpenTelemetry Attribute Mapping**:
-- **Documentation**: `langfuse.com/docs/opentelemetry/get-started`
+**⁵ Langfuse OpenTelemetry Attribute Mapping** (Verified 2025-11-19):
+- **Documentation**: `langfuse.com/docs/opentelemetry`
+- **Compliance Statement**:
+  > "Langfuse aims to be compliant with the OpenTelemetry GenAI semantic conventions"
+- **Verified Mappings**:
+  - `gen_ai.request.model` | `gen_ai.response.model` → `langfuse.observation.model.name`
+  - `gen_ai.usage.*` → `langfuse.observation.usage_details`
+  - `gen_ai.prompt` → `langfuse.observation.input`
+  - `gen_ai.completion` → `langfuse.observation.output`
+  - `gen_ai.usage.cost` → `langfuse.observation.cost_details`
 - **Mapping Strategy**:
-  > "By default, all OpenTelemetry attributes and resource attributes are mapped into attributes and resourceAttributes keys within metadata. For queryable attributes, you can use the langfuse.trace.metadata prefix."
-- **GenAI Attribute Handling**:
-  - `gen_ai.*` attributes → Langfuse trace properties
+  > "By default, all OpenTelemetry attributes and resource attributes are mapped into attributes and resourceAttributes keys within metadata."
+  - Attributes in `langfuse.*` namespace take precedence over generic OTEL conventions
   - Span kind determines Langfuse observation type (generation, span, event)
-  - Token usage attributes → Langfuse usage tracking
-- **Verification**: https://langfuse.com/docs/opentelemetry/get-started (Section: "Attribute Mapping")
+- **Verification**: https://langfuse.com/docs/opentelemetry (Section: "Model Mapping", "Usage Mapping")
 
 **⁶ Langfuse OTel Integration Architecture**:
 - **Process**: OTLP traces → Langfuse ingestion API → Data model transformation

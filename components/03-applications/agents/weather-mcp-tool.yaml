@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: weather-mcp-tool
+  name: weather-tool
   namespace: team1
   labels:
-    app: weather-mcp-tool
+    app: weather-tool
 spec:
   type: ClusterIP
   ports:
-  - port: 8001
+  - port: 8000
     targetPort: 8001
     protocol: TCP
     name: mcp
   selector:
-    app: weather-mcp-tool
+    app: weather-tool
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -21,21 +21,24 @@ metadata:
   name: weather-mcp-tool
   namespace: team1
   labels:
-    app: weather-mcp-tool
+    app: weather-tool
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: weather-mcp-tool
+      app: weather-tool
   template:
     metadata:
       labels:
-        app: weather-mcp-tool
+        app: weather-tool
     spec:
       serviceAccountName: default
+      volumes:
+      - name: cache
+        emptyDir: {}
       containers:
       - name: mcp-tool
-        image: localhost:5001/weather-mcp-tool:v0.0.1
+        image: localhost:5000/weather-mcp-tool:v0.0.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8001
@@ -50,6 +53,11 @@ spec:
           value: "streamable-http"
         - name: LOG_LEVEL
           value: "INFO"
+        - name: UV_CACHE_DIR
+          value: "/tmp/.cache/uv"
+        volumeMounts:
+        - name: cache
+          mountPath: /tmp/.cache
         resources:
           requests:
             cpu: 50m
@@ -57,15 +65,3 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8001
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8001
-          initialDelaySeconds: 5
-          periodSeconds: 10

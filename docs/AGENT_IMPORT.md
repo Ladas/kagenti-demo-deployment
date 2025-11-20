@@ -376,14 +376,16 @@ Error from server (InternalError): failed calling webhook "magentbuild.kb.io":
 tls: failed to verify certificate: x509: certificate is not valid for any names
 ```
 
-**Status**: Known platform bug - see [ISSUE_WEBHOOK_CERTIFICATE.md](../ISSUE_WEBHOOK_CERTIFICATE.md)
+**Status**: ✅ **RESOLVED** (2025-11-18) - see [ISSUE_WEBHOOK_CERTIFICATE.md](../ISSUE_WEBHOOK_CERTIFICATE.md)
 
-**Workaround**: Full platform redeployment may resolve the issue:
+**Root Cause**: Istio sidecar was intercepting webhook TLS connections and presenting Istio mTLS certificate instead of webhook's TLS certificate.
+
+**Solution**: Disabled Istio sidecar injection for operator pod by adding `sidecar.istio.io/inject: "false"` label.
+
+**If you encounter this error**: Platform redeploy should resolve it (fix is in Git):
 ```bash
 ./scripts/quick-redeploy.sh
 ```
-
-**Tracking**: Reported to kagenti-operator team
 
 ---
 
@@ -442,33 +444,47 @@ agent-examples/
 
 ---
 
-## Integration with quick-redeploy.sh
+## Integration with CI/CD
 
-**PLANNED** (blocked by webhook issue): The agent import script will be integrated into `quick-redeploy.sh`:
+### GitHub Actions CI Workflow
+
+Agents are automatically deployed in CI **AFTER** the platform is ready:
+
+**File**: `.github/workflows/app-state-validation.yml` (lines 221-236)
+
+```yaml
+- name: Deploy test agents for E2E validation
+  run: |
+    echo "🤖 Deploying test agents for E2E validation..."
+    kubectl apply -f components/03-applications/agents/weather-service.yaml
+    kubectl apply -f components/03-applications/agents/weather-mcp-tool.yaml
+
+    kubectl wait --for=condition=Ready pod -l app=weather-service -n team1 --timeout=120s || true
+    kubectl wait --for=condition=Ready pod -l app=weather-tool -n team1 --timeout=120s || true
+```
+
+**Why static manifests in CI?**
+- Faster than AgentBuild (no Tekton pipeline overhead)
+- More reliable for CI (fewer moving parts)
+- AgentBuild CRDs can still be tested separately
+
+### Local Development Workflow
+
+The agent import script can be called manually after platform deployment:
 
 ```bash
-# After platform deployment completes
-echo "🤖 Importing example agents..."
+# After running quick-redeploy.sh
+./scripts/quick-redeploy.sh
 
-# Wait for kagenti-ui to be ready
-kubectl wait --for=condition=Ready pod -l app=kagenti-ui -n kagenti-system --timeout=300s
-
-# Import weather-agent
-./scripts/import-agents-via-ui.sh \
+# Then import agents
+./scripts/import-agents-via-kagenti.sh \
   "https://github.com/redhat-et/agent-examples.git" \
   "a2a/weather_service" \
   "weather-agent" \
   "team1"
-
-# Import research-agent
-./scripts/import-agents-via-ui.sh \
-  "https://github.com/redhat-et/agent-examples-local.git" \
-  "research-agent" \
-  "research-agent" \
-  "team1"
 ```
 
-**Status**: Implementation blocked by [webhook certificate issue](../ISSUE_WEBHOOK_CERTIFICATE.md)
+**See**: `quick-redeploy.sh` deployment summary (step 5) for manual agent deployment instructions
 
 ---
 
