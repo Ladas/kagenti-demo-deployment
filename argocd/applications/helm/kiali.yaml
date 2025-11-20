@@ -37,7 +37,7 @@ spec:
         # External services configuration
         external_services:
           prometheus:
-            url: http://prometheus.istio-system:9090
+            url: http://prometheus.observability:9090
           grafana:
             enabled: true
             url: http://grafana.observability:3000
