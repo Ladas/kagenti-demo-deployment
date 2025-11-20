@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/Ladas/kagenti-operator  # TODO: Change to https://github.com/kagenti/kagenti-operator when CI/CD publishes images
     path: charts/kagenti-operator
-    targetRevision: fix/webhook-certificate-validation  # Branch with webhook cert fixes
+    targetRevision: fix/anonymous-git-clone-support  # Branch with anonymous git-clone support for public repos
     helm:
       values: |
         controllerManager:
