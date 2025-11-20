@@ -19,9 +19,6 @@ resources:
   # - korrel8r-operator.yaml
 
   # Wave 10 - Kagenti Operators
-  # NOTE: Both operators deploy identical Tekton pipeline ConfigMaps
-  # This causes SharedResourceWarnings but Kubernetes ServerSideApply
-  # allows both operators to share ownership of these resources
-  # DISABLED: Using kustomize-based overlays instead (see argocd/applications/kustomize/)
-  # - kagenti-operator.yaml
-  # - platform-operator.yaml
+  # NOTE: kagenti-operator replaces platform-operator (Issue #78)
+  # Helm chart includes all Tekton ConfigMaps (14 pipeline steps)
+  - kagenti-operator.yaml

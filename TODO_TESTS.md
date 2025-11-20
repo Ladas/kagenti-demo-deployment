@@ -11128,3 +11128,737 @@ Wave 0+: Main Keycloak resources (CR, PostgreSQL, realms)
 
 ---
 
+| 2025-11-20 10:28:39 | 332 | 278 | 0 | 54 | ✓ PASS |
+
+### Test Run: 2025-11-20 10:28:39
+
+**Summary**: 332 tests (278 passed, 0 failed, 54 skipped)
+
+| Test | Status | Duration |
+|------|--------|----------|
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_pod_running PASSED [  0%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_crds_registered PASSED [  0%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_webhook_service PASSED [  0%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_logs_no_errors PASSED [  1%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_can_list_agents PASSED [  1%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_pod_running SKIPPED [  1%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_crds_registered SKIPPED [  2%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_logs_no_errors SKIPPED [  2%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_can_list_components SKIPPED [  2%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_both_operators_running_simultaneously PASSED [  2%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_shared_configmaps_exist SKIPPED [  3%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_images_correct PASSED [  3%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_command_path_correct PASSED [  3%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_argocd_healthy PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_cert_manager_healthy PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_tekton_pipelines_installed PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_istiod_healthy PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_keycloak_healthy PASSED [  5%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_container_registry_healthy SKIPPED [  5%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_kiali_healthy PASSED [  5%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_operator_healthy SKIPPED [  6%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_crds_installed SKIPPED [  6%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_healthy PASSED [  6%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_oauth_config_completed SKIPPED) [  7%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_external_gateway_exists PASSED [  7%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_tls_certificates_ready PASSED [  7%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_tempo_healthy PASSED [  8%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_otel_collector_healthy PASSED [  8%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_phoenix_healthy PASSED [  8%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_agent_services_exist SKIPPED [ 10%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_research_agent_a2a_endpoint SKIPPED [ 10%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_all_applications_exist PASSED [ 10%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_critical_applications_synced PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_no_crashloop_pods PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_cluster_pod_health_threshold PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_all_deployments_have_replicas PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_service_healthy SKIPPED [ 12%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_has_qwen_model SKIPPED [ 12%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_tool_deployed SKIPPED [ 12%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_agent_deployed SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_has_agent_card SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_mcp_connectivity SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_chat_with_mcp_tool_calling SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestComponentIntegration::test_weather_tool_component_exists SKIPPED [ 14%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestComponentIntegration::test_weather_agent_component_exists SKIPPED [ 14%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_research_agent_simple_question SKIPPED [ 14%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_health_check SKIPPED [ 15%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_card_accessible SKIPPED [ 15%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_simple_factual_question SKIPPED [ 15%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_multi_turn_conversation SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_research_agent_healthy SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_code_agent_healthy SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_orchestrator_agent_healthy SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_services_exist SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_deployments_exist SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_research_agent_chat_endpoint SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_agent_health_endpoint SKIPPED [ 18%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentTelemetry::test_agent_trace_in_phoenix SKIPPED [ 18%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_prometheus_mcp_server_deployment_ready SKIPPED [ 18%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_phoenix_ready_for_trace_mcp_server PASSED [ 18%] | ✓ PASSED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_deployment_namespace_exists PASSED [ 19%] | ✓ PASSED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_service_accessible SKIPPED [ 19%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_github_mcp_server_has_credentials SKIPPED [ 19%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_monitoring_agent_workflow SKIPPED [ 20%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentCRDLifecycle::test_create_agent_cr SKIPPED [ 20%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agent_crd_installed PASSED [ 20%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentbuild_crd_installed PASSED [ 20%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentcard_crd_installed PASSED [ 21%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agents PASSED [ 21%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentbuilds PASSED [ 21%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentcards PASSED [ 22%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_webhook_accessible PASSED [ 22%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_rbac_configured PASSED [ 22%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentHealth::test_team1_namespace_exists PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentHealth::test_no_crashloop_agent_pods PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_prometheus_down_query_logic PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_deployment_down_query_logic PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_gateway_regex_pattern PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_prometheus_down_alert_query PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_deployment_replicas_metrics_exist PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_gateway_deployment_exists PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_all_alert_queries_valid_syntax PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertThresholds::test_cpu_threshold_not_triggered_during_normal_operation PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertThresholds::test_memory_threshold_not_triggered_during_normal_operation PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[prometheus-down-critical] PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[grafana-down-warning] PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[loki-down-warning] PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[tempo-down-warning] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[alertmanager-down-critical] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[istiod-down-critical] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[gateway-unhealthy-critical] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[keycloak-down-critical] PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[pod-crashloop-backoff-critical] PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_pod_is_running PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_service_exists PASSED [ 29%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_health_endpoint PASSED [ 29%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_ready_endpoint PASSED [ 29%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_api_status PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_config_loaded PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_can_receive_alerts PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_alerts_api PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_receivers_configured PASSED [ 31%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_routes_configured PASSED [ 31%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_network_policy_allows_grafana PASSED [ 31%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_mtls_is_permissive PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_keycloak_token_endpoint_accessible PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_acquire_token_with_admin_credentials PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_token_contains_valid_jwt PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_token_refresh PASSED [ 33%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakAdminAuth::test_keycloak_admin_console_redirect PASSED [ 33%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakAdminAuth::test_keycloak_admin_api_with_token PASSED [ 33%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyProtection::test_phoenix_requires_authentication PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyProtection::test_kiali_requires_authentication PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyProtection::test_prometheus_requires_authentication PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ClientSecrets::test_phoenix_oauth_secret_exists PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ClientSecrets::test_kiali_oauth_secret_exists PASSED [ 35%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ClientSecrets::test_prometheus_oauth_secret_exists PASSED [ 35%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyHealth::test_phoenix_oauth2_proxy_healthy PASSED [ 35%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyHealth::test_kiali_oauth2_proxy_healthy PASSED [ 36%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyHealth::test_prometheus_oauth2_proxy_healthy PASSED [ 36%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestDirectKeycloakOIDC::test_grafana_oidc_configured PASSED [ 36%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestDirectKeycloakOIDC::test_argocd_auth_configured PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_variables_use_valid_regex PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_namespace_variable_can_query_loki PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_pod_variable_query_with_all_namespaces PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_panel_query_with_all_variables_selected PASSED [ 38%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_error_logs_panel_query PASSED [ 38%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_logs_per_second_stat_panel PASSED [ 38%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_no_empty_compatible_regex_in_queries PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_accessible_and_loads_without_errors PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_pod_is_running PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_unified_alerting_enabled PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alertmanager_contact_point_configured PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_notification_policies_configured PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_platform_health_alerts_provisioned PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_have_proper_labels PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_severity PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_layer PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rule_annotations PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_critical_alerts_have_fast_evaluation PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alerting_config_mounted PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_can_query_alertmanager PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_internal_alertmanager_running PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alerting_provisioning_configmap_exists PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_env_vars_for_unified_alerting PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_dashboard_file_exists PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_dashboard_has_row_sections PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cluster_cpu_usage PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cluster_memory_usage PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cluster_disk_usage PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_total_pods PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_running_pods PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pending_pods PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_failed_pods PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pod_restarts PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_oomkilled_pods PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_crashloop_pods PASSED [ 47%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_firing_alerts PASSED [ 47%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_firing_alerts_timeseries PASSED [ 47%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pod_status_over_time PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pod_status_by_namespace PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cpu_usage_by_namespace PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_memory_usage_by_namespace PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_disk_usage_by_namespace PASSED [ 49%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_network_io_by_namespace PASSED [ 49%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_grafana_api_accessible PASSED [ 49%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_dashboard_exists_in_grafana PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_prometheus_datasource_exists PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_dashboard_panels_have_valid_queries PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Cluster CPU Usage-gauge] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Cluster Memory Usage-gauge] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Cluster Disk Usage-gauge] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Total Pods-stat] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Running Pods-stat] PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Failed Pods-stat] PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Firing Alerts-stat] PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Firing Alerts Over Time-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Pod Status Over Time-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Pod Status by Namespace-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[CPU Usage by Namespace-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Memory Usage by Namespace-timeseries] PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_all_panels_have_datasource PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_overview_section_not_collapsed PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_alerting_section_exists PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_dashboard_file_exists PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_dashboard_has_new_panels PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_dashboard_version PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_count PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Total Logs-stat] PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Error Count-stat] PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Warning Count-stat] PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Logs per Second-stat] PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Log Volume by Level-timeseries] PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Log Volume by Namespace-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Error Cumulative Counts by Namespace-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Warning Cumulative Counts by Namespace-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Log Errors vs Alerts (Coverage Analysis)-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[All Logs-logs] PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Error Logs-logs] PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Warning Logs-logs] PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Top 10 Error Sources-table] PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Top 10 Warning Sources-table] PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_server_healthy PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_applicationset_controller_healthy PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_repo_server_healthy PASSED [ 61%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_all_argocd_applications_exist PASSED [ 61%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_critical_applications_synced PASSED [ 61%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istiod_healthy PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_ingress_gateway_healthy SKIPPED [ 62%] | ○ SKIPPED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_base_crds_installed PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_mtls_policy_exists PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_healthy PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_webhook_healthy PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_cainjector_healthy PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_certificates_ready PASSED [ 64%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_gateway_api_crds_installed PASSED [ 64%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_external_gateway_exists PASSED [ 64%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_httproutes_configured PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_controller_healthy PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_webhook_healthy PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_crds_installed PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_no_crashloop_pods_in_infrastructure PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_infrastructure_pod_health_threshold PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_panel_exists PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_panel_exists PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_has_valid_queries PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_has_valid_query PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_queries_execute PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_query_executes PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_returns_data_per_level PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_returns_data_per_namespace PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_queries_do_not_use_empty_compatible_regex PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_is_running PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_alloy_is_running PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_ready_endpoint PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_has_log_streams PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_query_observability_logs PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_query_with_pod_selector PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_loki_datasource_configured PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_can_query_loki PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_logs_have_metadata PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_healthy PASSED [ 72%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_exists PASSED [ 72%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_api_responds SKIPPED [ 72%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_graph_accessible SKIPPED [ 72%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_healthy PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_service_exists PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_web_ui_accessible PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_graphql_api_responds PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_postgres_backend_running SKIPPED [ 74%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestTempo::test_tempo_healthy PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_service_exists PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_ready_endpoint PASSED [ 75%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_healthy PASSED [ 75%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_service_exists PASSED [ 75%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_configmap_exists PASSED [ 76%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_health_endpoint PASSED [ 76%] | ✓ PASSED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_service_exists PASSED [ 76%] | ✓ PASSED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_datasources_configured SKIPPED [ 77%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_phoenix PASSED [ 77%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_tempo PASSED [ 77%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_no_crashloop_pods_in_observability PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_observability_pod_health_threshold PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_otel_collector_metrics_endpoint PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_prometheus_scraping_otel_collector PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_prometheus_api_responds PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_grafana_prometheus_datasource PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_metrics_signal_end_to_end PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_ready_endpoint PASSED [ 80%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_receiving_logs PASSED [ 80%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_logql_query PASSED [ 80%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_grafana_loki_datasource PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_logs_signal_end_to_end PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_tempo_ready_endpoint PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_otel_collector_exports_to_tempo PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_grafana_tempo_datasource PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_tempo_api_search_endpoint PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_phoenix_receiving_llm_traces PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_otel_collector_filters_llm_traces_to_phoenix PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_traces_signal_end_to_end PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestOTELSignalsHealth::test_all_observability_components_healthy PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestOTELSignalsHealth::test_grafana_all_datasources_configured PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_healthy PASSED [ 84%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_service_exists PASSED [ 84%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_postgres_healthy PASSED [ 84%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_realm_imports_completed SKIPPED [ 85%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_admin_api_accessible SKIPPEDort=8080): Max retries exceeded | ○ SKIPPED | - |
+| CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed | ✗ FAILED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_https_gateway_access PASSED [ 85%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_kagenti_realm_accessible SKIPPEDort=8080): Max retries exceeded | ○ SKIPPED | - |
+| SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_healthy PASSED [ 86%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_service_exists PASSED [ 86%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_config_completed SKIPPED [ 86%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_secret_exists PASSED [ 87%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_responds SKIPPEDport=3000): Max retries exceeded | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_operator_healthy SKIPPED [ 87%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_installed SKIPPED [ 88%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_queryable SKIPPED [ 88%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKagentiOperator::test_kagenti_operator_deployment_exists PASSED [ 88%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_external_gateway_exists PASSED [ 89%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_gateway_listeners_configured PASSED [ 89%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_tls_certificates_ready PASSED [ 89%] | ✓ PASSED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_healthy SKIPPED [ 90%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_service_exists SKIPPED [ 90%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformHealth::test_no_crashloop_pods_in_platform PASSED [ 90%] | ✓ PASSED | - |
+| integration/test_platform.py::TestPlatformHealth::test_platform_pod_health_threshold PASSED [ 90%] | ✓ PASSED | - |
+| integration/test_platform.py::TestPlatformHealth::test_all_platform_services_have_endpoints PASSED [ 91%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_prometheus_is_running PASSED [ 91%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_cpu_usage_metric_exists PASSED [ 91%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_cpu_cores_metric_exists PASSED [ 92%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_memory_working_set_bytes_exists PASSED [ 92%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_memory_bytes_exists PASSED [ 92%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_cpu_usage_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_memory_usage_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cpu_usage_by_namespace_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_memory_usage_by_namespace_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_prometheus_scraping_kubelet PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_exist PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_healthy PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_apps_healthy PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[gateway-api] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istio-base] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istiod] PASSED [ 96%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak-operator] PASSED [ 96%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[cert-manager] PASSED [ 96%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[kagenti-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] FAILED [ 97%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[istio-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[gateway-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] FAILED [ 98%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] FAILED [ 98%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[istio-system] PASSED [ 98%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[gateway-system] PASSED [ 99%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_phoenix_traces SKIPPEDations': [{'line': 2, 'column': 3}]}) [ 99%] | ○ SKIPPED | - |
+| validation/test_log_trace_errors.py::test_generate_error_warning_summary PASSED [100%] | ✓ PASSED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] - Failed: Found 24 unacceptable errors in 1 containers: | ✗ FAILED | - |
+|   level=info ts=2025-11-20T09:26:36.567680926Z caller=roundtrip.go:289 org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level) (count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\" [5m]))" start=2025-11-20T08:26:37Z end=2025-11-20T09:26:37Z start_delta=59m59.567678717s end_delta=-432.321074ms length=1h0m0s step=60000 query_hash=1059503534 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.578042009Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=14m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.578665259Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=11m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.582698217Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=3m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.583086426Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=14m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.662890301Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=3m0s start_delta=1h0m36.662882718s end_delta=57m36.662882801s step=1m0s duration=80.126542ms status=500 limit=100 returned_lines=0 throughput=81MB total_bytes=6.5MB total_bytes_structured_metadata=973kB lines_per_second=407018 total_lines=32613 post_filter_lines=983 total_entries=8 store_chunks_download_time=914.666µs queue_time=360.167µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=772.333µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=43 ingester_chunk_downloaded=43 ingester_chunk_matches=9 ingester_requests=1 ingester_chunk_head_bytes=13kB ingester_chunk_compressed_bytes=507kB ingester_chunk_decompressed_bytes=6.5MB ingester_post_filter_lines=983 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.663837134Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=14m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.849930634Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=11m0s start_delta=11m36.849922343s end_delta=36.849922384s step=1m0s duration=271.020501ms status=500 limit=100 returned_lines=0 throughput=100MB total_bytes=27MB total_bytes_structured_metadata=3.3MB lines_per_second=418381 total_lines=113390 post_filter_lines=480 total_entries=12 store_chunks_download_time=817.583µs queue_time=454.333µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=476.583µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=8 ingester_chunk_downloaded=8 ingester_chunk_matches=51 ingester_requests=1 ingester_chunk_head_bytes=570kB ingester_chunk_compressed_bytes=1.9MB ingester_chunk_decompressed_bytes=26MB ingester_post_filter_lines=480 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.949889843Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=14m0s start_delta=26m36.949882468s end_delta=12m36.949882551s step=1m0s duration=371.782375ms status=500 limit=100 returned_lines=0 throughput=98MB total_bytes=36MB total_bytes_structured_metadata=4.5MB lines_per_second=410546 total_lines=152634 post_filter_lines=637 total_entries=23 store_chunks_download_time=1.74725ms queue_time=388.959µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=599µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=31 ingester_chunk_downloaded=31 ingester_chunk_matches=62 ingester_requests=1 ingester_chunk_head_bytes=273kB ingester_chunk_compressed_bytes=2.6MB ingester_chunk_decompressed_bytes=36MB ingester_post_filter_lines=637 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.952537551Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=14m0s start_delta=41m36.952533051s end_delta=27m36.952533093s step=1m0s duration=369.416833ms status=500 limit=100 returned_lines=0 throughput=96MB total_bytes=35MB total_bytes_structured_metadata=4.4MB lines_per_second=403381 total_lines=149016 post_filter_lines=379 total_entries=20 store_chunks_download_time=1.49125ms queue_time=5.106167ms splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=549.709µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=38 ingester_chunk_downloaded=38 ingester_chunk_matches=24 ingester_requests=1 ingester_chunk_head_bytes=249kB ingester_chunk_compressed_bytes=2.5MB ingester_chunk_decompressed_bytes=35MB ingester_post_filter_lines=379 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.957087134Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=14m0s start_delta=56m36.957082384s end_delta=42m36.957082468s step=1m0s duration=293.206ms status=500 limit=100 returned_lines=0 throughput=80MB total_bytes=24MB total_bytes_structured_metadata=3.0MB lines_per_second=342892 total_lines=100538 post_filter_lines=1216 total_entries=34 store_chunks_download_time=1.393876ms queue_time=80.827084ms splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=747.084µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=41 ingester_chunk_downloaded=41 ingester_chunk_matches=28 ingester_requests=1 ingester_chunk_head_bytes=159kB ingester_chunk_compressed_bytes=1.7MB ingester_chunk_decompressed_bytes=23MB ingester_post_filter_lines=1216 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.957715176Z caller=metrics.go:216 component=frontend org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level) (count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\" [5m]))" query_hash=1059503534 query_type=metric range_type=range length=1h0m0s start_delta=59m59.957708218s end_delta=-42.291657ms step=1m0s duration=389.825626ms status=200 limit=100 returned_lines=0 throughput=330MB total_bytes=129MB total_bytes_structured_metadata=16MB lines_per_second=1406246 total_lines=548191 post_filter_lines=3695 total_entries=3 store_chunks_download_time=6.364625ms queue_time=87.136709ms splits=5 shards=5 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=3.144709ms cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=5 cache_result_hit=0 cache_result_download_time=17.001µs cache_result_query_length_served=0s ingester_chunk_refs=161 ingester_chunk_downloaded=161 ingester_chunk_matches=174 ingester_requests=5 ingester_chunk_head_bytes=1.3MB ingester_chunk_compressed_bytes=9.1MB ingester_chunk_decompressed_bytes=127MB ingester_post_filter_lines=3695 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] - Failed: Found 2 unacceptable warnings in 2 containers: | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] - Failed: Found 428 unacceptable warnings in 7 containers: | ✗ FAILED | - |
+
+
+---
+
+| 2025-11-20 10:39:14 | 332 | 278 | 0 | 54 | ✓ PASS |
+
+### Test Run: 2025-11-20 10:39:14
+
+**Summary**: 332 tests (278 passed, 0 failed, 54 skipped)
+
+| Test | Status | Duration |
+|------|--------|----------|
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_pod_running PASSED [  0%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_crds_registered PASSED [  0%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_webhook_service PASSED [  0%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_logs_no_errors PASSED [  1%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestKagentiOperatorE2E::test_kagenti_operator_can_list_agents PASSED [  1%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_pod_running SKIPPED [  1%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_crds_registered SKIPPED [  2%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_logs_no_errors SKIPPED [  2%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestPlatformOperatorE2E::test_platform_operator_can_list_components SKIPPED [  2%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_both_operators_running_simultaneously PASSED [  2%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestOperatorIntegration::test_shared_configmaps_exist SKIPPED [  3%] | ○ SKIPPED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_images_correct PASSED [  3%] | ✓ PASSED | - |
+| e2e/test_operator_deployment.py::TestOperatorLifecycle::test_operator_command_path_correct PASSED [  3%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_argocd_healthy PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_cert_manager_healthy PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestInfrastructure::test_tekton_pipelines_installed PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_istiod_healthy PASSED [  4%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_keycloak_healthy PASSED [  5%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_container_registry_healthy SKIPPED [  5%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestServiceMesh::test_kiali_healthy PASSED [  5%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_operator_healthy SKIPPED [  6%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestOperators::test_platform_crds_installed SKIPPED [  6%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_healthy PASSED [  6%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_kagenti_ui_oauth_config_completed SKIPPED) [  7%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_external_gateway_exists PASSED [  7%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformServices::test_tls_certificates_ready PASSED [  7%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_tempo_healthy PASSED [  8%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_otel_collector_healthy PASSED [  8%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestObservability::test_phoenix_healthy PASSED [  8%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_agent_services_exist SKIPPED [ 10%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestAgents::test_research_agent_a2a_endpoint SKIPPED [ 10%] | ○ SKIPPED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_all_applications_exist PASSED [ 10%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestArgoCD::test_critical_applications_synced PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_no_crashloop_pods PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_cluster_pod_health_threshold PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_platform_e2e.py::TestPlatformHealth::test_all_deployments_have_replicas PASSED [ 11%] | ✓ PASSED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_service_healthy SKIPPED [ 12%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_ollama_has_qwen_model SKIPPED [ 12%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_tool_deployed SKIPPED [ 12%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentInfrastructure::test_weather_agent_deployed SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_has_agent_card SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_mcp_connectivity SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestWeatherAgentFunctionality::test_weather_agent_chat_with_mcp_tool_calling SKIPPED [ 13%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestComponentIntegration::test_weather_tool_component_exists SKIPPED [ 14%] | ○ SKIPPED | - |
+| e2e/test_weather_agent_e2e.py::TestComponentIntegration::test_weather_agent_component_exists SKIPPED [ 14%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_research_agent_simple_question SKIPPED [ 14%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_health_check SKIPPED [ 15%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversation::test_agent_card_accessible SKIPPED [ 15%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_simple_factual_question SKIPPED [ 15%] | ○ SKIPPED | - |
+| integration/test_agent_conversation.py::TestAgentConversationManual::test_multi_turn_conversation SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_research_agent_healthy SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_code_agent_healthy SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_orchestrator_agent_healthy SKIPPED [ 16%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_services_exist SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentDeployment::test_agent_deployments_exist SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_research_agent_chat_endpoint SKIPPED [ 17%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentConversationAPI::test_agent_health_endpoint SKIPPED [ 18%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentTelemetry::test_agent_trace_in_phoenix SKIPPED [ 18%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_prometheus_mcp_server_deployment_ready SKIPPED [ 18%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_phoenix_ready_for_trace_mcp_server PASSED [ 18%] | ✓ PASSED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_deployment_namespace_exists PASSED [ 19%] | ✓ PASSED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_correl8r_service_accessible SKIPPED [ 19%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_github_mcp_server_has_credentials SKIPPED [ 19%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestMonitoringAgents::test_monitoring_agent_workflow SKIPPED [ 20%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentCRDLifecycle::test_create_agent_cr SKIPPED [ 20%] | ○ SKIPPED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agent_crd_installed PASSED [ 20%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentbuild_crd_installed PASSED [ 20%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_agentcard_crd_installed PASSED [ 21%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agents PASSED [ 21%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentbuilds PASSED [ 21%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_can_list_agentcards PASSED [ 22%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_webhook_accessible PASSED [ 22%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentOperatorInfrastructure::test_kagenti_operator_rbac_configured PASSED [ 22%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentHealth::test_team1_namespace_exists PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_agents.py::TestAgentHealth::test_no_crashloop_agent_pods PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_prometheus_down_query_logic PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_deployment_down_query_logic PASSED [ 23%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesWithMockData::test_gateway_regex_pattern PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_prometheus_down_alert_query PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_deployment_replicas_metrics_exist PASSED [ 24%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_gateway_deployment_exists PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertQueriesAgainstRealPrometheus::test_all_alert_queries_valid_syntax PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertThresholds::test_cpu_threshold_not_triggered_during_normal_operation PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::TestAlertThresholds::test_memory_threshold_not_triggered_during_normal_operation PASSED [ 25%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[prometheus-down-critical] PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[grafana-down-warning] PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[loki-down-warning] PASSED [ 26%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[tempo-down-warning] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[alertmanager-down-critical] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[istiod-down-critical] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[gateway-unhealthy-critical] PASSED [ 27%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[keycloak-down-critical] PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alert_queries.py::test_alert_severity_classification[pod-crashloop-backoff-critical] PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_pod_is_running PASSED [ 28%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_service_exists PASSED [ 29%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_health_endpoint PASSED [ 29%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_ready_endpoint PASSED [ 29%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_api_status PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_config_loaded PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_can_receive_alerts PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_alerts_api PASSED [ 30%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_receivers_configured PASSED [ 31%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_routes_configured PASSED [ 31%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_network_policy_allows_grafana PASSED [ 31%] | ✓ PASSED | - |
+| integration/test_alertmanager.py::TestAlertManager::test_alertmanager_mtls_is_permissive PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_keycloak_token_endpoint_accessible PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_acquire_token_with_admin_credentials PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_token_contains_valid_jwt PASSED [ 32%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakTokens::test_token_refresh PASSED [ 33%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakAdminAuth::test_keycloak_admin_console_redirect PASSED [ 33%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestKeycloakAdminAuth::test_keycloak_admin_api_with_token PASSED [ 33%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyProtection::test_phoenix_requires_authentication PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyProtection::test_kiali_requires_authentication PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyProtection::test_prometheus_requires_authentication PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ClientSecrets::test_phoenix_oauth_secret_exists PASSED [ 34%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ClientSecrets::test_kiali_oauth_secret_exists PASSED [ 35%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ClientSecrets::test_prometheus_oauth_secret_exists PASSED [ 35%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyHealth::test_phoenix_oauth2_proxy_healthy PASSED [ 35%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyHealth::test_kiali_oauth2_proxy_healthy PASSED [ 36%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestOAuth2ProxyHealth::test_prometheus_oauth2_proxy_healthy PASSED [ 36%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestDirectKeycloakOIDC::test_grafana_oidc_configured PASSED [ 36%] | ✓ PASSED | - |
+| integration/test_authentication.py::TestDirectKeycloakOIDC::test_argocd_auth_configured PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_variables_use_valid_regex PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_namespace_variable_can_query_loki PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_pod_variable_query_with_all_namespaces PASSED [ 37%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_panel_query_with_all_variables_selected PASSED [ 38%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_error_logs_panel_query PASSED [ 38%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_logs_per_second_stat_panel PASSED [ 38%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_no_empty_compatible_regex_in_queries PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_dashboard_data_loading.py::TestDashboardDataLoading::test_dashboard_accessible_and_loads_without_errors PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_pod_is_running PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_unified_alerting_enabled PASSED [ 39%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alertmanager_contact_point_configured PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_notification_policies_configured PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_platform_health_alerts_provisioned PASSED [ 40%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_have_proper_labels PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_severity PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rules_by_layer PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alert_rule_annotations PASSED [ 41%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_critical_alerts_have_fast_evaluation PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alerting_config_mounted PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_can_query_alertmanager PASSED [ 42%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_internal_alertmanager_running PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_alerting_provisioning_configmap_exists PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_grafana_alerting.py::TestGrafanaAlerting::test_grafana_env_vars_for_unified_alerting PASSED [ 43%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_dashboard_file_exists PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_dashboard_has_row_sections PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cluster_cpu_usage PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cluster_memory_usage PASSED [ 44%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cluster_disk_usage PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_total_pods PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_running_pods PASSED [ 45%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pending_pods PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_failed_pods PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pod_restarts PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_oomkilled_pods PASSED [ 46%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_crashloop_pods PASSED [ 47%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_firing_alerts PASSED [ 47%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_firing_alerts_timeseries PASSED [ 47%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pod_status_over_time PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_pod_status_by_namespace PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_cpu_usage_by_namespace PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_memory_usage_by_namespace PASSED [ 48%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_disk_usage_by_namespace PASSED [ 49%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestPrometheusQueries::test_network_io_by_namespace PASSED [ 49%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_grafana_api_accessible PASSED [ 49%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_dashboard_exists_in_grafana PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_prometheus_datasource_exists PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::TestGrafanaDashboardAPI::test_dashboard_panels_have_valid_queries PASSED [ 50%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Cluster CPU Usage-gauge] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Cluster Memory Usage-gauge] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Cluster Disk Usage-gauge] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Total Pods-stat] PASSED [ 51%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Running Pods-stat] PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Failed Pods-stat] PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Firing Alerts-stat] PASSED [ 52%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Firing Alerts Over Time-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Pod Status Over Time-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Pod Status by Namespace-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[CPU Usage by Namespace-timeseries] PASSED [ 53%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_panel_type[Memory Usage by Namespace-timeseries] PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_all_panels_have_datasource PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_overview_section_not_collapsed PASSED [ 54%] | ✓ PASSED | - |
+| integration/test_grafana_k8s_dashboard.py::test_alerting_section_exists PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_dashboard_file_exists PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_dashboard_has_new_panels PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_dashboard_version PASSED [ 55%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_count PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Total Logs-stat] PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Error Count-stat] PASSED [ 56%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Warning Count-stat] PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Logs per Second-stat] PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Log Volume by Level-timeseries] PASSED [ 57%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Log Volume by Namespace-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Error Cumulative Counts by Namespace-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Warning Cumulative Counts by Namespace-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Log Errors vs Alerts (Coverage Analysis)-timeseries] PASSED [ 58%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[All Logs-logs] PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Error Logs-logs] PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Warning Logs-logs] PASSED [ 59%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Top 10 Error Sources-table] PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_grafana_loki_dashboard.py::test_panel_type[Top 10 Warning Sources-table] PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_server_healthy PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_applicationset_controller_healthy PASSED [ 60%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_argocd_repo_server_healthy PASSED [ 61%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_all_argocd_applications_exist PASSED [ 61%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestArgoCD::test_critical_applications_synced PASSED [ 61%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istiod_healthy PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_ingress_gateway_healthy SKIPPED [ 62%] | ○ SKIPPED | - |
+| integration/test_infrastructure.py::TestIstio::test_istio_base_crds_installed PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestIstio::test_mtls_policy_exists PASSED [ 62%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_healthy PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_webhook_healthy PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_cert_manager_cainjector_healthy PASSED [ 63%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestCertManager::test_certificates_ready PASSED [ 64%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_gateway_api_crds_installed PASSED [ 64%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_external_gateway_exists PASSED [ 64%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestGatewayAPI::test_httproutes_configured PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_controller_healthy PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_pipelines_webhook_healthy PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestTekton::test_tekton_crds_installed PASSED [ 65%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_no_crashloop_pods_in_infrastructure PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_infrastructure.py::TestInfrastructureHealth::test_infrastructure_pod_health_threshold PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_panel_exists PASSED [ 66%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_panel_exists PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_has_valid_queries PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_has_valid_query PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_queries_execute PASSED [ 67%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_query_executes PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_level_returns_data_per_level PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_by_namespace_returns_data_per_namespace PASSED [ 68%] | ✓ PASSED | - |
+| integration/test_log_volume_panels.py::TestLogVolumePanels::test_log_volume_queries_do_not_use_empty_compatible_regex PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_is_running PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_alloy_is_running PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_ready_endpoint PASSED [ 69%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_has_log_streams PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_query_observability_logs PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_query_with_pod_selector PASSED [ 70%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_loki_datasource_configured PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_grafana_can_query_loki PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_loki_logs.py::TestLokiLogs::test_loki_logs_have_metadata PASSED [ 71%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_healthy PASSED [ 72%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_exists PASSED [ 72%] | ✓ PASSED | - |
+| integration/test_observability.py::TestKiali::test_kiali_api_responds SKIPPED [ 72%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestKiali::test_kiali_service_graph_accessible SKIPPED [ 72%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_healthy PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_service_exists PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_web_ui_accessible PASSED [ 73%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_graphql_api_responds PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_observability.py::TestPhoenix::test_phoenix_postgres_backend_running SKIPPED [ 74%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestTempo::test_tempo_healthy PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_service_exists PASSED [ 74%] | ✓ PASSED | - |
+| integration/test_observability.py::TestTempo::test_tempo_ready_endpoint PASSED [ 75%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_healthy PASSED [ 75%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_service_exists PASSED [ 75%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_configmap_exists PASSED [ 76%] | ✓ PASSED | - |
+| integration/test_observability.py::TestOTELCollector::test_otel_collector_health_endpoint PASSED [ 76%] | ✓ PASSED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_service_exists PASSED [ 76%] | ✓ PASSED | - |
+| integration/test_observability.py::TestGrafana::test_grafana_datasources_configured SKIPPED [ 77%] | ○ SKIPPED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_phoenix PASSED [ 77%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityDataFlow::test_otel_collector_exports_to_tempo PASSED [ 77%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_no_crashloop_pods_in_observability PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_observability.py::TestObservabilityHealth::test_observability_pod_health_threshold PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_otel_collector_metrics_endpoint PASSED [ 78%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_prometheus_scraping_otel_collector PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_prometheus_api_responds PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_grafana_prometheus_datasource PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestMetricsSignal::test_metrics_signal_end_to_end PASSED [ 79%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_ready_endpoint PASSED [ 80%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_receiving_logs PASSED [ 80%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_loki_logql_query PASSED [ 80%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_grafana_loki_datasource PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestLogsSignal::test_logs_signal_end_to_end PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_tempo_ready_endpoint PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_otel_collector_exports_to_tempo PASSED [ 81%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_grafana_tempo_datasource PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_tempo_api_search_endpoint PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_phoenix_receiving_llm_traces PASSED [ 82%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_otel_collector_filters_llm_traces_to_phoenix PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestTracesSignal::test_traces_signal_end_to_end PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestOTELSignalsHealth::test_all_observability_components_healthy PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_otel_signal_flows.py::TestOTELSignalsHealth::test_grafana_all_datasources_configured PASSED [ 83%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_healthy PASSED [ 84%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_service_exists PASSED [ 84%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_postgres_healthy PASSED [ 84%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_realm_imports_completed SKIPPED [ 85%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_admin_api_accessible SKIPPEDort=8080): Max retries exceeded | ○ SKIPPED | - |
+| CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed | ✗ FAILED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_https_gateway_access PASSED [ 85%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKeycloak::test_keycloak_kagenti_realm_accessible SKIPPEDort=8080): Max retries exceeded | ○ SKIPPED | - |
+| SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] | ✗ FAILED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_healthy PASSED [ 86%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_service_exists PASSED [ 86%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_config_completed SKIPPED [ 86%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_oauth_secret_exists PASSED [ 87%] | ✓ PASSED | - |
+| integration/test_platform.py::TestKagentiUI::test_kagenti_ui_responds SKIPPEDport=3000): Max retries exceeded | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_operator_healthy SKIPPED [ 87%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_installed SKIPPED [ 88%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformOperator::test_platform_crds_queryable SKIPPED [ 88%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestKagentiOperator::test_kagenti_operator_deployment_exists PASSED [ 88%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_external_gateway_exists PASSED [ 89%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_gateway_listeners_configured PASSED [ 89%] | ✓ PASSED | - |
+| integration/test_platform.py::TestExternalGateway::test_tls_certificates_ready PASSED [ 89%] | ✓ PASSED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_healthy SKIPPED [ 90%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestContainerRegistry::test_container_registry_service_exists SKIPPED [ 90%] | ○ SKIPPED | - |
+| integration/test_platform.py::TestPlatformHealth::test_no_crashloop_pods_in_platform PASSED [ 90%] | ✓ PASSED | - |
+| integration/test_platform.py::TestPlatformHealth::test_platform_pod_health_threshold PASSED [ 90%] | ✓ PASSED | - |
+| integration/test_platform.py::TestPlatformHealth::test_all_platform_services_have_endpoints PASSED [ 91%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_prometheus_is_running PASSED [ 91%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_cpu_usage_metric_exists PASSED [ 91%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_cpu_cores_metric_exists PASSED [ 92%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_container_memory_working_set_bytes_exists PASSED [ 92%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_machine_memory_bytes_exists PASSED [ 92%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_cpu_usage_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cluster_memory_usage_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_cpu_usage_by_namespace_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_memory_usage_by_namespace_query PASSED [ 93%] | ✓ PASSED | - |
+| integration/test_prometheus_metrics.py::TestPrometheusMetrics::test_prometheus_scraping_kubelet PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_exist PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_all_apps_healthy PASSED [ 94%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_apps_healthy PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istiod] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[cert-manager] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak-operator] PASSED [ 95%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[keycloak] PASSED [ 96%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[gateway-api] PASSED [ 96%] | ✓ PASSED | - |
+| validation/test_app_state.py::TestArgocdAppState::test_critical_app_healthy[istio-base] PASSED [ 96%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[kagenti-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] FAILED [ 97%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[istio-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[gateway-system] PASSED [ 97%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] FAILED [ 98%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] FAILED [ 98%] | ✗ FAILED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[istio-system] PASSED [ 98%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[gateway-system] PASSED [ 99%] | ✓ PASSED | - |
+| validation/test_log_trace_errors.py::test_no_errors_in_phoenix_traces SKIPPEDations': [{'line': 2, 'column': 3}]}) [ 99%] | ○ SKIPPED | - |
+| validation/test_log_trace_errors.py::test_generate_error_warning_summary PASSED [100%] | ✓ PASSED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_errors_in_pod_logs[observability] - Failed: Found 43 unacceptable errors in 1 containers: | ✗ FAILED | - |
+|   level=info ts=2025-11-20T09:26:36.567680926Z caller=roundtrip.go:289 org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level) (count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\" [5m]))" start=2025-11-20T08:26:37Z end=2025-11-20T09:26:37Z start_delta=59m59.567678717s end_delta=-432.321074ms length=1h0m0s step=60000 query_hash=1059503534 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.578042009Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=14m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.578665259Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=11m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.582698217Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=3m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.583086426Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=14m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.662890301Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=3m0s start_delta=1h0m36.662882718s end_delta=57m36.662882801s step=1m0s duration=80.126542ms status=500 limit=100 returned_lines=0 throughput=81MB total_bytes=6.5MB total_bytes_structured_metadata=973kB lines_per_second=407018 total_lines=32613 post_filter_lines=983 total_entries=8 store_chunks_download_time=914.666µs queue_time=360.167µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=772.333µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=43 ingester_chunk_downloaded=43 ingester_chunk_matches=9 ingester_requests=1 ingester_chunk_head_bytes=13kB ingester_chunk_compressed_bytes=507kB ingester_chunk_decompressed_bytes=6.5MB ingester_post_filter_lines=983 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.663837134Z caller=engine.go:239 component=querier org_id=fake traceID=45d827386ec391b9 msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=14m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.849930634Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=11m0s start_delta=11m36.849922343s end_delta=36.849922384s step=1m0s duration=271.020501ms status=500 limit=100 returned_lines=0 throughput=100MB total_bytes=27MB total_bytes_structured_metadata=3.3MB lines_per_second=418381 total_lines=113390 post_filter_lines=480 total_entries=12 store_chunks_download_time=817.583µs queue_time=454.333µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=476.583µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=8 ingester_chunk_downloaded=8 ingester_chunk_matches=51 ingester_requests=1 ingester_chunk_head_bytes=570kB ingester_chunk_compressed_bytes=1.9MB ingester_chunk_decompressed_bytes=26MB ingester_post_filter_lines=480 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.949889843Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=14m0s start_delta=26m36.949882468s end_delta=12m36.949882551s step=1m0s duration=371.782375ms status=500 limit=100 returned_lines=0 throughput=98MB total_bytes=36MB total_bytes_structured_metadata=4.5MB lines_per_second=410546 total_lines=152634 post_filter_lines=637 total_entries=23 store_chunks_download_time=1.74725ms queue_time=388.959µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=599µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=31 ingester_chunk_downloaded=31 ingester_chunk_matches=62 ingester_requests=1 ingester_chunk_head_bytes=273kB ingester_chunk_compressed_bytes=2.6MB ingester_chunk_decompressed_bytes=36MB ingester_post_filter_lines=637 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.952537551Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=14m0s start_delta=41m36.952533051s end_delta=27m36.952533093s step=1m0s duration=369.416833ms status=500 limit=100 returned_lines=0 throughput=96MB total_bytes=35MB total_bytes_structured_metadata=4.4MB lines_per_second=403381 total_lines=149016 post_filter_lines=379 total_entries=20 store_chunks_download_time=1.49125ms queue_time=5.106167ms splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=549.709µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=38 ingester_chunk_downloaded=38 ingester_chunk_matches=24 ingester_requests=1 ingester_chunk_head_bytes=249kB ingester_chunk_compressed_bytes=2.5MB ingester_chunk_decompressed_bytes=35MB ingester_post_filter_lines=379 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.957087134Z caller=metrics.go:216 component=querier org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=14m0s start_delta=56m36.957082384s end_delta=42m36.957082468s step=1m0s duration=293.206ms status=500 limit=100 returned_lines=0 throughput=80MB total_bytes=24MB total_bytes_structured_metadata=3.0MB lines_per_second=342892 total_lines=100538 post_filter_lines=1216 total_entries=34 store_chunks_download_time=1.393876ms queue_time=80.827084ms splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=747.084µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=41 ingester_chunk_downloaded=41 ingester_chunk_matches=28 ingester_requests=1 ingester_chunk_head_bytes=159kB ingester_chunk_compressed_bytes=1.7MB ingester_chunk_decompressed_bytes=23MB ingester_post_filter_lines=1216 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:26:36.957715176Z caller=metrics.go:216 component=frontend org_id=fake traceID=45d827386ec391b9 latency=fast query="sum by (level) (count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\" [5m]))" query_hash=1059503534 query_type=metric range_type=range length=1h0m0s start_delta=59m59.957708218s end_delta=-42.291657ms step=1m0s duration=389.825626ms status=200 limit=100 returned_lines=0 throughput=330MB total_bytes=129MB total_bytes_structured_metadata=16MB lines_per_second=1406246 total_lines=548191 post_filter_lines=3695 total_entries=3 store_chunks_download_time=6.364625ms queue_time=87.136709ms splits=5 shards=5 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=3.144709ms cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=5 cache_result_hit=0 cache_result_download_time=17.001µs cache_result_query_length_served=0s ingester_chunk_refs=161 ingester_chunk_downloaded=161 ingester_chunk_matches=174 ingester_requests=5 ingester_chunk_head_bytes=1.3MB ingester_chunk_compressed_bytes=9.1MB ingester_chunk_decompressed_bytes=127MB ingester_post_filter_lines=3695 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:37:12.497815187Z caller=roundtrip.go:289 org_id=fake traceID=7650e8767b39d93f msg="executing query" type=range query="sum by (level) (count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\" [5m]))" start=2025-11-20T08:37:13Z end=2025-11-20T09:37:13Z start_delta=59m59.497812854s end_delta=-502.186979ms length=1h0m0s step=60000 query_hash=1059503534 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:37:12.501182854Z caller=engine.go:239 component=querier org_id=fake traceID=7650e8767b39d93f msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=7m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:37:12.501763979Z caller=engine.go:239 component=querier org_id=fake traceID=7650e8767b39d93f msg="executing query" type=range query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" length=14m0s step=1m0s query_hash=2054288166 | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:37:12.562411062Z caller=metrics.go:216 component=querier org_id=fake traceID=7650e8767b39d93f latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=7m0s start_delta=7m12.562403312s end_delta=12.562403396s step=1m0s duration=61.165709ms status=500 limit=100 returned_lines=0 throughput=326MB total_bytes=20MB total_bytes_structured_metadata=2.4MB lines_per_second=1361089 total_lines=83252 post_filter_lines=105 total_entries=12 store_chunks_download_time=617.292µs queue_time=97.416µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=273.5µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=7 ingester_chunk_downloaded=7 ingester_chunk_matches=50 ingester_requests=1 ingester_chunk_head_bytes=554kB ingester_chunk_compressed_bytes=1.4MB ingester_chunk_decompressed_bytes=19MB ingester_post_filter_lines=105 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:37:12.596683521Z caller=metrics.go:216 component=querier org_id=fake traceID=7650e8767b39d93f latency=fast query="sum by (level)(count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\"[5m]))" query_hash=2054288166 query_type=metric range_type=range length=14m0s start_delta=22m12.596675854s end_delta=8m12.596675937s step=1m0s duration=94.857333ms status=500 limit=100 returned_lines=0 throughput=344MB total_bytes=33MB total_bytes_structured_metadata=4.0MB lines_per_second=1438855 total_lines=136486 post_filter_lines=509 total_entries=17 store_chunks_download_time=914.666µs queue_time=87µs splits=0 shards=0 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=494.333µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=0 cache_result_hit=0 cache_result_download_time=0s cache_result_query_length_served=0s ingester_chunk_refs=14 ingester_chunk_downloaded=14 ingester_chunk_matches=50 ingester_requests=1 ingester_chunk_head_bytes=359kB ingester_chunk_compressed_bytes=2.3MB ingester_chunk_decompressed_bytes=32MB ingester_post_filter_lines=509 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+|   level=info ts=2025-11-20T09:37:12.597776229Z caller=metrics.go:216 component=frontend org_id=fake traceID=7650e8767b39d93f latency=fast query="sum by (level) (count_over_time({namespace=~\".+\", pod=~\".+\"} |~ \"(?i)(error|ERROR)\" [5m]))" query_hash=1059503534 query_type=metric range_type=range length=1h0m0s start_delta=59m59.597769187s end_delta=-402.230688ms step=1m0s duration=99.611625ms status=200 limit=100 returned_lines=0 throughput=527MB total_bytes=52MB total_bytes_structured_metadata=6.4MB lines_per_second=2205947 total_lines=219738 post_filter_lines=614 total_entries=3 store_chunks_download_time=1.531958ms queue_time=184.416µs splits=5 shards=2 query_referenced_structured_metadata=true pipeline_wrapper_filtered_lines=0 chunk_refs_fetch_time=767.833µs cache_chunk_req=0 cache_chunk_hit=0 cache_chunk_bytes_stored=0 cache_chunk_bytes_fetched=0 cache_chunk_download_time=0s cache_index_req=0 cache_index_hit=0 cache_index_download_time=0s cache_stats_results_req=0 cache_stats_results_hit=0 cache_stats_results_download_time=0s cache_volume_results_req=0 cache_volume_results_hit=0 cache_volume_results_download_time=0s cache_result_req=4 cache_result_hit=4 cache_result_download_time=17.125µs cache_result_query_length_served=35m0s ingester_chunk_refs=21 ingester_chunk_downloaded=21 ingester_chunk_matches=100 ingester_requests=2 ingester_chunk_head_bytes=912kB ingester_chunk_compressed_bytes=3.7MB ingester_chunk_decompressed_bytes=52MB ingester_post_filter_lines=614 congestion_control_latency=0s index_total_chunks=0 index_post_bloom_filter_chunks=0 index_bloom_filter_ratio=0.00 disable_pipeline_wrappers=false | ✗ ERROR | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[kagenti-system] - Failed: Found 2 unacceptable warnings in 2 containers: | ✗ FAILED | - |
+| FAILED tests/validation/test_log_trace_errors.py::test_no_warnings_in_pod_logs[observability] - Failed: Found 432 unacceptable warnings in 7 containers: | ✗ FAILED | - |
+
+
+---
+

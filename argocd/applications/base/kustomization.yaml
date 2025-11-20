@@ -12,8 +12,8 @@ resources:
   - reflector.yaml  # Kubernetes Reflector for OAuth secret mirroring
 
   # Wave 10 - Operators
-  - kagenti-operator.yaml
-  - platform-operator.yaml
+  # NOTE: Operators moved to Helm (see ../helm/kagenti-operator.yaml)
+  # kagenti-operator replaces platform-operator (Issue #78)
 
   # Wave 15 - Platform
   - platform.yaml
