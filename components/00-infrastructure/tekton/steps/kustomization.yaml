@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kagenti-system
+
+resources:
+  - github-clone-step.yaml
+  - check-subfolder-step.yaml
+  - kaniko-build-step-local.yaml
