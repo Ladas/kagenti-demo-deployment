@@ -688,6 +688,18 @@ class TestPlatformHealth:
             if 'ollama' in excluded_apps and pod.metadata.name.startswith('ollama'):
                 continue
 
+            # Skip OAuth2-Proxy pods if they have initContainers waiting for Keycloak
+            # This is expected during Keycloak startup - OAuth2-Proxy pods wait for secret extraction
+            if pod.metadata.namespace == "oauth2-proxy":
+                if pod.status.init_container_statuses:
+                    has_waiting_init = any(
+                        init.state.waiting
+                        for init in pod.status.init_container_statuses
+                    )
+                    if has_waiting_init:
+                        # Skip this pod - initContainer is waiting for Keycloak secrets (expected in CI)
+                        continue
+
             if pod.status.container_statuses:
                 for container in pod.status.container_statuses:
                     if container.state.waiting:
