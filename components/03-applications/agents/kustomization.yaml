@@ -13,7 +13,9 @@ resources:
   - research-agent.yaml
   - code-agent.yaml
   - orchestrator-agent.yaml
-  - weather-service.yaml
+  # Weather agent deployed via kagenti-operator (AgentBuild + Agent CRDs)
+  # Replaced static Deployment with operator-managed resources
+  - weather-agent-build-and-deploy.yaml
   - weather-mcp-tool.yaml
   - httproutes.yaml
 
