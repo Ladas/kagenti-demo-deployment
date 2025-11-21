@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tekton
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: tekton
+    app.kubernetes.io/part-of: kagenti
+    app.kubernetes.io/component: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ladas/kagenti-demo-deployment
+    targetRevision: argocd-gitops-dev-phase-2
+    path: components/00-infrastructure/tekton
+  destination:
+    server: https://kubernetes.default.svc
+    # No namespace - Tekton creates its own (tekton-pipelines)
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -5,6 +5,7 @@ resources:
   # Wave 0 - Core Infrastructure
   - gateway-api.yaml
   - cert-manager.yaml
+  - tekton.yaml
   - istio-config.yaml
   - keycloak-operator.yaml
 
