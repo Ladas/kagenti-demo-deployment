@@ -1,0 +1,172 @@
+# Weather Agents - Image-based deployment (pre-built images)
+# Uses existing images loaded in Kind cluster
+# Ref: https://github.com/kagenti/kagenti-operator/issues/78
+
+---
+# Weather MCP Tool Agent - Image-based deployment
+apiVersion: agent.kagenti.dev/v1alpha1
+kind: Agent
+metadata:
+  name: weather-mcp-tool
+  namespace: team1
+  labels:
+    app: weather-tool
+    kagenti.io/type: tool
+    kagenti.io/protocol: mcp
+  annotations:
+    description: "Weather MCP tool providing weather data"
+spec:
+  description: "Weather MCP tool providing weather data"
+  replicas: 1
+
+  # Use pre-built image (no AgentBuild needed)
+  imageSource:
+    image: "localhost:5000/weather-mcp-tool:v0.0.1"
+
+  # Service ports (Agent CRD creates Service automatically)
+  servicePorts:
+    - name: mcp
+      port: 8001
+      protocol: TCP
+      targetPort: 8001
+
+  # Complete pod template specification
+  podTemplateSpec:
+    spec:
+      serviceAccountName: default
+      containers:
+      - name: agent  # Fixed name "agent" for main container
+        imagePullPolicy: IfNotPresent
+
+        # Container ports
+        ports:
+        - containerPort: 8001
+          name: mcp
+          protocol: TCP
+
+        # Environment variables
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8001"
+        - name: MCP_TRANSPORT
+          value: "streamable-http"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: UV_CACHE_DIR
+          value: "/app/.cache/uv"
+
+        # Resource limits
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        # Volume mounts for cache
+        volumeMounts:
+        - name: cache
+          mountPath: /app/.cache
+
+      # Volumes
+      volumes:
+      - name: cache
+        emptyDir: {}
+
+---
+# Weather Service Agent - Image-based deployment
+apiVersion: agent.kagenti.dev/v1alpha1
+kind: Agent
+metadata:
+  name: weather-service
+  namespace: team1
+  labels:
+    app: weather-service
+    ai.openshift.io/agent.class: "a2a"
+    ai.openshift.io/agent.name: "weather-service"
+  annotations:
+    description: "Weather agent using LangGraph and MCP tools"
+spec:
+  description: "Weather agent using LangGraph and MCP tools"
+  replicas: 1
+
+  # Use pre-built image (no AgentBuild needed)
+  imageSource:
+    image: "localhost:5000/weather-service:v0.0.1"
+
+  # Service ports (Agent CRD creates Service automatically)
+  servicePorts:
+    - name: a2a
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+
+  # Complete pod template specification
+  podTemplateSpec:
+    spec:
+      serviceAccountName: default
+      containers:
+      - name: agent  # Fixed name "agent" for main container
+        imagePullPolicy: IfNotPresent
+
+        # Container ports
+        ports:
+        - containerPort: 8000
+          name: a2a
+          protocol: TCP
+
+        # Environment variables
+        env:
+        # Server configuration
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8000"
+        - name: UV_CACHE_DIR
+          value: "/app/.cache/uv"
+
+        # LLM configuration (Ollama)
+        - name: LLM_API_BASE
+          value: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+        - name: LLM_MODEL
+          value: "qwen2.5:7b"
+        - name: LLM_API_KEY
+          value: "not-needed"
+
+        # MCP Weather Tool endpoint
+        - name: MCP_URL
+          value: "http://weather-mcp-tool.team1.svc.cluster.local:8001/mcp"
+        - name: MCP_TRANSPORT
+          value: "streamable_http"
+
+        # OpenTelemetry configuration
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector.observability.svc.cluster.local:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "weather-service"
+
+        # Phoenix project assignment (for multi-tenancy)
+        - name: PHOENIX_PROJECT_NAME
+          value: "team1-agents"
+
+        # Resource limits
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+
+        # Volume mounts for cache
+        volumeMounts:
+        - mountPath: /app/.cache
+          name: cache
+
+      # Volumes
+      volumes:
+      - name: cache
+        emptyDir: {}
