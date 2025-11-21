@@ -19,7 +19,7 @@ spec:
 
   # Source repository configuration (public repo - no credentials needed)
   source:
-    sourceRepository: "github.com/redhat-et/agent-examples.git"
+    sourceRepository: "github.com/kagenti/agent-examples.git"
     sourceRevision: "main"
     sourceSubfolder: "a2a/weather_service"
 
@@ -55,6 +55,13 @@ spec:
   imageSource:
     buildRef:
       name: weather-service-build
+
+  # Service ports (Agent CRD creates Service automatically)
+  servicePorts:
+    - name: a2a
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
 
   # Complete pod template specification
   podTemplateSpec:
