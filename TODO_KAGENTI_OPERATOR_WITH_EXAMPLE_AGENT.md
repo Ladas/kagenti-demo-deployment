@@ -638,18 +638,24 @@
 
 ## Current Status
 
-**Last Updated**: 2025-11-20
+**Last Updated**: 2025-11-21
 
-**Status**: Phase 1 - Research & Understanding
+**Status**: ✅ COMPLETED - Image-based Agent deployment working
 
-**Next Action**: Read Issue #78 and understand kagenti-operator architecture
+**Completed Actions**:
+1. ✅ Researched kagenti-operator architecture (Issue #78)
+2. ✅ Converted weather agents to Agent CRD pattern (image-based)
+3. ✅ Successfully deployed both agents with kagenti-operator
+4. ✅ Verified agents are running and healthy
 
 **Blockers**: None
 
 **Notes**:
-- Discovered from upstream CI that Component CRD is the preferred pattern
-- kagenti-operator is the unified operator replacing platform-operator
-- Need to migrate from AgentBuild-only pattern to full Component CRD pattern
+- **CORRECTION**: kagenti-operator uses Agent + AgentBuild CRDs, NOT Component CRDs
+- Agent CRD pattern successfully deployed with image-based approach
+- AgentBuild + source builds timeout after 60min (buildah stage slow)
+- Image-based deployment is faster and more reliable for testing
+- File: `components/03-applications/agents/weather-agents-image-based.yaml`
 
 ---
 
@@ -800,3 +806,103 @@ charts/kagenti-operator/templates/tekton/
 
 **Next steps**: Either (1) add GitHub token secret to AgentBuild or (2) update kagenti-operator Helm chart to support public repos
 
+
+---
+
+## ✅ Successful Deployment (2025-11-21)
+
+### What Was Accomplished
+
+**Successfully deployed weather agents using kagenti-operator Agent CRD pattern (image-based deployment):**
+
+1. **Agent CRD Features Validated:**
+   - ✅ Automatic Deployment creation from Agent spec
+   - ✅ Automatic Service creation via `servicePorts` spec
+   - ✅ Istio sidecar injection (2/2 pods running)
+   - ✅ Image-based deployment via `imageSource.image`
+   - ✅ Volume mounts and environment variables working
+
+2. **Deployed Agents:**
+   - **weather-mcp-tool**: MCP server on port 8001 (Service: `weather-mcp-tool-svc`)
+   - **weather-service**: A2A server on port 8000 (Service: `weather-service-svc`)
+
+3. **File Location:**
+   - `components/03-applications/agents/weather-agents-image-based.yaml`
+
+### Key Learnings
+
+#### 1. CRD Pattern Clarification
+- ❌ **WRONG**: TODO document mentioned "Component CRDs"
+- ✅ **CORRECT**: kagenti-operator uses **Agent + AgentBuild** CRDs
+  - `agents.agent.kagenti.dev/v1alpha1`
+  - `agentbuilds.agent.kagenti.dev/v1alpha1`
+  - `agentcards.agent.kagenti.dev/v1alpha1`
+
+#### 2. Agent CRD Deployment Modes
+
+**Image-based deployment (FAST - recommended for testing):**
+```yaml
+spec:
+  imageSource:
+    image: "localhost:5000/weather-service:v0.0.1"
+  servicePorts:
+    - name: a2a
+      port: 8000
+      targetPort: 8000
+```
+
+**Source-based deployment (SLOW - AgentBuild + Tekton):**
+```yaml
+spec:
+  imageSource:
+    buildRef:
+      name: weather-service-build
+```
+
+#### 3. Automatic Service Creation
+- Agent CRD `servicePorts` spec automatically creates Kubernetes Services
+- Service naming: `{agent-name}-svc`
+- No need for separate Service manifests
+
+#### 4. AgentBuild + Tekton Issues
+- **Issue**: PipelineRuns timeout after 60 minutes (buildah stage slow/stuck)
+- **Issue**: Workspace PVCs NOT automatically created by operator
+- **Workaround**: Manually create PVCs before AgentBuild
+- **Recommendation**: Use image-based deployment for testing
+
+#### 5. Volume Mount Requirements
+- **CRITICAL**: UV_CACHE_DIR must use `/app/.cache` (mounted volume)
+- ❌ Using `/tmp/.cache` causes "Read-only file system" errors
+- ✅ Mount emptyDir volume to `/app/.cache`
+
+#### 6. Agent CRD Status Tracking
+```bash
+kubectl get agent -n team1
+# Shows: REPLICAS, PHASE (Deploying/Ready), AGE
+```
+
+### Deployment Commands
+
+**Apply image-based agents:**
+```bash
+kubectl apply -f components/03-applications/agents/weather-agents-image-based.yaml
+```
+
+**Verify deployment:**
+```bash
+kubectl get agent,deployment,service,pod -n team1
+```
+
+**Check logs:**
+```bash
+kubectl logs -n team1 -l app=weather-tool -c agent
+kubectl logs -n team1 -l app=weather-service -c agent
+```
+
+### Next Steps (Optional)
+
+- [ ] Test E2E weather query functionality
+- [ ] Fix AgentBuild timeout issues (increase timeout or optimize buildah)
+- [ ] Investigate automatic PVC creation for AgentBuild workspaces
+- [ ] Document migration from static Deployments to Agent CRDs
+- [ ] Test AgentBuild with shorter build times (smaller images)
