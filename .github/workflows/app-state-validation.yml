@@ -226,9 +226,9 @@ jobs:
           kubectl apply -f components/03-applications/agents/namespace.yaml
 
           echo ""
-          echo "Deploying weather agents using static manifests..."
+          echo "Deploying weather agents using static manifests (CI-only)..."
           kubectl apply -f components/03-applications/agents/weather-service.yaml
-          kubectl apply -f components/03-applications/agents/weather-mcp-tool.yaml
+          kubectl apply -f components/03-applications/agents/weather-mcp-tool-static.yaml
 
           echo ""
           echo "Waiting for agent pods to become ready..."

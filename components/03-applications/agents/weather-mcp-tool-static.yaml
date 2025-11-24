@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-mcp-tool
+  namespace: team1
+  labels:
+    app: weather-tool
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: mcp
+  selector:
+    app: weather-tool
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-mcp-tool
+  namespace: team1
+  labels:
+    app: weather-tool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-tool
+  template:
+    metadata:
+      labels:
+        app: weather-tool
+    spec:
+      serviceAccountName: default
+      volumes:
+      - name: cache
+        emptyDir: {}
+      containers:
+      - name: mcp-tool
+        image: localhost:5000/weather-mcp-tool:v0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8001
+          name: mcp
+          protocol: TCP
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8001"
+        - name: MCP_TRANSPORT
+          value: "streamable-http"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: UV_CACHE_DIR
+          value: "/app/.cache/uv"
+        volumeMounts:
+        - name: cache
+          mountPath: /app/.cache
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi

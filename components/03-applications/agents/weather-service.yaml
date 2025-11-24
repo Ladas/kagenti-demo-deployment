@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-service
+  namespace: team1
+  labels:
+    app: weather-service
+    ai.openshift.io/agent.class: "a2a"
+    ai.openshift.io/agent.name: "weather-service"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: a2a
+  selector:
+    app: weather-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-service
+  namespace: team1
+  labels:
+    app: weather-service
+    ai.openshift.io/agent.class: "a2a"
+    ai.openshift.io/agent.name: "weather-service"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-service
+  template:
+    metadata:
+      labels:
+        app: weather-service
+        ai.openshift.io/agent.class: "a2a"
+        ai.openshift.io/agent.name: "weather-service"
+    spec:
+      serviceAccountName: default
+      volumes:
+      - name: cache
+        emptyDir: {}
+      containers:
+      - name: agent
+        image: localhost:5000/weather-service:v0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: a2a
+          protocol: TCP
+        env:
+        # Server configuration
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8000"
+        - name: UV_CACHE_DIR
+          value: "/app/.cache/uv"
+
+        # LLM configuration (Ollama)
+        - name: LLM_API_BASE
+          value: "http://ollama.kagenti-system.svc.cluster.local:11434/v1"
+        - name: LLM_MODEL
+          value: "qwen2.5:7b"
+        - name: LLM_API_KEY
+          value: "not-needed"
+
+        # MCP Weather Tool endpoint
+        - name: MCP_URL
+          value: "http://weather-mcp-tool.team1.svc.cluster.local:8001/mcp"
+        - name: MCP_TRANSPORT
+          value: "streamable_http"
+
+        # OpenTelemetry configuration
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector.observability.svc.cluster.local:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "weather-service"
+
+        # Phoenix project assignment (for multi-tenancy)
+        - name: PHOENIX_PROJECT_NAME
+          value: "team1-agents"
+
+        volumeMounts:
+        - mountPath: /app/.cache
+          name: cache
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
