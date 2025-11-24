@@ -19,21 +19,8 @@ spec:
       labels:
         app: kiali-oauth2-proxy
     spec:
-      initContainers:
-      - name: wait-for-secret
-        image: bitnami/kubectl:latest
-        command:
-          - sh
-          - -c
-          - |
-            echo "Waiting for Keycloak client secret kiali-client-secret..."
-            until kubectl get secret kiali-client-secret -n oauth2-proxy > /dev/null 2>&1; do
-              echo "Secret kiali-client-secret not found, waiting 5s..."
-              sleep 5
-            done
-            echo "Secret kiali-client-secret found, proceeding with deployment"
-        securityContext:
-          runAsNonRoot: false
+      # Init container removed - rely on Kubernetes native retry logic when secret doesn't exist yet
+      # Pod will fail and retry until Keycloak PostSync hook creates the secret
       containers:
       - name: oauth2-proxy
         image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
