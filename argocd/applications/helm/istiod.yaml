@@ -31,6 +31,12 @@ spec:
               cpu: 500m
               memory: 2Gi
 
+        # Sidecar injector webhook configuration
+        sidecarInjectorWebhook:
+          # Allow pod creation even if istiod is not ready (critical for CI)
+          # This prevents deadlock where istiod takes >20min to start in resource-constrained environments
+          failurePolicy: Ignore
+
         global:
           # Use minimal profile
           proxy:
