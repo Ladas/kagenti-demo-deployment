@@ -43,8 +43,8 @@ spec:
           readOnly: true
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 25m  # Reduced for CI (allows overcommit)
+            memory: 64Mi # Reduced for CI
           limits:
             cpu: 500m
             memory: 512Mi

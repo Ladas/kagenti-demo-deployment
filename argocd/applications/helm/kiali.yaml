@@ -28,8 +28,8 @@ spec:
           replicas: 1
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 50m      # Reduced for CI (allows overcommit)
+              memory: 128Mi # Reduced for CI
             limits:
               cpu: 500m
               memory: 1Gi

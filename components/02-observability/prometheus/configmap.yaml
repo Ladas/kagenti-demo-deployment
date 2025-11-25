@@ -8,8 +8,8 @@ metadata:
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 15s
-      evaluation_interval: 15s
+      scrape_interval: 30s      # 30s instead of 15s to reduce CPU load in CI
+      evaluation_interval: 30s   # 30s instead of 15s
       external_labels:
         cluster: 'kagenti-demo'
         environment: 'kind-local'

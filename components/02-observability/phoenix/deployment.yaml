@@ -38,8 +38,8 @@ spec:
               cpu: 500m
               memory: 1Gi
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 50m      # Reduced for CI (allows overcommit)
+              memory: 128Mi # Reduced for CI
           livenessProbe:
             httpGet:
               path: /

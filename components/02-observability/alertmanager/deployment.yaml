@@ -81,8 +81,8 @@ spec:
           # Resource limits
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: "64Mi"  # Reduced for CI (allows overcommit)
+              cpu: "25m"      # Reduced for CI
             limits:
               memory: "256Mi"
               cpu: "200m"
