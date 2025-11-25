@@ -6,7 +6,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   annotations:
-    argocd.argoproj.io/sync-wave: "10"  # Deploy with other platform services
+    argocd.argoproj.io/sync-wave: "20"  # Deploy AFTER platform (wave 15) - optional component with large model pulls
 spec:
   project: default
   source:
