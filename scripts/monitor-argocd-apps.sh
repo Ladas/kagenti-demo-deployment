@@ -76,7 +76,12 @@ fi
 # App classification (CRITICAL vs OPTIONAL)
 # Note: Some apps are excluded from CRITICAL in CI/Kind environments where they won't deploy
 # CI_MODE detection: Check if CI environment variable is set (GitHub Actions, GitLab CI, etc.)
-CI_MODE="${CI:-false}"
+# Use parameter expansion that's compatible with set -u
+if [ -n "${CI+x}" ]; then
+    CI_MODE="$CI"
+else
+    CI_MODE="false"
+fi
 
 if [ "$CI_MODE" = "true" ]; then
     # CI/Kind environment: Exclude apps that require external resources
