@@ -66,25 +66,57 @@ echo "  - CRITICAL apps: Immediate warning when Degraded, fail after ${DEGRADED_
 echo "  - OPTIONAL apps: Can remain Progressing indefinitely"
 echo "  - Allows self-healing: Degraded → Progressing → Healthy"
 echo ""
+if [ "$CI_MODE" = "true" ]; then
+    echo -e "${YELLOW}CI Mode: Enabled${NC}"
+    echo "  - Reduced CRITICAL apps list (excludes: container-registry, kagenti-platform-operator, opentelemetry-operator)"
+    echo "  - These apps require external resources not available in Kind CI"
+    echo ""
+fi
 
 # App classification (CRITICAL vs OPTIONAL)
-CRITICAL_APPS=(
-    "gateway-api"
-    "cert-manager"
-    "istio-base"
-    "istiod"
-    "istio-config"
-    "tekton"
-    "keycloak"
-    "keycloak-operator"
-    "kagenti-operator"
-    "kagenti-platform-operator"
-    "platform"
-    "container-registry"
-    "keycloak-platform-rbac"
-    "opentelemetry-operator"
-    "reflector"
-)
+# Note: Some apps are excluded from CRITICAL in CI/Kind environments where they won't deploy
+# CI_MODE detection: Check if CI environment variable is set (GitHub Actions, GitLab CI, etc.)
+CI_MODE="${CI:-false}"
+
+if [ "$CI_MODE" = "true" ]; then
+    # CI/Kind environment: Exclude apps that require external resources
+    CRITICAL_APPS=(
+        "gateway-api"
+        "cert-manager"
+        "istio-base"
+        "istiod"
+        "istio-config"
+        "tekton"
+        "keycloak"
+        "keycloak-operator"
+        "kagenti-operator"
+        "platform"
+        "keycloak-platform-rbac"
+        "reflector"
+    )
+    # Moved to OPTIONAL in CI: container-registry (needs external storage),
+    # kagenti-platform-operator (may not deploy in Kind),
+    # opentelemetry-operator (may have CRD/webhook issues)
+else
+    # Production/local Kind: Full CRITICAL list
+    CRITICAL_APPS=(
+        "gateway-api"
+        "cert-manager"
+        "istio-base"
+        "istiod"
+        "istio-config"
+        "tekton"
+        "keycloak"
+        "keycloak-operator"
+        "kagenti-operator"
+        "kagenti-platform-operator"
+        "platform"
+        "container-registry"
+        "keycloak-platform-rbac"
+        "opentelemetry-operator"
+        "reflector"
+    )
+fi
 
 # Optional apps can be Progressing without failing
 OPTIONAL_APPS=(
