@@ -61,6 +61,16 @@ echo "Timeout: ${MONITOR_TIMEOUT}s ($(($MONITOR_TIMEOUT / 60)) minutes)"
 echo "Poll Interval: ${POLL_INTERVAL}s"
 echo "Degraded Grace Period: ${DEGRADED_GRACE_PERIOD}s ($(($DEGRADED_GRACE_PERIOD / 60)) minutes)"
 echo ""
+
+# CI_MODE detection: Check if CI environment variable is set (GitHub Actions, GitLab CI, etc.)
+# IMPORTANT: Must be done BEFORE first usage of CI_MODE below
+# Use parameter expansion that's compatible with set -u
+if [ -n "${CI+x}" ]; then
+    CI_MODE="$CI"
+else
+    CI_MODE="false"
+fi
+
 echo -e "${CYAN}Smart Failure Logic:${NC}"
 echo "  - CRITICAL apps: Immediate warning when Degraded, fail after ${DEGRADED_GRACE_PERIOD}s"
 echo "  - OPTIONAL apps: Can remain Progressing indefinitely"
@@ -75,13 +85,6 @@ fi
 
 # App classification (CRITICAL vs OPTIONAL)
 # Note: Some apps are excluded from CRITICAL in CI/Kind environments where they won't deploy
-# CI_MODE detection: Check if CI environment variable is set (GitHub Actions, GitLab CI, etc.)
-# Use parameter expansion that's compatible with set -u
-if [ -n "${CI+x}" ]; then
-    CI_MODE="$CI"
-else
-    CI_MODE="false"
-fi
 
 if [ "$CI_MODE" = "true" ]; then
     # CI/Kind environment: Exclude apps that require external resources
