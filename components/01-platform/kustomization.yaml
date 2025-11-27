@@ -15,8 +15,7 @@ resources:
   # Kagenti UI
   - kagenti-ui/
 
-  # TLS certificates
-  - tls/
+  # TLS certificates - self-signed cert now defined in gateway/self-signed-cert.yaml
 
 # NOTE: kagenti-chart is a Helm chart - needs separate Helm Application
 # TODO: Create argocd/applications/helm/kagenti-platform.yaml for this chart
